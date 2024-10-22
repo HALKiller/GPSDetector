@@ -26,7 +26,7 @@
 
 #include "handlers.h"
 
-// #include "tmr_handlers.h"
+#include "UART.h"
 
 #include "stddef.h"
 
@@ -65,12 +65,12 @@ static gpsd_state_t detector_state;
 
 #define STANDARD_SLEEP_TIME_DEBUGGING 1 // 4 seconds --> nice!!
 
-
+#define SEND_APP_STRINGS 0
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
-const char *app_txt[] = {
+static const char *app_txt[] = {
   
   "E_RESET_STATE",
   "E_LUZ_COM_STATE",
@@ -83,7 +83,7 @@ const char *app_txt[] = {
   
 };
 
-const char *app_txt_2[] = {
+static const char *app_txt_2[] = {
   
   "E_GPS_CHECK_ON_ACTIVATION",
   "E_GPS_SEARCHES_FOR_POSITION",
@@ -120,7 +120,7 @@ static void f_on_exit_E_TRANSMISSION_STATE_handler(void);
 static void f_on_exit_E_SLEEP_STATE_handler(void);
 
 // Array of function pointers
-void (*exitstateHandlers[E_NUM_STATES])() = {
+static void (*exitstateHandlers[E_NUM_STATES])() = {
   f_on_exit_E_RESET_STATE_handler,
   f_on_exit_E_LUZ_COM_STATE_handler,
   f_on_exit_E_STARTUP_STATE_handler,
@@ -131,7 +131,7 @@ void (*exitstateHandlers[E_NUM_STATES])() = {
 };
 
 // Array of function pointers
-void (*stateHandlers[E_NUM_STATES])() = {
+static void (*stateHandlers[E_NUM_STATES])() = {
     f_E_RESET_STATE_handler,
     f_E_LUZ_COM_STATE_handler,
     f_E_STARTUP_STATE_handler,
@@ -148,7 +148,7 @@ void gd_states_initialize(void){
   
   detector_state.last_state = E_RESET_STATE,
   detector_state.actual_state = E_RESET_STATE,
-  detector_state.detector_is_on = false;
+  detector_state.detector_is_on = FALSE;
   gd_states_set_gpsd_substate(E_CHECK_ON_TILT_SENSOR);
   
 }
@@ -161,7 +161,7 @@ void gd_states_switch_to_next_state(void){
   
   detector_state.last_state = detector_state.actual_state;
 #if SEND_APP_STRINGS  
-  APP_PRINT("The last state was: %s \r\n", (const char*)app_txt[detector_state.actual_state]);
+  DB_PRINT("The last state was: %s \r\n", (const char*)app_txt[detector_state.actual_state]);
 #endif
 
 
@@ -174,8 +174,8 @@ void gd_states_switch_to_next_state(void){
     assert(false);
   }
 #if SEND_APP_STRINGS    
-  APP_PRINT("The actual state is: %s \r\n", (const char*)app_txt[detector_state.actual_state]);
-  APP_PRINT("The actual sub state is: %s \r\n", (const char*)app_txt_2[detector_state.gd_substate]);
+  DB_PRINT("The actual state is: %s \r\n", (const char*)app_txt[detector_state.actual_state]);
+  DB_PRINT("The actual sub state is: %s \r\n", (const char*)app_txt_2[detector_state.gd_substate]);
 #endif  
 }
 
@@ -186,7 +186,7 @@ void gd_states_set_gpsd_substate(e_gpsd_substate_t substate){
   
   detector_state.gd_substate = substate;
 #if SEND_APP_STRINGS   
-  APP_PRINT("Sub state is: %s \r\n", (const char*)app_txt_2[detector_state.gd_substate]);
+  DB_PRINT("Sub state is: %s \r\n", (const char*)app_txt_2[detector_state.gd_substate]);
 #endif 
 }
 
@@ -238,12 +238,7 @@ static void f_on_exit_E_LUZ_COM_STATE_handler(void){
   detector_state.actual_state = E_STARTUP_STATE;
   
   
-#if USE_RTC
-  set_rtc_periodic_rate();
-#else  
-  // this timer gets switched on only once --> here !
-  tmr_handlers_start(SLEEP_TIMER);
-#endif  
+  // TODO: eRTC clock startup --> TMR4 
 
 
 }
@@ -287,7 +282,7 @@ static void f_on_exit_E_SEARCH_POSITION_STATE_handler(void){
   else if(detector_state.gd_substate == E_GPS_CHECK_ON_ACTIVATION)
   {
     // therefore the GPS is still on --> switch it off !
-    // set_handler_FLG(E_GPS_OFF_h);
+    // handlers_generic_set_handler_FLG(E_GPS_OFF_h);
     detector_state.actual_state = E_TRANSMISSION_STATE;
     
     
@@ -305,7 +300,7 @@ static void f_on_exit_E_SEARCH_POSITION_STATE_handler(void){
 static void f_on_exit_E_OFF_STATE_handler(void){
   
   detector_state.actual_state = E_STARTUP_STATE;
-  APP_PRINT("DETECTOR_IS_ON!\r\n");
+  DB_PRINT("DETECTOR_IS_ON!\r\n");
 }
 
 // E_TRANSMISSION_STATE
@@ -374,15 +369,16 @@ static void f_E_RESET_STATE_handler(void){
 //  E_LUZ_COM_STATE,
 static void f_E_LUZ_COM_STATE_handler(void){
   
-  set_handler_FLG(E_RX_LUZ_COM_h);
+  handlers_generic_set_handler_FLG(e_rx_luz_com_h);
   
 }
 
 //  E_STARTUP_STATE,
 static void f_E_STARTUP_STATE_handler(void){
 
-  set_handler_FLG(E_STARTUP_h);
-  // tmr_handlers_start(STANDARD_TIMER);
+
+  handlers_generic_set_handler_FLG(e_startup_h);
+  
 
 }
 
@@ -390,7 +386,7 @@ static void f_E_STARTUP_STATE_handler(void){
 static void f_E_SEARCH_POSITION_STATE_handler(void){
 
   // set handler flag for gps_initialization
-  set_handler_FLG(E_GPS_ON_h);
+  handlers_generic_set_handler_FLG(e_gps_on_h);
   
   
 }
@@ -398,9 +394,9 @@ static void f_E_SEARCH_POSITION_STATE_handler(void){
 //  E_OFF_STATE,
 static void f_E_OFF_STATE_handler(void){
   
-  APP_PRINT("DETECTOR_IS_OFF!\r\n");
+  DB_PRINT("DETECTOR_IS_OFF!\r\n");
   
-  set_handler_FLG(E_GD_OFF_h);
+  handlers_generic_set_handler_FLG(e_gd_off_h);
   // therefore we need to set the lpm_enter_handler...
 
 }
@@ -416,7 +412,7 @@ static void f_E_TRANSMISSION_STATE_handler(void){
   if(detector_state.gd_substate == E_GPS_CHECK_ON_ACTIVATION)
   {
     // Activation or no hay position
-    // APP_PRINT
+    // DB_PRINT
   }
   else
   {
@@ -424,7 +420,7 @@ static void f_E_TRANSMISSION_STATE_handler(void){
   }
 
 
-  set_handler_FLG(E_PREPARE_MESSAGE_h);
+  handlers_generic_set_handler_FLG(e_prepare_msg_h);
 
 }
 
@@ -453,9 +449,9 @@ static void f_E_SLEEP_STATE_handler(void){
   // use the fixed timeout for the sleep timer
   // r_sleep_handler_set_sleep_time_counter(STANDARD_SLEEP_TIME_DEBUGGING);
   
-  set_handler_FLG(E_LPM_START_h);
+  handlers_generic_set_handler_FLG(e_ertc_handler_start);
   
-  set_rtc_calendar_alarm(30u);
+  
   
 }
 

@@ -37,7 +37,7 @@
 
 
 
-// set_handler_FLG(E_TILT_SENSOR_h);
+// set_handler_FLG(e_tilt_sensor_h);
 static void f_tilt_sensor_to_check(void);
 
 
@@ -50,20 +50,20 @@ static uint8_t test_handler_FLG(uint8_t handler_flg_spot);
 
 static void set_tmr_2ms_handler_dependencies_flgs(void);
 
-
+static void f_gd_off(void);
 
 static void prepare_sleep(void);
 static void fn_clock_switching(void);
 static void process_next_char_from_input(void);
-static void f_gd_on_off(void); // static void f_gd_on_off(HandlerType the_handler);
+static void f_gd_on(void);
 
-
+static void f_prepare_msg(void);
 
 static void set_tmr_25ms_handler_dependencies_flgs(void);
 static void set_tmr_200ms_handler_dependencies_flgs(void);
 static void set_tmr_1000ms_handler_dependencies_flgs(void);
 
-
+static void f_gps_on(void);
 
 static void reset_swoff_tmr_of_cnt(void);
 
@@ -72,7 +72,7 @@ static void swoff_tmr_handler(void);
 static void err_handler_output(void);
 static void empty_function(void);
 
-static uint8_t test_handler_array(void);
+static void test_handler_array(void);
 
 
 //  **********************  DATA TYPES, STRUCTS, ENUMS  ************************  //
@@ -86,20 +86,28 @@ typedef struct {
 static const HandlersHandlerType Handler_arr[] =
 {
 	
-	{ e_sleep_handler,	                  prepare_sleep	},	
+	// { e_sleep_handler,	                  prepare_sleep	},	
 	{ e_switch_clock_handler,             fn_clock_switching },	
 	{ e_ring_buffer_handler,              process_next_char_from_input },
 	{ e_2ms_of_handler,	                  set_tmr_2ms_handler_dependencies_flgs	},
-	{ E_GD_ON_OFF_h,                      f_gd_on_off },	
+	{ e_gd_on_h,                          f_gd_on },	
+  
   
 	// { e_adc_bateria_handler,	           adc_bat_handler },	
-	{ E_TILT_SENSOR_h,	                  f_tilt_sensor_to_check },	
+	{ e_tilt_sensor_h,	                  f_tilt_sensor_to_check },	
 	{ e_200ms_h,                          set_tmr_200ms_handler_dependencies_flgs },
-	// { e_seg_7d_refresh_handler,          seg_7d_refresh },	
-	{ e_reset_swoff_tmr_of_cnt_handler,  reset_swoff_tmr_of_cnt },	
-	// { e_swoff_tmr_handler,               swoff_tmr_handler },
-	// { e_swoff_consumption,               swoff_handler },				
-	{ e_errhandler,                      empty_function },		
+  { e_gps_on_h,                         f_gps_on },
+  { e_prepare_msg_h,                      f_prepare_msg },
+  
+  
+	{ e_rx_luz_com_h,                     empty_function },	
+	{ e_reset_swoff_tmr_of_cnt_handler,   reset_swoff_tmr_of_cnt },	
+	{ e_startup_h,                        empty_function },
+  // { e_swoff_tmr_handler,               swoff_tmr_handler },
+  
+	{ e_ertc_handler_start,               empty_function },	
+  { e_gd_off_h,                         f_gd_off },	
+	{ e_errhandler,                       empty_function },		
 
 	
 };
@@ -135,17 +143,17 @@ static const uint8_t const_MAXIMUM_HANDLERS = 16;
 
 //  **********************  STATIC DATA DECLARATIONS  ************************  //
 
-volatile uint16_t Handler_FLGS = 0;
+static volatile uint16_t Handler_FLGS = 0;
 
 
-volatile uint8_t temp_clockspeed_flg = false;
+static volatile uint8_t temp_clockspeed_flg = false;
 
 
-uint8_t swoff_tmr_cnt = 0;
-uint16_t of_cnt_2000ms = 0;
-uint16_t of_cnt_200ms = 0;
-uint8_t of_cnt_100ms = 0;
-uint16_t of_cnt_seg_7d = 0;
+static uint8_t swoff_tmr_cnt = 0;
+static uint16_t of_cnt_2000ms = 0;
+static uint16_t of_cnt_200ms = 0;
+static uint8_t of_cnt_100ms = 0;
+static uint16_t of_cnt_seg_7d = 0;
 
 //  **********************  PUBLIC FUNCTIONS BODY  ************************  //
 
@@ -154,14 +162,63 @@ uint16_t of_cnt_seg_7d = 0;
 
 void init_handler_flg(void){
 	
-	Handler_FLGS = 0;
+	Handler_FLGS = (uint8_t)0u;
 	
 	test_handler_array();
 	
 }
 
 
+#if 1
 
+void get_the_next_handler(void){
+
+uint8_t handler_runs_once_flg = false;	
+uint8_t handler_id = 0;	
+	
+  
+  uint16_t temp_handler_FLGS = Handler_FLGS;
+
+  // Create a mask by shifting 1 to the left by n_bit positions
+  unsigned int mask = 1U; //  << n_bit;
+
+  // Return whether the specific bit is set
+  // return (b_field & mask) != 0; // Returns 1 if the bit is set, 0 otherwise
+
+
+  while(Handler_FLGS == 0u)
+  {
+    CLRWDT();
+    DB_LED1_SWAP;
+  }
+
+  temp_handler_FLGS = Handler_FLGS;
+
+	for(handler_id = 0; handler_id < NUM_HANDLERS; handler_id++)
+	{
+    
+		if((temp_handler_FLGS & mask) != 0)
+		{
+
+			(*Handler_arr[handler_id].func)();
+			
+				// this is a special case and gets reset in the actual function
+			if((handler_id != e_ring_buffer_handler) && (handler_id != e_gd_off_h))
+      // if(handler_id != e_ring_buffer_handler)
+			{
+				reset_handler_FLG(handler_id);
+			}
+
+			handler_id = NUM_HANDLERS;
+			
+		}
+    mask = mask << 1;
+	}
+
+}
+
+#else
+  
 void get_the_next_handler(void){
 
 uint8_t handler_runs_once_flg = false;	
@@ -180,7 +237,7 @@ uint8_t handler_id = 0;
 			(*Handler_arr[handler_id].func)();
 			
 				// this is a special case and gets reset in the actual function
-			if(handler_id != e_ring_buffer_handler)
+			if((handler_id != e_ring_buffer_handler) && (handler_id != e_gd_off_h))
 			{
 				reset_handler_FLG(handler_id);
 			}
@@ -192,6 +249,7 @@ uint8_t handler_id = 0;
 
 }
 
+#endif
 
 void reset_ring_buffer_handler_FLG(void){
 	
@@ -320,15 +378,7 @@ static void set_tmr_2ms_handler_dependencies_flgs(void){
 	
   
 
-	// every 2 seconds --> ADC_BAT_HANDLER
-	if(OF_CNT_2000MS < of_cnt_2000ms)
-	{
 
-    handlers_generic_set_handler_FLG(e_sleep_handler);  
-
-		of_cnt_2000ms = 0;
-		
-	}
 
 }
 
@@ -353,25 +403,46 @@ static void process_next_char_from_input(void){
 
 
 
-static void f_gd_on_off(void){
+static void f_gd_on(void){
   
-  // reset_handler_FLG(the_handler);
+  reset_handler_FLG(e_gd_off_h);
   
-  DB_PRINT("Tilt Sensor state change!\r\n");
+  TMR4_IE = true;
+  TMR4_IF = FALSE;
+  PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = TRUE;
+  TMR4_ON = TRUE;
+  
+  
+  
+  
+  // actually the full startup routine needs to be happening here...
+  
+  // DB_PRINT("Tilt Sensor state change!\r\n");
   
   if(tilt_sensor_get_detector_state() == TS_ON_STATE)
   {
     
     // we can do that becaue that is always the highest level of all things 
     // gd_states_set_gpsd_substate(E_TILT_SENSOR_IS_ON);
-    DB_PRINT("DETECTOR IS ON\r\n");
+    if(FAST_CLOCK == false)
+    {
+      SWITCH_CLOCK = true;
+    }
+    else
+    {
+      DB_PRINT("DETECTOR IS ON\r\n");  
+    }
+    // DB_PRINT("DETECTOR IS ON\r\n");
     
   }
   else
   {
     
-    // gd_states_set_gpsd_substate(E_TILT_SENSOR_IS_OFF);
-    DB_PRINT("DETECTOR IS OFF\r\n");
+    DB_PRINT("That seems to be an error!\r\n");
+    
+
+
     
   }
   
@@ -385,7 +456,7 @@ static void f_gd_on_off(void){
 static void set_tmr_200ms_handler_dependencies_flgs(void){
 	
 	DB_LED2_SWAP;
-	set_handler_FLG(E_TILT_SENSOR_h);
+	set_handler_FLG(e_tilt_sensor_h);
   
 }
 
@@ -399,112 +470,64 @@ static void f_tilt_sensor_to_check(void){
   
 }
 
-
-
-
-static void prepare_sleep(void){
-	
-  static uint8_t rndcnt = 0;
+static void f_gps_on(void){
   
   
-  if(temp_clockspeed_flg == false)
+  // set up the GPS for reception --> bla bla, timeout timer, etc...
+  
+  
+  
+}
+
+static void f_prepare_msg(void){
+  
+  
+  
+  
+  
+}
+
+
+
+
+static void f_gd_off(void){
+  
+  // when we enter here we do NOT need to take care of the oscillator timing related switch over
+  // because the WDT clock is so unreliable that we are not further bothered...
+  // --> that is going to be taken care of by the watch dog timer and sleep instruction...
+  
+  if(FAST_CLOCK == true)
   {
-    UWT("Prepare_sleep\r\n");  
-    while(!PIR1bits.TXIF)
-    {
-      // empty_loop
-    }
+    // gd_states_set_gpsd_substate(E_TILT_SENSOR_IS_OFF);
+    DB_PRINT("DETECTOR IS OFF\r\n");
+    set_slow_clock();
+    configure_tmr4();
     
   }
   
- 
-  
-  #if 1    
+  PERIPHERIC_IE = FALSE;
+	GLOBAL_IE = FALSE;
+  TMR4_IE = FALSE;
+  TMR4_ON = FALSE;
   
   LATC &= 0b11011011;
   LATB &= 0b00100011;
   LATA |= 0b01000000;
   LATA &= 0b11101000;
   
+  // And we need to swoff all the periferic ISR IE
   
-
-
-  // FVRCONbits.FVREN = 0;
-  // FVRCONbits.ADFVR = 0;
+  // and now set all the super low power things so that there is almost no consumption...
+  // and jsut checking the Input pin for activation
+  WDTCONbits.WDTPS = 0x08u;
+  WDTCONbits.SWDTEN = 0x01u;  // wdton = true
   
-  RCSTAbits.CREN = false;
-	TXSTAbits.TXEN = false;
-  GIE = false;
+  SLEEP();  // 512ms sleep
+  DB_LED2_SWAP;
   
-  // TRISA = 0x00;
-  // TRISB = 0x00;
-  // TRISC = 0x00;
+  set_handler_FLG(e_tilt_sensor_h);
   
-  // LATA = 0x00;
-  // LATB = 0x00;
-  // LATC = 0x00;
-  
-  // clock_slowdown();
-  
-  WDTCONbits.SWDTEN = 1;
-  
- #endif 
-  
-    // DB_LED_1 = true;
-    __delay_ms(2);
-    // DB_LED_1 = false;
-  
-  if(rndcnt == 1)
-  {
-    // DB_LED_2 = true;
-    __delay_ms(1);
-    // DB_LED_2 = false;
-    // set_clock_speed(SLOW_CLOCK_OSC);
-    // clock_slowdown();
-    rndcnt = 0;
-    temp_clockspeed_flg = true;
-    TMR0IE = false;
-    TMR4IE = true;
-    TMR4_ON = true;
-
-    
-  }
-  
-  rndcnt++;
-#if 0  
-  if(rndcnt == 5)
-  {
-    
-    
-    set_clock_speed(FAST_CLOCK_OSC);
-    temp_clockspeed_flg = false;
-    TMR0IE = true;
-    TMR4IE = false;
-    LUZ_TX = true;
-    __delay_ms(200);
-    LUZ_TX = false;
-  }
-#endif
-  // OPTION_REGbits.PS = TMR0_002_PRESCALER;
-
-  
-
-  SLEEP();
-
-  RCSTAbits.CREN = true;
-	TXSTAbits.TXEN = true;
-  GIE = true;
-  
-  // init_all();
- 
-
-
-	
 }
-
-
-
-
 
 
 static void fn_clock_switching(void){
@@ -515,8 +538,9 @@ static void fn_clock_switching(void){
   if(FAST_CLOCK == true)
   {
     
-    configure_tmr4();
+    
     set_slow_clock();
+    configure_tmr4();
     
   }
   else
@@ -557,7 +581,17 @@ static void err_handler_output(void){
 
 
 static void empty_function(void){
+  
+#if DEBUGGING_IS_ON  
+  
 	return;
+  
+#else
+  
+  wat?
+  
+#endif  
+
 }
 
 
@@ -566,9 +600,9 @@ static void empty_function(void){
 // we can test that the array is synced with the enumeration
 // that is actually quite important!!
 // TODO: that should get only in DEBUGGING
-static uint8_t test_handler_array(void){
+static void test_handler_array(void){
 	
-	uint8_t hlooper = 0;
+	int8_t hlooper = 0;
 	
 	
 	assert(NUM_HANDLERS == (sizeof(Handler_arr)/sizeof(Handler_arr[0])));
@@ -577,7 +611,7 @@ static uint8_t test_handler_array(void){
 	{
 		assert(hlooper == Handler_arr[hlooper].Handlers)
 	}
-	return true;
+	// return true;
 }
 
 
@@ -1133,4 +1167,93 @@ static void rx_response_handler(void){
 #endif
 
 
+#if 0
+static void prepare_sleep(void){
+	
+  static uint8_t rndcnt = 0;
+  
+  
+  if(temp_clockspeed_flg == false)
+  {
+    UWT("Prepare_sleep\r\n");  
+    while(!PIR1bits.TXIF)
+    {
+      // empty_loop
+    }
+    
+  }
+  
+ 
+  
+#if 1    
+  
+  LATC &= 0b11011011;
+  LATB &= 0b00100011;
+  LATA |= 0b01000000;
+  LATA &= 0b11101000;
+  
+  
+
+
+  // FVRCONbits.FVREN = 0;
+  // FVRCONbits.ADFVR = 0;
+  
+  RCSTAbits.CREN = false;
+	TXSTAbits.TXEN = false;
+  GIE = false;
+  
+  // TRISA = 0x00;
+  // TRISB = 0x00;
+  // TRISC = 0x00;
+  
+  // LATA = 0x00;
+  // LATB = 0x00;
+  // LATC = 0x00;
+  
+  // clock_slowdown();
+  
+  WDTCONbits.SWDTEN = 1;
+  
+ #endif 
+  
+    // DB_LED_1 = true;
+    __delay_ms(2);
+    // DB_LED_1 = false;
+  
+  if(rndcnt == 1)
+  {
+    // DB_LED_2 = true;
+    __delay_ms(1);
+    // DB_LED_2 = false;
+    // set_clock_speed(SLOW_CLOCK_OSC);
+    // clock_slowdown();
+    rndcnt = 0;
+    temp_clockspeed_flg = true;
+    TMR0IE = false;
+    TMR4IE = true;
+    TMR4_ON = true;
+
+    
+  }
+  
+  rndcnt++;
+
+  // OPTION_REGbits.PS = TMR0_002_PRESCALER;
+
+  
+
+  SLEEP();
+
+  RCSTAbits.CREN = true;
+	TXSTAbits.TXEN = true;
+  GIE = true;
+  
+  // init_all();
+ 
+
+
+	
+}
+
+#endif
 // EOF

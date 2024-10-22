@@ -59,7 +59,7 @@ const uint8_t const_off_cnt_debounced = TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * sen
 
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
-#define SENSOR_READINGS_PER_SECOND ((uint8_t)5u)
+#define SENSOR_READINGS_PER_SECOND ((uint16_t)5u)
 #define CONST_ON_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_ON * SENSOR_READINGS_PER_SECOND)
 #define CONST_OFF_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * SENSOR_READINGS_PER_SECOND)
  
@@ -157,7 +157,7 @@ static void update_detector_position_state_handler(uint8_t read_state){
         
         tilt_sensor.last_state = tilt_sensor.detector_is_on;
         
-        handlers_generic_set_handler_FLG(E_GD_ON_OFF_h);
+        handlers_generic_set_handler_FLG(e_gd_on_h);
         
       }
       
@@ -183,7 +183,7 @@ static void update_detector_position_state_handler(uint8_t read_state){
         
         tilt_sensor.last_state = tilt_sensor.detector_is_on;
         
-        handlers_generic_set_handler_FLG(E_GD_ON_OFF_h);
+        handlers_generic_set_handler_FLG(e_gd_off_h);
         
       }
 		}	

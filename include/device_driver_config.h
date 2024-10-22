@@ -73,7 +73,7 @@ typedef enum{
 
 void IO_Init(void);
 
-uint8_t device_driver_get_AN_from_channel(IO_ChannelType channel);
+uint8_t d_driver_get_AN_from_channel(IO_ChannelType channel);
 
 void IO_Write_channel(IO_ChannelType channel, uint8_t setter);
 

@@ -25,7 +25,7 @@ uint8_t clock_slowdown(void);
 #define CLOCK_6250KHZ_MF_CLOCK 0x04u
 
 #define CLOCK_4_MHZ_HF_CLOCK 0x0Du
-#define CLOCK_8_32_MHZ_HF_CLOCK 0x0E
+#define CLOCK_8_32_MHZ_HF_CLOCK 0x0Eu
 #define CLOCK_16_MHZ_HF_CLOCK 0x0Fu
 
 

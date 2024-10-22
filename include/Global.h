@@ -14,8 +14,14 @@
 //  * * * * * * * * * * * * *  g l o b a l  a b r e v i a t i o n s   r e l a t e d     * * * * * * * * * * * * *  //
 
 #define NULL_TERMINATOR	(char)'\0'
-#define TRUE true
-#define FALSE false
+
+#define TRUE (1u)
+#define FALSE (0u)
+
+#define True (uint8_t)(1u)
+#define False (uint8_t)(0u)
+
+
 
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
@@ -191,8 +197,8 @@ error again --> that MIPS is not standard so far --> write it extra out
 
 // these are the time s in seconds that the sensor has to have 
 // a stable reading to change the state initial state is off!! but still without having set to sleep
-#define TIME_THRESHOLD_FOR_DETECTOR_IS_ON ((uint8_t)4u)
-#define TIME_THRESHOLD_FOR_DETECTOR_IS_OFF ((uint8_t)4u)
+#define TIME_THRESHOLD_FOR_DETECTOR_IS_ON ((uint16_t)4u)
+#define TIME_THRESHOLD_FOR_DETECTOR_IS_OFF ((uint16_t)4u)
 #define SENSOR_IS_TOP_MOUNTED ((uint8_t)1u) // because the signal is invertred depending on the sid of mounting
 
 

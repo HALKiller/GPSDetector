@@ -17,22 +17,22 @@
 #if MIPS == 8
 
 #define CLOCK_SETTING CLOCK_8_32_MHZ_HF_CLOCK
-#define PLL_SETTING TRUE
+#define PLL_SETTING 0x01u
 
 #elif MIPS == 4
 
 #define CLOCK_SETTING CLOCK_16_MHZ_HF_CLOCK
-#define PLL_SETTING FALSE
+#define PLL_SETTING 0u
 
 #elif MIPS == 2
 
 #define CLOCK_SETTING CLOCK_8_32_MHZ_HF_CLOCK
-#define PLL_SETTING FALSE
+#define PLL_SETTING 0u
 
 #elif MIPS == 1
 
 #define CLOCK_SETTING CLOCK_4_MHZ_HF_CLOCK
-#define PLL_SETTING FALSE
+#define PLL_SETTING 0u
 
 #else
   
@@ -61,12 +61,12 @@ void init_clock(void){
 	// PLL Enabled
 	OSCCONbits.SPLLEN = PLL_SETTING;
 	
-  while((bool)!OSCSTATbits.OSTS)
+  while(OSCSTATbits.OSTS == 0u)
   {
     // just wait till it is locked
   }
 	
-  FAST_CLOCK = true;
+  FAST_CLOCK = TRUE;
   
   // fast_clock = true;
 	
@@ -80,15 +80,16 @@ void set_slow_clock(void){
   
   OSCCONbits.IRCF = CLOCK_3125KHZ_MF_CLOCK;  //0x0C; // 31.25kHz   0x7;
   
-  OSCCONbits.SPLLEN = false;
+  OSCCONbits.SPLLEN = 0u;
   
-  while((bool)!OSCSTATbits.MFIOFR)
+  // while((bool)!OSCSTATbits.MFIOFR)
+  while(OSCSTATbits.MFIOFR == 0u)
   {
     // just wait till it is locked
   }
   
   // fast_clock = false;
-  FAST_CLOCK = false;
+  FAST_CLOCK = FALSE;
   
   
 }

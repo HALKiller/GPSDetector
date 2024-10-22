@@ -21,6 +21,9 @@
 #include <stdint.h>
 #include "xc.h"
 
+#if DEBUGGING_IS_ON
+#include "generic_union_flgs.h"
+#endif
 
 
 
@@ -146,12 +149,12 @@ void uart_init_slow_clock(void){
   BRG16 = 0u;
   BRGH = 0u;
   SPBRG = 3u;
-  SYNC = 0u;
-  SPEN = 1u;
-  CREN = 1u;
-  TXEN = 1;
+  SYNC = FALSE;
+  SPEN = TRUE;
+  CREN = TRUE;
+  TXEN = TRUE;
 #if DEBUG_16F1936_GPS_FORCE_RCIE	
-  RCIE = 1;
+  RCIE = TRUE;
 #endif
 
   
@@ -167,11 +170,11 @@ void init_UART(void)
   BRGH = 1u;
   SPBRG = 16u;
   SYNC = 0u;
-  SPEN = 1u;
-  CREN = 1u;
-  TXEN = 1;
+  SPEN = TRUE;
+  CREN = TRUE;
+  TXEN = TRUE;
 #if DEBUG_16F1936_GPS_FORCE_RCIE	
-  RCIE = 1;
+  RCIE = TRUE;
 #endif
 
 }
@@ -186,16 +189,16 @@ void init_UART(void){
 	BAUDCONbits.BRG16 = true;	// false; 
 	TXSTAbits.BRGH = true;
 
-	SPBRGH = 0;
-	SPBRG = 138;	// 51;
+	SPBRGH = 0u;
+	SPBRG = 138u;	// 51;
 
 	
-	TXSTAbits.SYNC = false;
+	TXSTAbits.SYNC = FALSE;
 	// BAUD1CONbits.SCKP = true;
-	RCSTAbits.SPEN = true;
+	RCSTAbits.SPEN = TRUE;
 	
-	RCSTAbits.CREN = true;
-	TXSTAbits.TXEN = true;
+	RCSTAbits.CREN = TRUE;
+	TXSTAbits.TXEN = TRUE;
 	
 
 	
@@ -210,8 +213,8 @@ void init_UART(void){
 	BAUDCONbits.BRG16 = true;	// false; 
 	TXSTAbits.BRGH = true;
 
-	SPBRGH = 0;
-	SPBRG = 138;	// 51;
+	SPBRGH = 0u;
+	SPBRG = 138u;	// 51;
 
 	
 	TXSTAbits.SYNC = false;
@@ -568,23 +571,17 @@ db_data[3] = NULL_TERMINATOR;
 #endif
 	// first we check if there was allready a header found and 
 	// therefore we just add this one to the rest...
-	if(HEADER_FOUND == true)
+	if(HEADER_FOUND == TRUE)
 	{
 		// this would be the kind of order we have
-		if(NEXT_CHAR_IS_ORDER_BYTE == true)
+		if(NEXT_CHAR_IS_ORDER_BYTE == TRUE)
 		{
-				NEXT_CHAR_IS_ORDER_BYTE = false;
+				NEXT_CHAR_IS_ORDER_BYTE = FALSE;
 				
 				switch(rx_data)
 				{
-					case 'r':
-						// set handler flag, reset everything
-						*(huart.data_pnt) = rx_data;
-						huart.data_pnt++;
-						*(huart.data_pnt) = NULL_TERMINATOR;
-						huart.data_lencnt++;
-						prepare_tx_handler();
-						max_len = CHARS_TO_RECEIVE + 1;
+					case 's':
+            SWITCH_CLOCK = TRUE;
 					break;
 					case 'w':
 						// basically nothing else to do

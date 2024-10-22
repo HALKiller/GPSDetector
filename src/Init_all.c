@@ -29,6 +29,8 @@
 
 #include "tilt_sensor.h"
 
+#include "gd_states.h"
+
 #include "xc.h"
 
 
@@ -46,14 +48,14 @@ static void next_clock(void);
 
 static void init_wdt(void);
 static void init_IO_PORTS(void);
-static void init_tmr0(void);
-static void init_tmr1(void);
-static void configure_tmr2(void);
+// static void init_tmr0(void);
+// static void init_tmr1(void);
+// static void configure_tmr2(void);
 
 
-uint8_t t_status __at(0x16F); // (0xA0);
+static uint8_t t_status __at(0x16F); // (0xA0);
 
-uint8_t fs_clock = 1;
+
 
 
 #if 1
@@ -91,6 +93,8 @@ void init_all(void){
 	init_UART();
 	
 	init_IO_PORTS();
+  
+  gd_states_initialize();
   
   tilt_sensor_init();
   
@@ -146,24 +150,29 @@ void init_all(void){
 #endif
  
 
-	RX_IF = false;
-	RX_IE = true;
+	RX_IF = FALSE;
+	RX_IE = TRUE;
   
-	TMR0_IF = false;
-	TMR0_IE = true;
+	TMR0_IF = FALSE;
+	TMR0_IE = TRUE;
 
 
-	PERIPHERIC_IE = true;
-	GLOBAL_IE = true;
+	PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = TRUE;
 
 
-  TMR4_IF = false;
-  TMR4_IE = true;
-  TMR4ON = true;
+  TMR4_IF = FALSE;
+  TMR4_IE = TRUE;
+  
+  TMR4_ON = TRUE;
+  
   
 
-
-
+// for reference...
+  // TMR4ON = true;   // bad
+  // TMR4_ON = TRUE;  // good
+  // TMR4ON = TRUE;   // bad
+  // TMR4_ON = true;  // bad
   
 
 
@@ -234,64 +243,6 @@ void init_all(void){
 }
 
 
-static void next_clock(void){
-  
-  static uint8_t speed = 1;
-  
-  if(fs_clock)
-  {
-    UWT("\r\nNext clock: ");
-    UART_int(speed);
-    __delay_ms(500);
-    
-    speed = clock_slowdown();
-  }
-  else
-  {
-    init_clock();
-    // init_clock_2();
-    // _delay_ms(50);
-    __delay_ms(500);
-  }
-  
-  fs_clock = !fs_clock;
-  
-  
-}
-
-
-
-
-static uint8_t temp_tilt_sensor_tester(void){
-  
-  static uint8_t state_cnt = 125;
-  uint8_t ret_val = 0;
-  
-  uint8_t state = TILT_SENSOR;
-  
-  if(state == 1u)
-  {
-    state_cnt++;
-    if(state_cnt > 250)
-    {
-      ret_val = 1u;
-      state_cnt = 250;
-    }
-  }
-  else
-  {
-    state_cnt--;
-    if(state_cnt < 1)
-    {
-      ret_val = 0u;
-      state_cnt = 1;
-    }
-  }
-
-  
-  return ret_val;
-  
-}
 
 
 #else
@@ -340,14 +291,14 @@ void init_all(void){
 	UART_CRLF;
  
 	
-	RX_IF = false;
-	RX_IE = true;
-	TMR0_IF = false;
-	TMR0_IE = true;
+	RX_IF = FALSE;
+	RX_IE = TRUE;
+	TMR0_IF = FALSE;
+	TMR0_IE = TRUE;
   
 
-	PERIPHERIC_IE = true;
-	GLOBAL_IE = true;
+	PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = TRUE;
 	
 
 
@@ -373,11 +324,11 @@ void init_all(void){
   
   // RCSTAbits.SPEN = false; // serial port disabled
 
-  GLOBAL_IE = false;
+  GLOBAL_IE = FALSE;
   
-  TMR0_IE = true;
+  TMR0_IE = TRUE;
   
-  TMR4_ON = true;
+  TMR4_ON = TRUE;
   
   init_wdt();
 
@@ -399,7 +350,7 @@ void init_all(void){
 #endif  
   // init_wdt();
   
-  GLOBAL_IE = false;
+  GLOBAL_IE = FALSE;
   
 	while(db_cnt < 200)
 	{
@@ -408,7 +359,7 @@ void init_all(void){
 #if MHZ32_TEST   
 
     UWT("RND\r\n");
-    while(TMR4_IF == false);
+    while(TMR4_IF == FALSE);
     DB_LED_1 = !DB_LED_1;
     SLEEP();
     db_cnt++;
@@ -420,17 +371,17 @@ void init_all(void){
       SLEEP();
       DB_LED_2 = !DB_LED_2;
     }
-    TMR4_IF = false;
+    TMR4_IF = FALSE;
     CLRWDT();    
     
 #else // 31.25kHz testing
   
-    while(TMR4_IF == false)
+    while(TMR4_IF == FALSE)
     {
       CLRWDT();
     }
     
-    TMR4_IF = false;
+    TMR4_IF = FALSE;
     
     DB_LED_1 = !DB_LED_1;
     
@@ -496,9 +447,9 @@ void init_all(void){
   FVRCONbits.FVREN = 0;
   FVRCONbits.ADFVR = 0;
   
-  RCSTAbits.CREN = false;
-	TXSTAbits.TXEN = false;
-  GIE = false;
+  RCSTAbits.CREN = FALSE;
+	TXSTAbits.TXEN = FALSE;
+  GIE = FALSE;
   
 
   
@@ -518,20 +469,79 @@ void init_all(void){
 
 
 
+static void next_clock(void){
+  
+  static uint8_t speed = 1;
+  uint8_t fs_clock = 1;
+  if(fs_clock)
+  {
+    UWT("\r\nNext clock: ");
+    UART_int(speed);
+    __delay_ms(500);
+    
+    speed = clock_slowdown();
+  }
+  else
+  {
+    init_clock();
+    // init_clock_2();
+    // _delay_ms(50);
+    __delay_ms(500);
+  }
+  
+  fs_clock = !fs_clock;
+  
+  
+}
+
+
+
+
+static uint8_t temp_tilt_sensor_tester(void){
+  
+  static uint8_t state_cnt = 125;
+  uint8_t ret_val = 0;
+  
+  uint8_t state = TILT_SENSOR;
+  
+  if(state == 1u)
+  {
+    state_cnt++;
+    if(state_cnt > 250)
+    {
+      ret_val = 1u;
+      state_cnt = 250;
+    }
+  }
+  else
+  {
+    state_cnt--;
+    if(state_cnt < 1)
+    {
+      ret_val = 0u;
+      state_cnt = 1;
+    }
+  }
+
+  
+  return ret_val;
+  
+}
+
 #endif
 
 static void init_wdt(void){
 	
 	// TODO --> check WDT overflow time
-	WDTCONbits.WDTPS = 0x0B;  // 0x0c = 4seconds
+	WDTCONbits.WDTPS = 0x0Bu;  // 0x0c = 4seconds
   
 #if IS_RELEASE	
 
-	WDTCONbits.SWDTEN = 1;
+	WDTCONbits.SWDTEN = TRUE;
   
 #else
   
-	WDTCONbits.SWDTEN = 1;
+	WDTCONbits.SWDTEN = TRUE;
   
 #endif	
 	
@@ -632,144 +642,6 @@ static void init_IO_PORTS(void){
 
 }
 
-
-static void init_tmr0(void){
-
-
-
-	TMR0_IE = false;
-	TMR0_IF = false;
-
-
-	OPTION_REG = 0x80;
-	OPTION_REGbits.PS = TMR0_004_PRESCALER;
-  
-
-	
-
-}
-
-
-static void init_tmr1(void){
-	
-	// T1CONbits.T1CKPS = 0x03;	// 8:1 Prescaler
-	T1_PRESCALER = TMR1_8_PRESCALER;
-	
-	
-}
-
-
-static void configure_tmr2(void){
-  
-	
-	
-  TMR2ON = false;
-	
-#if 0	
-
-	T2_PRESCALER = TMR2_64_PRESCALER;
-	T2_POSTSCALER = TMR2_15_POSTSCALER;
-	PR2 = 250;	
-
-#else	
-	
-#if MIPS==1
-	
-	T2_PRESCALER = TMR2_04_PRESCALER;
-	T2_POSTSCALER = TMR2_15_POSTSCALER;	// 0x0E;	// 0b0111;	// T2CONbits.T2OUTPS = 0b0111; // PostScaler 7  T2CONbits.TOUTPS = 0b0111; // PostScaler 7	
-	PR2 = 250;	//125;  // 250; // thereforefor 150ms we need a counter to 6 --> for halfbit cnt to 3
-
-#elif MIPS==2
-
-MISSING
-
-#elif MIPS==4
-
-MISSING
-
-#elif MIPS==8
-	
-	T2_PRESCALER = TMR2_64_PRESCALER;
-	T2_POSTSCALER = TMR2_15_POSTSCALER;
-	PR2 = 125;	
-
-#else	
-	
-error again --> that MIPS is not standard so far --> write it extra out
-
-#endif
-
-#endif
-
-}
-
-
-
-#if 0
-
-void configure_tmr4(void){
-  
-	
-	
-  TMR4ON = false;
-	
-  
-  if(FAST_CLOCK == true)
-  {
-    
-    T4_PRESCALER = TMR4_64_PRESCALER;
-    T4_POSTSCALER = TMR4_10_POSTSCALER;
-    PR4 = 250;	
-    tmr4_200ms_of = 10;
-    // with a cnt to 50 for 1000ms
-  }
-  else
-  {
-    T4_PRESCALER = TMR2_01_PRESCALER;
-    T4_POSTSCALER = TMR2_11_POSTSCALER;
-    PR4 = 142;	
-    tmr4_200ms_of = 1;
-    // directly to 200ms
-  }
-
-
-}
-
-
-// f.e.
-// 8 MIPS and 200ms 
-    // T4_PRESCALER = TMR4_64_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 250;	
-    // cnt = 10;
-    
-// 4 MIPS and 200ms
-    // T4_PRESCALER = TMR4_64_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 250;	
-    // cnt = 5;
-
-// 2 MIPS and 200ms
-    // T4_PRESCALER = TMR4_64_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 125;	
-    // cnt = 5;    
-    
-// 1 MIPS and 200ms
-    // T4_PRESCALER = TMR4_16_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 125;	
-    // cnt = 10;        
-    
-// 31.25kHz Clock and 200ms
-    // T4_PRESCALER = TMR4_01_PRESCALER;
-    // T4_POSTSCALER = TMR4_11_POSTSCALER;
-    // PR4 = 142;	
-    // cnt = 1;      
-    
-
-
-#endif
 
 
 // EOF

@@ -32,6 +32,21 @@ void assertion_failure(char *expr, char* file);
 #endif // ENABLE_ASSERTIONS==1
  
  
+#elif 1 // PVS conform
+
+void assert_init(void (*assert_indicator)(void));
+#if ENABLE_ASSERTIONS==1
+void assertion_failure(char* expr, char* file, uint16_t linenum);
+#define assert(expr) \
+    if (expr) {;} \
+    else {assertion_failure(#expr,__FILE__,__LINE__);}
+    
+#else
+#define assert(expr) /*nothing*/
+#endif // ENABLE_ASSERTIONS==1
+ 
+ 
+ 
  
 #elif 1
 

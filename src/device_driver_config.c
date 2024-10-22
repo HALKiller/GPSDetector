@@ -27,13 +27,13 @@
 
 #define INPUT 1
 #define OUTPUT 0
-#define NO_CH 0xFF
-#define ANALOG 1
-#define DIGITAL 0
+#define NO_CH (uint8_t)0xFF
+#define ANALOG (uint8_t)1
+#define DIGITAL (uint8_t)0
 #define GPIO 1
 
 
-#define SFR_DNE 0xFF
+#define SFR_DNE (uint8_t)0xFF
 
 #define NUM_PINS_PER_PORT 8
 #define EACH_PORT_HAS_AN_ANSEL_REGISTER 1
@@ -50,7 +50,7 @@ static volatile uint8_t sPortC = 0;
 
 static struct udt_num_pos{
   
-  int8_t number;
+  uint8_t number;
   uint8_t position;
   
 }channel_num_pos;
@@ -204,7 +204,7 @@ static uint8_t volatile *const analog_channel[2] = {
 
 #endif
 
-const uint8_t pins[NUM_PINS_PER_PORT] = {
+static const uint8_t pins[NUM_PINS_PER_PORT] = {
 	
 	(1U << 0), (1U << 1), (1U << 2), (1U << 3), 
 	(1U << 4), (1U << 5), (1U << 6), (1U << 7), 
@@ -219,7 +219,7 @@ const uint8_t pins[NUM_PINS_PER_PORT] = {
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
-static void set_channel_number_position(IO_ChannelType channel);
+static void set_channel_number_position(uint8_t channel);
 static void clear_bit(uint8_t volatile *reg_pnt, uint8_t pos);
 static void set_bit(uint8_t volatile *reg_pnt, uint8_t pos);
 
@@ -240,7 +240,7 @@ const IO_ConfigType *set_pnt_to_struct(void){
 #endif
 
 
-uint8_t device_driver_get_AN_from_channel(IO_ChannelType channel){
+uint8_t d_driver_get_AN_from_channel(IO_ChannelType channel){
 	
 	return IO_Config_Port[channel].AN_Channel;
 	
@@ -258,12 +258,12 @@ void IO_Write_channel(IO_ChannelType channel, uint8_t setter){
 
 // i reduced it to 4(!!)us
 
-  set_channel_number_position(channel);
+  set_channel_number_position((uint8_t)channel);
 // DB_LED = false;
-  reg_pnt = port_latch[channel_num_pos.number];
+  reg_pnt = port_latch[(int8_t)channel_num_pos.number];
   
   
-	if(setter == false)
+	if(setter == False)
 	{
 
 // 5us the next instruction
@@ -294,9 +294,9 @@ void IO_Set_channel(IO_ChannelType channel){
   
   uint8_t volatile *reg_pnt;
   
-  set_channel_number_position(channel);
+  set_channel_number_position((uint8_t)channel);
 
-  reg_pnt = port_latch[channel_num_pos.number];
+  reg_pnt = port_latch[(int8_t)channel_num_pos.number];
   set_bit(reg_pnt, channel_num_pos.position);
   
 
@@ -323,9 +323,9 @@ void IO_Clear_channel(IO_ChannelType channel){
 
   uint8_t volatile *reg_pnt;
   
-  set_channel_number_position(channel);
+  set_channel_number_position((uint8_t)channel);
 
-  reg_pnt = port_latch[channel_num_pos.number];
+  reg_pnt = port_latch[(int8_t)channel_num_pos.number];
   clear_bit(reg_pnt, channel_num_pos.position);
   
   
@@ -350,9 +350,9 @@ void IO_Toggle_channel(IO_ChannelType channel){
   uint8_t volatile *reg_pnt;
 
 
-  set_channel_number_position(channel);
+  set_channel_number_position((uint8_t)channel);
 
-  reg_pnt = port_latch[channel_num_pos.number];
+  reg_pnt = port_latch[(int8_t)channel_num_pos.number];
   
 	*reg_pnt = *reg_pnt ^ pins[channel_num_pos.position];
 
@@ -373,6 +373,7 @@ void IO_Toggle_channel(IO_ChannelType channel){
 }
 
 
+#if 0
 void IO_update_Port_for_sPort(IO_ChannelType channel){
 	
 	
@@ -380,7 +381,7 @@ void IO_update_Port_for_sPort(IO_ChannelType channel){
 
 	
 }
-
+#endif
 
 
 
@@ -392,7 +393,7 @@ uint8_t IO_Read_channel(IO_ChannelType channel){
   
   uint8_t volatile *reg_pnt;
  
-  set_channel_number_position(channel);
+  set_channel_number_position((uint8_t)channel);
 
   reg_pnt = ports_address[channel_num_pos.number];
 
@@ -407,14 +408,14 @@ uint8_t IO_Read_channel(IO_ChannelType channel){
  
 
  
-  set_channel_number_position(channel);
+  set_channel_number_position((uint8_t)channel);
 
-  reg_pnt = ports_address[channel_num_pos.number];
+  reg_pnt = ports_address[(int8_t)channel_num_pos.number];
 
-	if((*reg_pnt & pins[channel_num_pos.position]) == 0)
+	if((*reg_pnt & pins[(int8_t)channel_num_pos.position]) == 0u)
 		
 	{
-		ret_value = 0;
+		ret_value = (uint8_t)0u;
 	}
   
   return ret_value;
@@ -457,10 +458,10 @@ void IO_Init(const IO_ConfigType *ConfigT)
 {
   const IO_ConfigType *ConfigT = &IO_Config_Port[0];
   
-	uint8_t hlooper = 0;
+	int8_t hlooper = 0;
 
 
-   uint8_t volatile *sfr_pnt;
+  uint8_t volatile *sfr_pnt;
 	
 	// assuring that the const declarations are coherent...
 	assert(sizeof(IO_Config_Port) / sizeof(IO_Config_Port[0]) == NUM_DIGITAL_PINS);
@@ -475,7 +476,7 @@ void IO_Init(const IO_ConfigType *ConfigT)
 		
     
     
-    assert(ConfigT[hlooper].Channel == hlooper);
+    assert((int8_t)ConfigT[hlooper].Channel == hlooper);
     
     set_channel_number_position(ConfigT[hlooper].Channel);
     
@@ -485,7 +486,7 @@ void IO_Init(const IO_ConfigType *ConfigT)
 		if(ConfigT[hlooper].PinType != SFR_DNE)		
 		{
       
-      sfr_pnt = analog_channel[channel_num_pos.number];
+      sfr_pnt = analog_channel[(int8_t)channel_num_pos.number];
       
 			if((ConfigT[hlooper].PinType == ANALOG)	&& (ConfigT[hlooper].AN_Channel != NO_CH))
 			{
@@ -563,22 +564,17 @@ void IO_Init(const IO_ConfigType *ConfigT)
 }
 
 
-static void set_channel_number_position(IO_ChannelType channel){
+static void set_channel_number_position(uint8_t channel){
   
-  // i am doing that because i know that there are 8 Pins per Port and therefore i an do it like that...
-  // otherwise that would be a complete failure!
-  // get the correct Port...
-  channel_num_pos.number = channel>>3u;
-  
+  // i am doing that because i know that there are 8 Pins per Port and therefore i 
+  // can do it like that...
+
+  channel_num_pos.number = channel >> 3u;
+
   // ... and then the correct pin
-  channel_num_pos.position = channel & 0x07u;
+  channel_num_pos.position = channel & 0x07;
   
 
-#if 0
-// that is very slow...
-  channel_num_pos.number = channel / NUM_PINS_PER_PORT;
-  channel_num_pos.position = channel % NUM_PINS_PER_PORT;
-#endif
 }
 
 

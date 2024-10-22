@@ -26,39 +26,34 @@ void set_led_var(uint8_t set_val);
 #if 1
 
 typedef enum {
-  e_sleep_handler,      						//	0
-  e_switch_clock_handler,      	//	1
-	e_ring_buffer_handler,				//	2 
-	e_2ms_of_handler,							// 	3
-	E_GD_ON_OFF_h,
-	// e_adc_bateria_handler,
-	E_TILT_SENSOR_h,
-	e_200ms_h,
-	// e_seg_7d_refresh_handler,
-	e_reset_swoff_tmr_of_cnt_handler,
-	// e_swoff_tmr_handler,	
-	// e_swoff_consumption,
-	e_errhandler,
-	NUM_HANDLERS,									//	+1
- }HandlerType;                           
+  
+  // e_sleep_handler,	               
+  e_switch_clock_handler,          
+  e_ring_buffer_handler,           
+  e_2ms_of_handler,	               
+  e_gd_on_h, 
+   
+  e_tilt_sensor_h,	               
+  e_200ms_h,      
+  e_gps_on_h,  
+  e_prepare_msg_h,
+  e_rx_luz_com_h,                  
+  e_reset_swoff_tmr_of_cnt_handler,
+  e_startup_h,                     
+  e_ertc_handler_start, 
+  e_gd_off_h,   
+  e_errhandler,   
+  NUM_HANDLERS,									//	+1
+    
+}HandlerType;                           
  
 #endif
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#endif	// HANDLER_H
+                 
+ 
+ 
+ 
+ 
+ #endif	// HANDLER_H

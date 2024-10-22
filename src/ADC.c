@@ -29,24 +29,27 @@
 
 void init_ADC(void){
 	
-	ADC_ON = false;
+	ADC_ON = FALSE;
 #if MIPS==1	
-	ADCON1bits.ADCS = 5;	// FOSC/16 --> 4MHz Fosc Internal	1TAD = 4us(datasheet)
+	ADCON1bits.ADCS = 5u;	// FOSC/16 --> 4MHz Fosc Internal	1TAD = 4us(datasheet)
 #elif MIPS==8
-	ADCON1bits.ADCS = 6;	// FOSC/64 --> 32MHz Fosc Internal	1TAD = 2us(datasheet)
+	ADCON1bits.ADCS = 6u;	// FOSC/64 --> 32MHz Fosc Internal	1TAD = 2us(datasheet)
 #else
 	MISSING
 #endif	
-	ADCON1bits.ADFM = false;	// left justified in taht case...
-	ADCON1bits.ADNREF = false;	// Vss = -Vref
-	ADCON1bits.ADPREF = false;	// Vdd = +Vref
+	ADCON1bits.ADFM = FALSE;	// left justified in taht case...
+	ADCON1bits.ADNREF = FALSE;	// Vss = -Vref
+	ADCON1bits.ADPREF = FALSE;	// Vdd = +Vref
 	
   
-	FVRCONbits.ADFVR = 3;	// 0 = off, 1 = 1024mV, 2 = 2048mV, 3 = 4096mV
-	FVRCONbits.FVREN = true;
-	while(FVRCONbits.FVRRDY == false);
+	FVRCONbits.ADFVR = 3u;	// 0 = off, 1 = 1024mV, 2 = 2048mV, 3 = 4096mV
+	FVRCONbits.FVREN = TRUE;
+	while(FVRCONbits.FVRRDY == FALSE)
+  {
+    // empty loop
+  }
 	
-	ADC_ON = true;
+	ADC_ON = TRUE;
 	
 	
 	
