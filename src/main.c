@@ -1,0 +1,90 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+/******************************************************************************/
+
+
+/******************************************************************************/
+/* Files to Include                                                           */
+/******************************************************************************/
+
+
+// CONFIG1
+#pragma config FOSC = INTOSC    // Oscillator Selection (INTOSC oscillator: I/O function on CLKIN pin)
+#pragma config WDTE = SWDTEN    // Watchdog Timer Enable (WDT controlled by the SWDTEN bit in the WDTCON register)
+#pragma config PWRTE = OFF      // Power-up Timer Enable (PWRT disabled)
+#pragma config MCLRE = ON       // MCLR Pin Function Select (MCLR/VPP pin function is MCLR)
+#pragma config CP = OFF         // Flash Program Memory Code Protection (Program memory code protection is disabled)
+#pragma config CPD = OFF        // Data Memory Code Protection (Data memory code protection is disabled)
+#pragma config BOREN = ON       // Brown-out Reset Enable (Brown-out Reset enabled)
+#pragma config CLKOUTEN = OFF   // Clock Out Enable (CLKOUT function is disabled. I/O or oscillator function on the CLKOUT pin)
+#pragma config IESO = ON        // Internal/External Switchover (Internal/External Switchover mode is enabled)
+#pragma config FCMEN = ON       // Fail-Safe Clock Monitor Enable (Fail-Safe Clock Monitor is enabled)
+
+// CONFIG2
+#pragma config WRT = OFF        // Flash Memory Self-Write Protection (Write protection off)
+#pragma config VCAPEN = OFF     // Voltage Regulator Capacitor Enable (All VCAP pin functionality is disabled)
+#pragma config PLLEN = OFF      // PLL Enable (4x PLL disabled)
+#pragma config STVREN = ON      // Stack Overflow/Underflow Reset Enable (Stack Overflow or Underflow will cause a Reset)
+#pragma config BORV = LO        // Brown-out Reset Voltage Selection (Brown-out Reset Voltage (Vbor), low trip point selected.)
+#pragma config LVP = ON         // Low-Voltage Programming Enable (Low-voltage programming enabled)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+
+
+
+#include <xc.h>           
+
+#include "Init_all.h"
+
+#include "UART.h"
+
+#include "Global.h"
+
+#include "handlers.h"
+
+// #include <stdint.h>    
+
+/******************************************************************************/
+/* User Global Variable Declaration                                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* Main Program                                                               */
+/******************************************************************************/
+void main(void)
+{
+#if DEBUGGING_IS_ON
+  const unsigned char SW_version[] = "GPSDetector_v.1.0_db";
+#else
+  const unsigned char SW_version[] = "GPSDetector_v.1.0_rc";
+#endif
+
+	init_all();
+
+  UWT(&SW_version[0]);
+  
+	while(1)
+	{
+    CLRWDT();
+		get_the_next_handler();
+
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+// EOF-
