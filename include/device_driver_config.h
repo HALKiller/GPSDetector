@@ -51,7 +51,7 @@ typedef enum{
   IO_UPDATE_AD9954 		  ,
   IO_FREE_RB5 		    ,
   IO_ICSPCLCK 			    ,
-  IO_ICSPDAT 	    ,
+  IO_DB_LED_3,  // IO_ICSPDAT 	    ,
 
   IO_FREE_RC0 			    ,
   IO_FREE_RC1 			    ,

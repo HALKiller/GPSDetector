@@ -4,7 +4,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
-
+#define CR	13
+#define LF	10
+#define SPACE 32
+#define TAB 9
 
 #define UWF always_send_string
 

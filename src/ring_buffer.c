@@ -193,13 +193,12 @@ void get_data_from_buffer_with_pnt(uint8_t *rx_data){
 
   *rx_data = ret_value;
 
-  // db_var = ret_value;
   
 	// UART_int(db_var);
   
 #endif
 
-	// return db_var;//ret_value;
+
 
 #endif
 	

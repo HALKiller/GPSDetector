@@ -75,7 +75,8 @@
 #define UPDATE_AD9954 LATBbits.LATB4
 #define FREE_RB5 	    LATBbits.LATB5
 #define ICSPCLCK 			LATBbits.LATB6
-#define ICSPDAT 			PORTBbits.RB7
+#define ICSPDAT 			LATBbits.LATB7
+// #define ICSPDAT 			PORTBbits.RB7
 
 
 // --------   PORT C  ---------------
@@ -105,12 +106,12 @@
 
 #define DB_LED_1 LED 
 #define DB_LED_2 GPS_VALIM 
-
+#define DB_LED_3 ICSPDAT
 #else
   
 #define DB_LED_1
 #define DB_LED_2
-
+#define DB_LED_3
 #endif
 
 

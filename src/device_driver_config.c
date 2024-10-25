@@ -115,7 +115,8 @@ static const IO_ConfigType IO_Config_Port[] = {
 	{ IO_UPDATE_AD9954 	,DIGITAL		,11			,OUTPUT		,LOW,		GPIO },  //	RB_4  DONE
 	{ IO_FREE_RB5 		  ,DIGITAL		,13			,OUTPUT		,LOW,		GPIO },  //	RB_5
 	{ IO_ICSPCLCK 			,DIGITAL		,NO_CH	,OUTPUT		,LOW,		GPIO },  //	RB_6
-	{ IO_ICSPDAT 	      ,DIGITAL		,NO_CH	,OUTPUT		,LOW,		GPIO },  //	RB_7
+	{ IO_DB_LED_3       ,DIGITAL		,NO_CH	,OUTPUT		,LOW,		GPIO },  //	RB_7
+  // { IO_ICSPDAT 	      ,DIGITAL		,NO_CH	,OUTPUT		,LOW,		GPIO },  //	RB_7
 
 	{ IO_FREE_RC0 			,SFR_DNE		,NO_CH	,OUTPUT		,LOW,		GPIO },  //	RC_0
 	{ IO_FREE_RC1 			,SFR_DNE		,NO_CH	,OUTPUT		,LOW,		GPIO },  //	RC_1

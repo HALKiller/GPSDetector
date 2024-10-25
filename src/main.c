@@ -58,9 +58,9 @@
 void main(void)
 {
 #if DEBUGGING_IS_ON
-  const unsigned char SW_version[] = "GPSDetector_v.1.0_db";
+  const unsigned char SW_version[] = "GPSDetector_v.1.0_db\r\n";
 #else
-  const unsigned char SW_version[] = "GPSDetector_v.1.0_rc";
+  const unsigned char SW_version[] = "GPSDetector_v.1.0_rc\r\n";
 #endif
 
 	init_all();

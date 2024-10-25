@@ -79,10 +79,7 @@ const uint8_t rx_header[] = "$EESL";
 #define RX_PC_BAD_CHCKSUM 1
 
 
-#define CR	13
-#define LF	10
-#define SPACE 32
-#define TAB 9
+
 
 //  **********************  STATIC DATA DECLARATIONS  ************************  //
 

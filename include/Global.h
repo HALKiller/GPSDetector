@@ -118,6 +118,7 @@ wat
 
 #define DB_SWAP DB_LED=!DB_LED;
 
+#define DB_LED3_SWAP DB_LED_3=!DB_LED_3
 #define DB_LED2_SWAP DB_LED_2=!DB_LED_2
 #define DB_LED1_SWAP DB_LED_1=!DB_LED_1
 #define DB_LED_1_ON (DB_LED_1 = true)
@@ -135,6 +136,8 @@ wat
 #define DB_LED_1_OFF
 
 #define DB_LED2_SWAP
+
+#define DB_LED3_SWAP
 #define DB_PRINT(str)
 
 #endif
