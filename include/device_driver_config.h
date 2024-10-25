@@ -59,6 +59,7 @@ typedef enum{
   IO_FREE_RC3 			    ,
   IO_FREE_RC4 				    ,
   IO_DB_LED_2	    , // That gives Valim to the GPS --> in debug we do not need that...
+  IO_GPS_VALIM = IO_DB_LED_2,
   IO_UART_TX_PC 		    ,	
   IO_UART_RX_PC 		    ,	
   NUM_DIGITAL_PINS

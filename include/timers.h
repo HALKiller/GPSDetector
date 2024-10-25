@@ -1,7 +1,7 @@
 #ifndef TIMERS_H
 #define TIMERS_H
 
-
+#include "Global.h"
 
 #if 1
 // --------   T M R  0  ---------------
@@ -28,6 +28,29 @@
 #define TMR1_2_PRESCALER	1u
 #define TMR1_4_PRESCALER	2u
 #define TMR1_8_PRESCALER	3u
+
+
+#if MIPS == 8
+
+#define TMR1_MIPS_PSA TMR1_8_PRESCALER
+
+#elif MIPS == 4
+
+#define TMR1_MIPS_PSA TMR1_4_PRESCALER
+
+#elif MIPS == 2
+
+#define TMR1_MIPS_PSA TMR1_2_PRESCALER
+
+#elif MIPS == 1
+
+#define TMR1_MIPS_PSA TMR1_1_PRESCALER
+
+#else
+  
+wat 
+
+#endif
 
 
 
@@ -121,7 +144,107 @@
 #define TMR6_15_POSTSCALER	14u
 #define TMR6_16_POSTSCALER	15u
 
+
+
+// Watch Dog TIMER timeout
+#define WDT_TIMEOUT_001ms_timeout 0x00u
+#define WDT_TIMEOUT_002ms_timeout 0x01u
+#define WDT_TIMEOUT_004ms_timeout 0x02u
+#define WDT_TIMEOUT_008ms_timeout 0x03u
+#define WDT_TIMEOUT_016ms_timeout 0x04u
+#define WDT_TIMEOUT_032ms_timeout 0x05u
+#define WDT_TIMEOUT_064ms_timeout 0x06u
+#define WDT_TIMEOUT_128ms_timeout 0x07u
+#define WDT_TIMEOUT_256ms_timeout 0x08u
+#define WDT_TIMEOUT_512ms_timeout 0x09u
+#define WDT_TIMEOUT_001s_timeout  0x0Au
+#define WDT_TIMEOUT_002s_timeout  0x0Bu
+#define WDT_TIMEOUT_004s_timeout  0x0Cu
+#define WDT_TIMEOUT_008s_timeout  0x0Du
+#define WDT_TIMEOUT_016s_timeout  0x0Eu
+#define WDT_TIMEOUT_032s_timeout  0x0Fu
+#define WDT_TIMEOUT_064s_timeout  0x10u
+#define WDT_TIMEOUT_128s_timeout  0x11u
+#define WDT_TIMEOUT_256s_timeout  0x12u
+#define MAX_WDT_TIMEOUT  0x12u
+
+
+
 #endif// if 0
+
+
+
+
+#if MIPS == 8
+
+#define eRTC_TMR_PSA   TMR4_64_PRESCALER;
+#define eRTC_TMR_POST  TMR4_10_POSTSCALER;
+#define eRTC_TMR_PR    (uint8_t)250;	
+#define eRTC_TMR_CNT   (uint8_t)10;
+
+#elif MIPS == 4
+
+#define  eRTC_TMR_PSA  TMR4_64_PRESCALER;
+#define  eRTC_TMR_POST TMR4_10_POSTSCALER;
+#define  eRTC_TMR_PR   (uint8_t)250;	
+#define  eRTC_TMR_CNT  (uint8_t)5;
+
+#elif MIPS == 2
+
+#define  eRTC_TMR_PSA  TMR4_64_PRESCALER;
+#define  eRTC_TMR_POST TMR4_10_POSTSCALER;
+#define  eRTC_TMR_PR   (uint8_t)125;	
+#define  eRTC_TMR_CNT  (uint8_t)5; 
+
+#elif MIPS == 1
+
+#define  eRTC_TMR_PSA  TMR4_16_PRESCALER;
+#define  eRTC_TMR_POST TMR4_10_POSTSCALER;
+#define  eRTC_TMR_PR   (uint8_t)125;	
+#define  eRTC_TMR_CNT  (uint8_t)10;
+
+#else
+  
+#define  eRTC_TMR_PSA  TMR4_01_PRESCALER;
+#define  eRTC_TMR_POST TMR4_11_POSTSCALER;
+#define  eRTC_TMR_PR   (uint8_t)142;	
+#define  eRTC_TMR_CNT  (uint8_t)1;  
+
+#endif
+
+// f.e.
+// 8 MIPS and 200ms 
+// #define eRTC_TMR_PSA = TMR4_64_PRESCALER;
+// #define eRTC_TMR_POST = TMR4_10_POSTSCALER;
+// #define eRTC_TMR_PR = (uint8_t)250;	
+// #define eRTC_TMR_CNT = (uint8_t)10;
+    
+// 4 MIPS and 200ms
+// #define  eRTC_TMR_PSA = TMR4_64_PRESCALER;
+// #define  eRTC_TMR_POST = TMR4_10_POSTSCALER;
+// #define  eRTC_TMR_PR = (uint8_t)250;	
+// #define  eRTC_TMR_CNT = (uint8_t)5;
+
+// 2 MIPS and 200ms
+// #define  eRTC_TMR_PSA = TMR4_64_PRESCALER;
+// #define  eRTC_TMR_POST = TMR4_10_POSTSCALER;
+// #define  eRTC_TMR_PR = (uint8_t)125;	
+// #define  eRTC_TMR_CNT = (uint8_t)5;    
+    
+// 1 MIPS and 200ms
+// #define  eRTC_TMR_PSA = TMR4_16_PRESCALER;
+// #define  eRTC_TMR_POST = TMR4_10_POSTSCALER;
+// #define  eRTC_TMR_PR = (uint8_t)125;	
+// #define  eRTC_TMR_CNT = (uint8_t)10;        
+    
+// 31.25kHz Clock and 200ms
+#define  eRTC_TMR_PSA_SLOW_CLCK  TMR4_01_PRESCALER;
+#define  eRTC_TMR_POST_SLOW_CLCK TMR4_11_POSTSCALER;
+#define  eRTC_TMR_PR_SLOW_CLCK   (uint8_t)142;	
+#define  eRTC_TMR_CNT_SLOW_CLCK  (uint8_t)1; 
+
+
+
 
 
 

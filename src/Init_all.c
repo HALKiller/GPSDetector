@@ -182,6 +182,140 @@ void init_all(void){
 
 
 
+#elif 1
+// testing the INT PIN
+void init_all(void){
+
+#if DEBUGGING_IS_ON	
+  uint8_t db_cnt = 0;
+  uint8_t t_var = MIPS;
+#endif
+  
+  CLRWDT();
+
+	
+  init_clock();
+
+// datasheet --> switching to the PLL can take +- 2ms --> 
+	__delay_ms(5);
+
+  
+	
+	// init_tmr0();
+	
+	// init_tmr1();
+	
+	// configure_tmr2();
+	
+  // TODO:
+  // gFLGS reset ons startup
+  
+	configure_tmr4();
+		
+	init_uart_flags();
+	
+	init_UART();
+	
+	init_IO_PORTS();
+  
+  // gd_states_initialize();
+  
+  // tilt_sensor_init();
+  
+  
+  
+  
+#if DEBUGGING_IS_ON&&0
+
+  UWT("LAT: ");
+  UART_int(LATA);
+  UART_CRLF;
+  
+  UART_int(LATB);
+  UART_CRLF;
+  
+  UART_int(LATC);
+  UART_CRLF;
+  
+   UWT("TRIS: ");
+  UART_int(TRISA);
+  UART_CRLF;
+  
+  UART_int(TRISB);
+  UART_CRLF;
+  
+  UART_int(TRISC);
+  UART_CRLF;
+  
+  
+  UWT("ANSEL: ");
+  UART_int(ANSELA);
+  UART_CRLF;
+  
+  UART_int(ANSELB);
+  UART_CRLF;
+  
+
+  
+#endif  
+
+
+	init_handler_flg();
+
+#if DEBUGGING_IS_ON
+	UWT("BUILD: ");
+	UWT(__DATE__);
+	UWT("  ");
+	UWT(__TIME__);
+	UWT("\r\n");
+	UWT("MIPS: ");
+	UART_int(t_var);
+	UART_CRLF;
+#endif
+ 
+
+	RX_IF = FALSE;
+	RX_IE = TRUE;
+  
+	TMR0_IF = FALSE;
+	TMR0_IE = TRUE;
+
+
+	PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = FALSE;
+
+
+  TMR4_IF = FALSE;
+  TMR4_IE = TRUE;
+  
+  TMR4_ON = TRUE;
+  
+  OPTION_REGbits.INTEDG = TRUE;
+  INTCONbits.INTE = TRUE;
+  INTCONbits.INTF = FALSE;
+  while(1)
+  {
+    if(INTCONbits.INTF == TRUE)
+    {
+      UWT("Fired!\r\n");
+      INTCONbits.INTF = false;
+    }
+    else
+    {
+      UWT("Not_fired\r\n");
+      
+    }
+    __delay_ms(500);
+  }
+
+
+	
+}
+
+
+
+
+
 
 #elif 1
 

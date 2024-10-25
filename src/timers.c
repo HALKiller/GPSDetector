@@ -45,40 +45,8 @@ uint8_t tmr4_200ms_of = 10;
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
 
-
-// f.e.
-// 8 MIPS and 200ms 
-    // T4_PRESCALER = TMR4_64_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 250;	
-    // cnt = 10;
-    
-// 4 MIPS and 200ms
-    // T4_PRESCALER = TMR4_64_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 250;	
-    // cnt = 5;
-
-// 2 MIPS and 200ms
-    // T4_PRESCALER = TMR4_64_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 125;	
-    // cnt = 5;    
-    
-// 1 MIPS and 200ms
-    // T4_PRESCALER = TMR4_16_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = 125;	
-    // cnt = 10;        
-    
-// 31.25kHz Clock and 200ms
-    // T4_PRESCALER = TMR4_01_PRESCALER;
-    // T4_POSTSCALER = TMR4_11_POSTSCALER;
-    // PR4 = 142;	
-    // cnt = 1;    
-
-
-
+// TMR is for the 200ms base time around which the eRTC runs and the 
+// tilt sensor sampling
 void configure_tmr4(void){
   
 	
@@ -97,10 +65,10 @@ void configure_tmr4(void){
   }
   else
   {
-    T4_PRESCALER = TMR4_01_PRESCALER;
-    T4_POSTSCALER = TMR4_11_POSTSCALER;
-    PR4 = (uint8_t)142;	
-    tmr4_200ms_of = (uint8_t)1u;
+    T4_PRESCALER = eRTC_TMR_PSA_SLOW_CLCK;
+    T4_POSTSCALER = eRTC_TMR_POST_SLOW_CLCK;
+    PR4 = eRTC_TMR_PR_SLOW_CLCK;	
+    tmr4_200ms_of = eRTC_TMR_CNT_SLOW_CLCK;
     // directly to 200ms
   }
 
@@ -126,12 +94,16 @@ void init_tmr0(void){
 }
 
 
-
+// a time out timer --> when there is the need to 
+// avoid an endless wait for some event to be happening
+// base time --> 50ms therefore we need some counter to count up to or down to...
 void init_tmr1(void){
 	
-	// T1CONbits.T1CKPS = 0x03;	// 8:1 Prescaler
-	T1_PRESCALER = TMR1_8_PRESCALER;
 	
+	T1_PRESCALER = TMR1_MIPS_PSA;
+	TMR1_ON = FALSE;
+  TMR1_IE = FALSE;
+  TMR1_IF = FALSE;
 	
 }
 

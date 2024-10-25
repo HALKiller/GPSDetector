@@ -26,6 +26,21 @@
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
 
+
+// this define reduces the data_arrays to a lower 
+// sizer so that the whoel project keeps on compiling
+// and therefroe can get checked on errors of compilation
+#define USE_REDUCED_RAM 0
+
+// * * * * * * * * * * *  M I S R A   * * * * * * * * * * * * * * * * 
+// when we set this one we use the coding style which removes MISRA Violations
+// but might increase code size. Becaseu of that i use this one so that i know
+// that the created MISRA warning got worked over and i am aware of the place 
+// where it happens and that there is a MISRA compliant solution 
+#define ENFORCE_MISRA_RULE 0
+
+
+
 // if to use the device driver calls or directly the sfr calls...
 #define USE_DEVICE_DRIVER 1
 
@@ -105,6 +120,8 @@ wat
 
 #define DB_LED2_SWAP DB_LED_2=!DB_LED_2
 #define DB_LED1_SWAP DB_LED_1=!DB_LED_1
+#define DB_LED_1_ON (DB_LED_1 = true)
+#define DB_LED_1_OFF (DB_LED_1 = false)
 
 #define DB_PRINT(str) send_string((const unsigned char *)(str))
 
@@ -112,8 +129,13 @@ wat
   
 #define LANGUAGE_SPANISH 1
 #define DB_SWAP
+#define DB_LED1_SWAP
 
-#define DB_PRINT
+#define DB_LED_1_ON 
+#define DB_LED_1_OFF
+
+#define DB_LED2_SWAP
+#define DB_PRINT(str)
 
 #endif
 
@@ -184,7 +206,7 @@ error again --> that MIPS is not standard so far --> write it extra out
 
 
 
-#define CHARS_TO_RECEIVE	35	// 34 config bytes + 1 chcksum
+#define CHARS_TO_RECEIVE	35u	// 34 config bytes + 1 chcksum
 
 
 
@@ -197,8 +219,8 @@ error again --> that MIPS is not standard so far --> write it extra out
 
 // these are the time s in seconds that the sensor has to have 
 // a stable reading to change the state initial state is off!! but still without having set to sleep
-#define TIME_THRESHOLD_FOR_DETECTOR_IS_ON ((uint16_t)4u)
-#define TIME_THRESHOLD_FOR_DETECTOR_IS_OFF ((uint16_t)4u)
+#define TIME_THRESHOLD_FOR_DETECTOR_IS_ON ((uint16_t)2u)
+#define TIME_THRESHOLD_FOR_DETECTOR_IS_OFF ((uint16_t)2u)
 #define SENSOR_IS_TOP_MOUNTED ((uint8_t)1u) // because the signal is invertred depending on the sid of mounting
 
 

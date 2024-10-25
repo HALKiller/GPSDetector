@@ -27,7 +27,8 @@ void set_led_var(uint8_t set_val);
 
 typedef enum {
   
-  // e_sleep_handler,	               
+  // e_sleep_handler,
+  e_gd_off_h,   // highest priority --> because when it swoffs, nothing else is important
   e_switch_clock_handler,          
   e_ring_buffer_handler,           
   e_2ms_of_handler,	               
@@ -39,9 +40,10 @@ typedef enum {
   e_prepare_msg_h,
   e_rx_luz_com_h,                  
   e_reset_swoff_tmr_of_cnt_handler,
-  e_startup_h,                     
+  e_startup_h, 
+  e_gps_has_full_position_h,  
   e_ertc_handler_start, 
-  e_gd_off_h,   
+     
   e_errhandler,   
   NUM_HANDLERS,									//	+1
     

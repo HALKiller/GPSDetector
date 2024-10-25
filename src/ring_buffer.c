@@ -18,21 +18,21 @@
 
 
 
-
+#define RING_BUFFER_SIZE 10
 #define NOT_SEARCH_THE_BUG 1
 
 #if 1
 
 
 struct r_buffer{
-	unsigned char data[41];
+	unsigned char data[RING_BUFFER_SIZE];
 	uint8_t read_index;
 	uint8_t write_index;
 	uint8_t buffer_length;
 }ring_buff;
 
 
-const uint8_t const_buffer_size = 41;
+const uint8_t const_buffer_size = RING_BUFFER_SIZE;
 
 
 
@@ -193,9 +193,9 @@ void get_data_from_buffer_with_pnt(uint8_t *rx_data){
 
   *rx_data = ret_value;
 
-  db_var = ret_value;
+  // db_var = ret_value;
   
-	UART_int(db_var);
+	// UART_int(db_var);
   
 #endif
 

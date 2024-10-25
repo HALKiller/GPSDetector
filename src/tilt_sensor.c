@@ -26,11 +26,12 @@
 #include "tilt_sensor.h"
 
 #include "device_driver_config.h"
-// #include "my_debugger.h"
 
-// #include "gd_config.h"
+#include "gd_states.h"
 
-#include "handlers.h"
+#if DEBUGGING_IS_ON
+#include "UART.h"
+#endif
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -47,14 +48,7 @@ static struct udt_tilt_sensor_type tilt_sensor;
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
- 
- #if 0
- // TODO: that should get a setting so that it depends on the TMR4 OF time
-const uint8_t sensor_readings_per_second = 5;
-const uint8_t const_on_cnt_debounced = TIME_THRESHOLD_FOR_DETECTOR_IS_ON * sensor_readings_per_second;
-const uint8_t const_off_cnt_debounced = TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * sensor_readings_per_second;
- 
- #endif
+
  
 
 
@@ -63,10 +57,6 @@ const uint8_t const_off_cnt_debounced = TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * sen
 #define CONST_ON_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_ON * SENSOR_READINGS_PER_SECOND)
 #define CONST_OFF_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * SENSOR_READINGS_PER_SECOND)
  
- 
- 
- 
- #define ON_TIME_TILT_SENSOR 65  // 75 changed to 100 because of stabilization for ACMPL module
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
@@ -75,11 +65,8 @@ const uint8_t const_off_cnt_debounced = TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * sen
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
-// static void deinit_acmplp(void);
-
-// static fsp_err_t init_acmplp(void);
-
 static void update_detector_position_state_handler(uint8_t read_state);
+
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
@@ -94,6 +81,7 @@ void tilt_sensor_init(void){
  
  
 }
+
 
 tilt_sensor_states_t tilt_sensor_get_detector_state(void){
   
@@ -157,7 +145,9 @@ static void update_detector_position_state_handler(uint8_t read_state){
         
         tilt_sensor.last_state = tilt_sensor.detector_is_on;
         
-        handlers_generic_set_handler_FLG(e_gd_on_h);
+        gd_states_switch_to_next_state(E_GPS_CHECK_ON_ACTIVATION);
+        
+        // UWT("T_S_ON\r\n");
         
       }
       
@@ -183,7 +173,9 @@ static void update_detector_position_state_handler(uint8_t read_state){
         
         tilt_sensor.last_state = tilt_sensor.detector_is_on;
         
-        handlers_generic_set_handler_FLG(e_gd_off_h);
+        gd_states_switch_to_next_state(E_OFF_STATE);
+        
+        // UWT("T_S_OFF\r\n");
         
       }
 		}	

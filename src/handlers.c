@@ -28,14 +28,14 @@
 #include "generic_union_flgs.h"
 
 #include "tilt_sensor.h"
-
+#include "gd_states.h"
 // TODO: --> becaseu of tmr4 config move it
 #include "Init_all.h"
-
+#include "gps.h"
 #include <stdint.h>
 
 
-
+#define USE_FUNC_PNT_HANDLER 0
 
 // set_handler_FLG(e_tilt_sensor_h);
 static void f_tilt_sensor_to_check(void);
@@ -77,6 +77,7 @@ static void test_handler_array(void);
 
 //  **********************  DATA TYPES, STRUCTS, ENUMS  ************************  //
 
+#if USE_FUNC_PNT_HANDLER
 
 typedef struct {
 	HandlerType Handlers;
@@ -87,6 +88,7 @@ static const HandlersHandlerType Handler_arr[] =
 {
 	
 	// { e_sleep_handler,	                  prepare_sleep	},	
+  { e_gd_off_h,                         f_gd_off },	  
 	{ e_switch_clock_handler,             fn_clock_switching },	
 	{ e_ring_buffer_handler,              process_next_char_from_input },
 	{ e_2ms_of_handler,	                  set_tmr_2ms_handler_dependencies_flgs	},
@@ -104,13 +106,17 @@ static const HandlersHandlerType Handler_arr[] =
 	{ e_reset_swoff_tmr_of_cnt_handler,   reset_swoff_tmr_of_cnt },	
 	{ e_startup_h,                        empty_function },
   // { e_swoff_tmr_handler,               swoff_tmr_handler },
+  { e_gps_has_full_position_h,               empty_function }, // TODO: write handler
   
 	{ e_ertc_handler_start,               empty_function },	
-  { e_gd_off_h,                         f_gd_off },	
+
 	{ e_errhandler,                       empty_function },		
 
 	
 };
+
+#endif
+
 
 
 union8_t gFLAGS;
@@ -169,7 +175,7 @@ void init_handler_flg(void){
 }
 
 
-#if 1
+#if USE_FUNC_PNT_HANDLER
 
 void get_the_next_handler(void){
 
@@ -203,8 +209,116 @@ uint8_t handler_id = 0;
 			(*Handler_arr[handler_id].func)();
 			
 				// this is a special case and gets reset in the actual function
-			if((handler_id != e_ring_buffer_handler) && (handler_id != e_gd_off_h))
-      // if(handler_id != e_ring_buffer_handler)
+			// if((handler_id != e_ring_buffer_handler) && (handler_id != e_gd_off_h))
+      if(handler_id != e_ring_buffer_handler)
+			{
+				reset_handler_FLG(handler_id);
+			}
+      // else
+      // {
+        // UWT("EXIT!\r\n");
+      // }
+
+			handler_id = NUM_HANDLERS;
+			
+		}
+    mask = mask << 1;
+	}
+
+}
+
+
+#elif 1
+
+
+void get_the_next_handler(void){
+
+uint8_t handler_runs_once_flg = false;	
+uint8_t handler_id = 0;	
+	
+  
+  uint16_t temp_handler_FLGS = Handler_FLGS;
+
+  // Create a mask by shifting 1 to the left by n_bit positions
+  unsigned int mask = 1U; //  << n_bit;
+
+  // Return whether the specific bit is set
+  // return (b_field & mask) != 0; // Returns 1 if the bit is set, 0 otherwise
+
+
+  while(Handler_FLGS == 0u)
+  {
+    CLRWDT();
+    DB_LED1_SWAP;
+  }
+
+  temp_handler_FLGS = Handler_FLGS;
+
+	for(handler_id = 0; handler_id < NUM_HANDLERS; handler_id++)
+	{
+    
+		if((temp_handler_FLGS & mask) != 0)
+		{
+
+
+      switch(handler_id)
+      {
+        case 0:
+f_gd_off ();	  
+        break;
+        case 1:
+fn_clock_switching ();
+        break;
+        case 2:
+process_next_char_from_input ();
+        break;
+        case 3:
+set_tmr_2ms_handler_dependencies_flgs	();
+        break;
+        case 4:
+f_gd_on ();	
+        break;
+        case 5:
+f_tilt_sensor_to_check ();	
+        break;
+        case 6:
+set_tmr_200ms_handler_dependencies_flgs ();
+        break;
+        case 7:
+f_gps_on ();
+        break;
+        case 8:
+f_prepare_msg ();
+        break;
+        case 9:
+empty_function ();	
+        break;
+        case 10:
+reset_swoff_tmr_of_cnt ();	
+        break;
+        case 11:
+empty_function ();
+        break;
+        case 12:
+empty_function ();	
+        break;
+        case 13:
+empty_function ();	
+        break;
+        case 14:
+empty_function ();	
+        break;
+        case 15:
+empty_function ();	
+        break;
+        
+        
+      }
+			
+			
+				// this is a special case and gets reset in the actual function
+			// if((handler_id != e_ring_buffer_handler) && (handler_id != e_gd_off_h))
+      if(handler_id != e_ring_buffer_handler)
 			{
 				reset_handler_FLG(handler_id);
 			}
@@ -216,6 +330,8 @@ uint8_t handler_id = 0;
 	}
 
 }
+
+
 
 #else
   
@@ -388,74 +504,30 @@ static void process_next_char_from_input(void){
 	
 	// we reset only here and if the ret_value from the btn_press is true
 	
-	set_handler_FLG(e_reset_swoff_tmr_of_cnt_handler);
+	// set_handler_FLG(e_reset_swoff_tmr_of_cnt_handler);
+  
+  uint8_t rx_data;
 
-	if(check_next_char() != 0)
-	{
-#if LANGUAGE_SPANISH
-		UWT("\r\nRecibido suma de control desde PC esta mal\r\n");
-#else		
-		UWT("\r\nBad checksum from pc\r\n");
-#endif	
-	}
+#if 1
+// the actual gps input
+  get_data_from_buffer_with_pnt(&rx_data);
+
+  values_to_gps_rx_buffer(rx_data);
+  
+#else
+	check_next_char();
+#endif
 
 }
 
 
 
-static void f_gd_on(void){
-  
-  reset_handler_FLG(e_gd_off_h);
-  
-  TMR4_IE = true;
-  TMR4_IF = FALSE;
-  PERIPHERIC_IE = TRUE;
-	GLOBAL_IE = TRUE;
-  TMR4_ON = TRUE;
-  
-  
-  
-  
-  // actually the full startup routine needs to be happening here...
-  
-  // DB_PRINT("Tilt Sensor state change!\r\n");
-  
-  if(tilt_sensor_get_detector_state() == TS_ON_STATE)
-  {
-    
-    // we can do that becaue that is always the highest level of all things 
-    // gd_states_set_gpsd_substate(E_TILT_SENSOR_IS_ON);
-    if(FAST_CLOCK == false)
-    {
-      SWITCH_CLOCK = true;
-    }
-    else
-    {
-      DB_PRINT("DETECTOR IS ON\r\n");  
-    }
-    // DB_PRINT("DETECTOR IS ON\r\n");
-    
-  }
-  else
-  {
-    
-    DB_PRINT("That seems to be an error!\r\n");
-    
-
-
-    
-  }
-  
-  // gd_states_switch_to_next_state();
-  
-  
-}
 
 
 
 static void set_tmr_200ms_handler_dependencies_flgs(void){
 	
-	DB_LED2_SWAP;
+	
 	set_handler_FLG(e_tilt_sensor_h);
   
 }
@@ -470,14 +542,21 @@ static void f_tilt_sensor_to_check(void){
   
 }
 
+
 static void f_gps_on(void){
   
   
   // set up the GPS for reception --> bla bla, timeout timer, etc...
+  // TODO:
+  // UART_on
+  // TIMEout timer on
+  
   
   
   
 }
+
+
 
 static void f_prepare_msg(void){
   
@@ -488,8 +567,111 @@ static void f_prepare_msg(void){
 }
 
 
+#if 1
+
+// this only happens when exiting sleep mode,
+// therefore we just need the most basic things to start up, namely tmr4
+static void f_gd_on(void){
+  
+  // reset all handlers because there should not be any allready active
+  Handler_FLGS = (uint8_t)0u;
+  
+  if(FAST_CLOCK == FALSE)
+  {
+    init_clock();
+    configure_tmr4();
+
+  }
+  
+  TMR4_IF = FALSE;
+  TMR4_IE = TRUE;
+  
+  PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = TRUE;
+  TMR4_ON = TRUE;
+  
+  
+}
 
 
+
+static void f_gd_off(void){
+  
+  // when we enter here we do NOT need to take care of the oscillator timing related switch over
+  // because the WDT clock is so unreliable that we are not further bothered...
+  // --> that is going to be taken care of by the watch dog timer and sleep instruction...
+
+  if(FAST_CLOCK == false)
+  {
+    
+    init_clock();
+    configure_tmr4();
+    
+  }
+
+  DB_PRINT("DETECTOR IS OFF\r\n");
+  
+  
+  PERIPHERIC_IE = FALSE;
+	GLOBAL_IE = FALSE;
+  TMR4_IE = FALSE;
+  TMR4_ON = FALSE;
+  
+  LATC &= 0b11011011;
+  LATB &= 0b00100011;
+  LATA |= 0b01000000;
+  LATA &= 0b11101000;
+  
+  // And we need to swoff all the periferic ISR IE
+  OPTION_REGbits.INTEDG = TRUE;
+  INTCONbits.INTE = TRUE;
+  INTCONbits.INTF = FALSE;
+  
+  // and now set all the super low power things so that there is almost no consumption...
+  // and jsut checking the Input pin for activation
+  
+  WDTCONbits.WDTPS = WDT_TIMEOUT_256s_timeout;
+  WDTCONbits.SWDTEN = 0x01u;  // wdton = true
+  
+
+  while(INTCONbits.INTF == 0u)
+  { 
+    DB_LED_1_ON;
+    
+    SLEEP();
+    
+    DB_LED_1_OFF;
+
+  }
+  WDTCONbits.SWDTEN = 0x00u;  // wdton = true
+  
+  
+  
+#if DEBUGGING_IS_ON
+// becasue in debugging we are sending ,sg and for that we will need speed in the clock
+  if(FAST_CLOCK == FALSE)
+  {
+    init_clock();
+    configure_tmr4();
+    // __delay_ms(5);
+    // DB_PRINT("DETECTOR IS ON\r\n"); 
+  }
+#endif
+ 
+  INTCONbits.INTE = FALSE;
+
+  gd_states_switch_to_next_state(E_STARTUP_STATE);
+  
+  
+}
+
+
+
+
+
+#else
+
+// this one is (almost) working
 static void f_gd_off(void){
   
   // when we enter here we do NOT need to take care of the oscillator timing related switch over
@@ -519,15 +701,24 @@ static void f_gd_off(void){
   
   // and now set all the super low power things so that there is almost no consumption...
   // and jsut checking the Input pin for activation
-  WDTCONbits.WDTPS = 0x08u;
+  WDTCONbits.WDTPS = 0x0Au;
   WDTCONbits.SWDTEN = 0x01u;  // wdton = true
+  OPTION_REGbits.INTEDG = TRUE;
+  INTCONbits.INTE = TRUE;
+  INTCONbits.INTF = FALSE;
+  while(INTCONbits.INTF == FALSE)
+  {
+    SLEEP();  // 512ms sleep
+    
+  }
   
-  SLEEP();  // 512ms sleep
-  DB_LED2_SWAP;
   
   set_handler_FLG(e_tilt_sensor_h);
   
 }
+
+
+#endif
 
 
 static void fn_clock_switching(void){
@@ -559,18 +750,6 @@ static void fn_clock_switching(void){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 static void err_handler_output(void){
 	
 	
@@ -588,7 +767,7 @@ static void empty_function(void){
   
 #else
   
-  wat?
+return; //  wat?
   
 #endif  
 
@@ -601,7 +780,8 @@ static void empty_function(void){
 // that is actually quite important!!
 // TODO: that should get only in DEBUGGING
 static void test_handler_array(void){
-	
+
+#if USE_FUNC_PNT_HANDLER	
 	int8_t hlooper = 0;
 	
 	
@@ -611,7 +791,7 @@ static void test_handler_array(void){
 	{
 		assert(hlooper == Handler_arr[hlooper].Handlers)
 	}
-	// return true;
+#endif
 }
 
 

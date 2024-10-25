@@ -34,9 +34,11 @@
 
 
 struct udt_uart{
-	union {
+	union
+  {
 		uint8_t reg;
-		struct{
+		struct
+    {
 			unsigned startbyte_found : 1;
 			unsigned header_found	: 1;
 			unsigned first_char_after_header : 1;
@@ -321,7 +323,7 @@ void UART_ui2s(void* hvar, size_t size){
   else 
   {
     // If size is unsupported, just return an empty string or handle error
-    str[0] = '\0';
+    str[0] = NULL_TERMINATOR; // '\0';
     return;
   }
 
@@ -372,9 +374,6 @@ void UART_int(uint16_t hvar){
 
 
 
-
-
-
 void send_string(const unsigned char *str_pnt){
 
   const uint8_t const_max_length = 128;
@@ -385,8 +384,11 @@ void send_string(const unsigned char *str_pnt){
 		
 		transmit_char(*str_pnt);
 		str_pnt++;
-		sent_char_cnt++;
-		
+#if ENFORCE_MISRA_RULE    
+    sent_char_cnt = (uint8_t)((uint16_t)sent_char_cnt + 1u);
+#else    
+    sent_char_cnt++;
+#endif  
 	}	
 	
 
@@ -581,7 +583,9 @@ db_data[3] = NULL_TERMINATOR;
 				switch(rx_data)
 				{
 					case 's':
+#if DEBUGGING_IS_ON          
             SWITCH_CLOCK = TRUE;
+#endif            
 					break;
 					case 'w':
 						// basically nothing else to do
@@ -813,170 +817,36 @@ static void transmit_char(uint8_t n_char){
 
 
 static uint8_t chcksum_checker(void){
-  uint8_t ret_value = false;
-  uint8_t hlooper = 0;
-  uint8_t chcksum = 0;
+  
+  uint8_t ret_value = 0u;
+  uint8_t hlooper = 0u;
+  uint8_t chcksum = 0u;
   
   for(hlooper = 0; hlooper < CHARS_TO_RECEIVE; hlooper++)
   {
     
-    chcksum = chcksum ^ tx_data[hlooper + 1];
+    chcksum = chcksum ^ tx_data[hlooper + 1u];
     
   }
+
 #if 0
 
 	UWT("chcksum: ");
 	UART_int(chcksum);
 
 	return false;
+  
 #else		
 	
 	return chcksum;
+  
 #endif	
-}
-
-
-
-
-#if 0
-
-
-
-void UART_32_int(uint32_t hvar){
-
-  char str[11];
-
-  int_to_str_converter_32bits(hvar, str);
-	
-  UWT(&str[0]);
-	
-}
-
-void int_to_str_converter_32bits(uint32_t the_value, unsigned char *str_pnt){
-	
-  uint8_t res[6];
-
-  unsigned char hlooper = 0;
-
-  uint8_t blooper = 0;
-
-  uint32_t val = the_value;
-
-  res[0] = 0;    
-  res[1] = 0;    
-  res[2] = 0;    
-  res[3] = 0;    
-  res[4] = 0;    
-  res[5] = (uint8_t) ((val & 0xFF000000) >> 24);
-  
-  
-  UWT("32b: ");
-  
-  
-  for(hlooper = 0; hlooper < 32; hlooper++)
-  {
-    UART_CRLF;
-    UWT("hlooper: ");
-    UART_int(hlooper);
-    
-    for(blooper = 0; blooper < 5; blooper++)  // only till the last -1 becaseu we need to test against the value received the bit there
-    {
-      // for(db_looper = 0; db_looper )
-        UART_CRLF;
-      UWT("blooper: ");    
-      UART_int(blooper);
-      UART_int(res[blooper]);
-      
-      
-      if((0x0F & res[blooper]) >= 0x05)
-      {
-        res[blooper] = res[blooper] + 0x03;		
-      }
-      if((0xF0 & res[blooper]) >= 0x50)
-      {
-        res[blooper] = res[blooper] + 0x30;
-      }
-      
-      UART_int(res[blooper]);
-
-      if((res[blooper + 1] & 0x80) != 0)  // testing for the next shifting left from the next lower byte...which is the higher byte in memory
-      {
-        res[blooper]++;
-      }
-      
-      UART_int(res[blooper]);
-      
-      res[blooper] = res[blooper] << 1; // we left shifted everything..now the addinbg takes place
-      
-      UART_int(res[blooper]);
-      
-    }
-    val = val << 1;
-    res[5] = (uint8_t) ((val & 0xFF000000) >> 24);
-    
-    UWT("val: ");
-    UART_int((uint16_t)val);
-    UART_int(res[5]);
-    
-  }
-  
-  for(hlooper = 0; hlooper < 5; hlooper++)
-  {
-    *str_pnt = (res[hlooper] >> 4) + 0x30;
-    str_pnt++;
-    *str_pnt = (res[hlooper] & 0x0F) + 0x30;
-    str_pnt++;
-  }
-  
-  *str_pnt = '\0';
 
 }
 
-// #else
-
-static void int_to_str_converter(uint16_t the_value, unsigned char *str_pnt){
-	
-	uint8_t hlooper = 0;
-	uint16_t divider = 10000;	
-	uint8_t temp_val = 0;	
-	uint8_t null_flg = true;
 
 
-	for(hlooper = 0; hlooper < 5; hlooper++)
-	{
-		
-		temp_val = (the_value / divider);
-		*str_pnt = temp_val + 0x30;
-		the_value = the_value - (temp_val * divider);
-	
-		if((null_flg == false) || (*str_pnt != 0x30))
-		{
-			str_pnt++;
-			null_flg = false;
-		}	
 
-		divider = divider / 10;
-
-	}
-	if(null_flg == true)
-	{
-		*str_pnt = 0x30;
-		str_pnt++;
-	}
-	
-  	// *str_pnt = CR;
-	// str_pnt++;
-    	// *str_pnt = LF;
-	// str_pnt++;
-  
-	*str_pnt = TAB;
-	str_pnt++;
-	
-	*str_pnt = NULL_TERMINATOR;
-
-}
-
-#endif
 
 #undef LOCAL_DB_UART
 

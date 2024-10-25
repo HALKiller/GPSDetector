@@ -42,7 +42,7 @@ void __interrupt() isr(void){
   
   // becaseu on the first run there is going to be F_CLOCK
   
-
+  DB_LED2_SWAP;
 
 	if(RCSTAbits.OERR == TRUE)
 	{
@@ -80,7 +80,7 @@ void __interrupt() isr(void){
 	{
 		
     tmr4_of_cnt--;
-    // DB_LED1_SWAP;
+    
     if((FAST_CLOCK == FALSE) || (tmr4_of_cnt == (uint8_t)0u))
     {
     

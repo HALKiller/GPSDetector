@@ -46,9 +46,7 @@ wat? because that shall not be possible!
 
 // uint8_t fast_clock = false;
 
-
-
-
+#if MIPS == 8
 
 void init_clock(void){
 	
@@ -61,17 +59,48 @@ void init_clock(void){
 	// PLL Enabled
 	OSCCONbits.SPLLEN = PLL_SETTING;
 	
-  while(OSCSTATbits.OSTS == 0u)
+  while(OSCSTATbits.HFIOFR == 0u)
   {
     // just wait till it is locked
   }
-	
-  FAST_CLOCK = TRUE;
   
-  // fast_clock = true;
+	while(OSCSTATbits.HFIOFL == 0u)
+  {
+    // just wait till it is stable
+  }
+  
+  FAST_CLOCK = TRUE;
 	
 }
 
+
+#else
+
+void init_clock(void){
+	
+ 
+	// The PLL needs this setup
+	OSCCONbits.SCS = 0u;  // false;
+	// internal with PLL to get 32MHz
+	OSCCONbits.IRCF = CLOCK_SETTING;
+	
+	// PLL Enabled
+	OSCCONbits.SPLLEN = PLL_SETTING;
+	
+  while(OSCSTATbits.HFIOFR == 0u)
+  {
+    // just wait till it is locked
+  }
+	while(OSCSTATbits.HFIOFL == 0u)
+  {
+    // just wait till it is stable
+  }
+  
+  FAST_CLOCK = TRUE;
+	
+}
+
+#endif
 
 void set_slow_clock(void){
   
