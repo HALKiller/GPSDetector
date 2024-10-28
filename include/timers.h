@@ -259,15 +259,15 @@ void init_tmr0(void);
 
 void init_tmr1(void);
 
+void eRTC_clock_reset(void);
+
 
 
 extern uint8_t tmr4_200ms_of;
 
+extern volatile uint8_t tmr4_of_cnt;
 
-
-
-
-
+extern volatile uint32_t eRTC_second_cnt;
 
 
 

@@ -208,8 +208,8 @@ static void try_reconfigure_gps(void);
 static void gps_reconfigure_uart(uint8_t slotter);
 static void gps_uart_stop(void);
 
-static uint8_t check_against_header(char *const t_buffer);
-
+// static uint8_t check_against_header(char *const t_buffer);
+static uint8_t check_against_header(const char *t_buffer);
 static void sentence_handler(uint8_t sentence_id);
 
 #if 1
@@ -257,16 +257,12 @@ void gps_startup_initializer(void){
   // switch on the uart valim pin
   // reset the uart buffer --> that should get perhaps on the initializer of the uart !
 
-  gps_inst.baudslot = 0;
+  reset_uart_handler_flags();
+  
+  gps_inst.baudslot = 0u;
   
   gps_reinit();
-
-#if GPS_PRINT   
-  //DB_PRINT("GPS_On\r\n");
-#endif  
-
-  
-  
+ 
 }
 
 
@@ -275,19 +271,19 @@ void gps_reinit(void){
 #if DEBUGGING_IS_ON    
   uint8_t h_flg = 0;
   
-  if(UART_GPS_FLG.debugging_send_sentences)
+  if(UART_GPS_FLG.debugging_send_sentences == TRUE)
   {
-    h_flg = 1;
+    h_flg = 1u;
   }
   
-  if(UART_GPS_FLG.debugging_sync_time)
+  if(UART_GPS_FLG.debugging_sync_time == TRUE)
   {
-    h_flg = h_flg + 2;
+    h_flg = h_flg + 2u;
   }
 
 #endif
   
-  UART_GPS_FLG.reg = 0; // reset everything
+  UART_GPS_FLG.reg = 0u; // reset everything
 
 #if DEBUGGING_IS_ON    
   UART_GPS_FLG.reg = UART_GPS_FLG.reg + h_flg;
@@ -299,7 +295,7 @@ void gps_reinit(void){
 #if 0  
   if(UART_GPS_FLG.debugging_send_sentences)
   {
-    UART_GPS_FLG.reg = 0; // reset everything
+    UART_GPS_FLG.reg = 0u; // reset everything
     UART_GPS_FLG.debugging_send_sentences = true;
   }
   else
@@ -307,6 +303,9 @@ void gps_reinit(void){
     UART_GPS_FLG.reg = 0; // reset everything;
   }
 #endif 
+  
+  CREN = TRUE;
+  RX_IE = TRUE;
   
   
 #if USE_DEVICE_DRIVER
@@ -339,7 +338,7 @@ void gps_reinit(void){
   
   
   
-  UART_GPS_FLG.timeout_tmr_is_running = true;
+  UART_GPS_FLG.timeout_tmr_is_running = TRUE;
   
 #endif  
 
@@ -351,7 +350,7 @@ void gps_stop(void){
  
   // stop everything --> therefore : switch off  the uart
   // deinit_uart(GPS_UART);  
-  gps_uart_stop();
+  // gps_uart_stop();
 
   // //DB_PRINT("G: \r\n");
   
@@ -359,6 +358,10 @@ void gps_stop(void){
 //DB_PRINT("GPS_Off\r\n");  
 #endif 
   // and switch off the valim_pin for the UART_CRLF
+
+  CREN = FALSE;
+  RX_IE = FALSE;
+  
 
   // IO_GPS_VALIM_ON_OFF
   
@@ -375,7 +378,7 @@ gps_state_t gps_check_gps_error_status(void){
   
   // tmr_handlers_deinit(GPS_TIME_OUT_TIMER); 
   
-  UART_GPS_FLG.timeout_tmr_is_running = false;
+  UART_GPS_FLG.timeout_tmr_is_running = FALSE;
   
   if(UART_GPS_FLG.gps_sentence_is_good)
   {
@@ -384,7 +387,7 @@ gps_state_t gps_check_gps_error_status(void){
     //DB_PRINT("\r\nGPS Works\r\n");
 #endif    
   }
-  else if(UART_GPS_FLG.receiving_chars_is_good == false)
+  else if(UART_GPS_FLG.receiving_chars_is_good == FALSE)
   {
     
     gps_inst.gps_state = NOT_RECEIVING;
@@ -394,7 +397,7 @@ gps_state_t gps_check_gps_error_status(void){
     try_reconfigure_gps();
 
   }
-  else if(UART_GPS_FLG.valid_header_received == false)
+  else if(UART_GPS_FLG.valid_header_received == FALSE)
   {
     
     gps_inst.gps_state = RECEIVING_NOT_CORRECTLY;
@@ -532,28 +535,9 @@ static void gps_uart_stop(void){
 // otherwise reset to looking for the next startbyte.
 void values_to_gps_rx_buffer(uint8_t n_char){
 	
-  // #define SEND_GPS_DATA	0	
-  #define DB_UART_GPS 0
-  #define SEND_GPS_DATA_GOOD 0
-  #define SEND_EXTRACTED_GPS_SENTENCE_TO_PC	0
-  #define SEND_DMA_BUFFER_TO_PC 0
-    
-
 
   static uint8_t startwordcnt = 1;	
 
-  uint8_t *gps_buff_pnt;
-  uint8_t d_looper = 0;
-
-  
-
-  static char header_buffer[7];
-
-  #if DB_UART_GPS	
-  static uint8_t rnd_cnt = 0;
-  #endif
-  
-  
 #if DEBUGGING_IS_ON&&0
   char db_char[2];
   
@@ -564,67 +548,40 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 #endif  
 
   DB_LED2_SWAP;
-  // DB_LED3_SWAP;
-  UART_GPS_FLG.receiving_chars_is_good = true;
 
-  if(UART_GPS_FLG.endbyte_found)
-  {
-    // DB_PRINT("E\r\n");
+  UART_GPS_FLG.receiving_chars_is_good = TRUE;
+
+#if 1
     *temp_buff_pnt = n_char;
     temp_buff_pnt++;
     temp_buff_pnt_cnt--;
+#endif
+
+
+  if(UART_GPS_FLG.endbyte_found)
+  {
+
     endbyte_cnt--;
-    if(endbyte_cnt == false)
+    
+    if(endbyte_cnt == 0u)
     {
       // we are finished extracting the string!--> now we need to check the sum and if this is also good send it to its 
-      // final destination...
-      
-      // DB_PRINT("END\r\n");
-      // *temp_buff_pnt = NULL_TERMINATOR;
-      // DB_PRINT(src_buff_pnt);
-      // UWT("temp_buff_pnt_cnt: ");
-      // UART_int(temp_buff_pnt_cnt);
-      
-      if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt))
-        // if(GPS_checksum_checker(temp_buffer, cMax_Sentence_length_GPS - temp_buff_pnt_cnt))
+      if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt) == TRUE)
       {
-
-        // *temp_buff_pnt = NULL_TERMINATOR;
         
-  #if 0      
-        temp_buff_pnt = &sentence_buffer.gps_buffer[0];
-        gps_buff_pnt = sentence_buffer.gps_buffer;
-        // gps_buff_pnt = GPS_Rx_data;
-        
-        
-        for(d_looper = 0; d_looper < (cMax_Sentence_length_GPS - temp_buff_pnt_cnt); d_looper++)
-        {
-          *gps_buff_pnt = *temp_buff_pnt;
-          gps_buff_pnt++;
-          temp_buff_pnt++;
-        }
-        
-        *gps_buff_pnt = NULL_TERMINATOR;
-#endif
-        UART_GPS_FLG.gps_sentence_is_good = true;
-
+        UART_GPS_FLG.gps_sentence_is_good = TRUE;
         // we have now the full string in memory--> therefore we should be able to extract the different sub strings into the GPS_struct...
 #if 1
-        // move_data_to_GPS_struct();
+
         DB_LED3_SWAP;
         sentence_handler(gps_inst.sentence_id);
-        DB_PRINT("\r\n");
-        DB_PRINT(header_buffer);
-        DB_PRINT("\r\n");
         DB_LED3_SWAP;
+        
 #endif
+
 #if MY_DEBUGGING_IS_ON
-#if 0 
-        //DB_PRINT("\r\nGPS received: ");
-       
-        //DB_PRINT((char*)&sentence_buffer.gps_buffer);
-#endif          
-        if(UART_GPS_FLG.debugging_send_sentences == true)
+        
+        if(UART_GPS_FLG.debugging_send_sentences == TRUE)
         {
           strcat((char*)&sentence_buffer.gps_buffer, (char*)&finisher[0]);
           UWT(DEBUG_UART, sentence_buffer.gps_buffer);
@@ -637,192 +594,92 @@ void values_to_gps_rx_buffer(uint8_t n_char){
         
         // if( (UART_GPS_FLG.debugging_sync_time == true) && (UART_GPS_FLG.rmc_time_is_good == true) )
           
-        if( (UART_GPS_FLG.rmc_time_is_good == true) && ((UART_GPS_FLG.debugging_sync_time == true) || (rtc_time_got_set() == false) ))
+        if( (UART_GPS_FLG.rmc_time_is_good == TRUE) && ((UART_GPS_FLG.debugging_sync_time == TRUE) || (rtc_time_got_set() == FALSE) ))
         
         {
-          UART_GPS_FLG.debugging_sync_time = false;
+          UART_GPS_FLG.debugging_sync_time = FALSE;
           rtc_sync_rtc_to_gps_time(get_pointer_to_rmc());
         }
 #endif          
       }
+#if DEBUGGING_IS_ON      
       else
       {
-// Checksum failed here!!         
-        DB_PRINT("\r\n");
-        DB_PRINT(header_buffer);
-        
-        DB_PRINT("  CKerr\r\n"); //  on gps sentence failed\r\n");
+
+        // DB_PRINT("\r\n");
+        // DB_PRINT(header_buffer);
+        DB_PRINT("  CKerr\r\n"); 
         // the chcksum failed!!! we therefore just reset afterwards everything but do not save the received data...
       }
-#if 1
-      
-      reset_uart_handler_flags();
-      // temp_buff_pnt = temp_buffer;
-      temp_buff_pnt = &sentence_buffer.gps_buffer[0];
-#else
+#endif
 
-      UART_GPS_FLG.startbyte_found = false;
-      UART_GPS_FLG.startword_found = false;
-      UART_GPS_FLG.endbyte_found = false;
-      // temp_buff_pnt = temp_buffer;
-      temp_buff_pnt = &sentence_buffer.gps_buffer[0];
-      temp_buff_pnt_cnt = cMax_Sentence_length_GPS;
-      endbyte_cnt = 2;
-      
-#endif				
+      reset_uart_handler_flags();
+			
     }
   }
   else if(UART_GPS_FLG.startword_found)
   {
     if(n_char == '*')
     {
-      UART_GPS_FLG.endbyte_found = true;	// the next startbyte was found and therefore the last sentence got received completely--> we need to check the data integrity and if good keep it free for further processing
-      *temp_buff_pnt = n_char;
-      temp_buff_pnt++;
-      temp_buff_pnt_cnt--;
-// we need two more bytes for the chcksum
+  // the next startbyte was found and therefore the last 
+  // sentence got received completely--> we need to check 
+  // the data integrity and if good keep it free for further processing      
+      UART_GPS_FLG.endbyte_found = TRUE;	
       
     }
-    else
-    {
-      *temp_buff_pnt = n_char;
-      temp_buff_pnt++;
-      temp_buff_pnt_cnt--;
 
-    }
 
   }
   else if(UART_GPS_FLG.startbyte_found)
   {	
 
-// DB_PRINT("A\r\n");
-
-    *temp_buff_pnt = n_char;
-    temp_buff_pnt_cnt--;
-    temp_buff_pnt++;
     startwordcnt++;
     
-  #if 0  
-    *temp_buff_pnt = CR;
-    *(temp_buff_pnt + 1) = LF;
-    *(temp_buff_pnt + 2) = NULL_TERMINATOR;
-    
-    // sentence_buffer.gps_buffer[0] = 'H';
-    // sentence_buffer.gps_buffer[1] = 'A';
-    // sentence_buffer.gps_buffer[2] = 'I';
-    // sentence_buffer.gps_buffer[3] = NULL_TERMINATOR;
-    
-    
-    DB_PRINT(&sentence_buffer.gps_buffer[0]);
- #endif   
-    
-////DB_PRINT("LEN: %d\r\n", startwordcnt);
     if(const_STARTWORDCOUNT_LEN == startwordcnt)
     {
-      // temp_buff_pnt = NULL_TERMINATOR;
-      // //DB_PRINT(temp_buffer);
-      // check against all the headers
-      // DB_PRINT("B\r\n");
-      
+
       *temp_buff_pnt = NULL_TERMINATOR;
-      
-      // DB_PRINT(&sentence_buffer.gps_buffer[0]);
-      // DB_PRINT(src_buff_pnt);
-      
-      memcpy(header_buffer, src_buff_pnt, const_STARTWORDCOUNT_LEN);
-      // memcpy()
-      // memcpy(header_buffer, temp_buffer, const_STARTWORDCOUNT_LEN);
-      // DB_PRINT(header_buffer);
-      // header_buffer[6] = NULL_TERMINATOR;
-      
-      if(check_against_header(header_buffer) == true)
+
+      if(check_against_header((const char *)src_buff_pnt) == TRUE)
+        
       {
-        
-        // DB_PRINT("C\r\n");
-        
+ 
         // there wa a valid header found!
-        UART_GPS_FLG.startword_found = true;
-        UART_GPS_FLG.valid_header_received = true;
+        UART_GPS_FLG.startword_found = TRUE;
+        UART_GPS_FLG.valid_header_received = TRUE;
         
       }
       else
       {
-        // DB_PRINT("D\r\n");
         
-#if 1
         reset_uart_handler_flags();
         
-#else
-          
-        UART_GPS_FLG.startbyte_found = false;
-        // temp_buff_pnt = temp_buffer;
-        temp_buff_pnt = &sentence_buffer.gps_buffer[0];
-        temp_buff_pnt_cnt = cMax_Sentence_length_GPS;
-#endif
       }
-      
-      
     }
-
-    
-    
-    
   }
   else if(n_char == '$')
-  {	// if we did not enter so far any of the above if statements we are looking fot the startbyte
-    *temp_buff_pnt = n_char;	// movbe the first char into the temp_buffer
-    temp_buff_pnt++;
-    temp_buff_pnt_cnt--;
-    UART_GPS_FLG.startbyte_found = true;	// we have a startbyte!
-    startwordcnt = 1;	// set the startwordcnt 
+  {	
+    // if we did not enter so far any of the above if statements we are looking fot the startbyte
+    UART_GPS_FLG.startbyte_found = TRUE;	// we have a startbyte!
+    startwordcnt = 1u;	// set the startwordcnt 
   }
   else
   {
-    // temp_buff_pnt = temp_buffer;
-    temp_buff_pnt = &sentence_buffer.gps_buffer[0];
-    temp_buff_pnt_cnt = cMax_Sentence_length_GPS;
+    reset_uart_handler_flags();
+
   }
   
-  if(temp_buff_pnt_cnt == false)
+  if(temp_buff_pnt_cnt == FALSE)
   {					
 // DB_PRINT("Z\r\n");
     // something went seriously wrong because we are on the end of the buffer but have not found the stopbyte-->
     // therefore we need to reset the complete thing and start to keep searching for a "$" startbyte and thats all there is to it...
 //---> reset everything for a new search
 #if 1
-      
-    //DB_PRINT("\r\nEnd of buffer and no stopbyte received\r\n");
-    
-#if MY_DEBUGGING_IS_ON
-    temp_buffer[MAX_DATA_LENGTH_GPS_SENTENCE] = NULL_TERMINATOR;
-    //DB_PRINT((char*)&temp_buffer);
-#endif    
-      
-      
-    reset_uart_handler_flags();
-    // temp_buff_pnt = temp_buffer;
-      
-      
-      
-      
-#else
-    //DB_PRINT("\r\nEnd of buffer and no stopbyte received\r\n");
-    
-#if MY_DEBUGGING_IS_ON
-    temp_buffer[MAX_DATA_LENGTH_GPS_SENTENCE] = NULL_TERMINATOR;
-    //DB_PRINT((char*)&temp_buffer);
-#endif    
-    
-    UART_GPS_FLG.startbyte_found = false;
-    UART_GPS_FLG.startword_found = false;
-    UART_GPS_FLG.endbyte_found = false;
-    // temp_buff_pnt = temp_buffer;
-    temp_buff_pnt = &sentence_buffer.gps_buffer[0];
-    temp_buff_pnt_cnt = cMax_Sentence_length_GPS;
-    endbyte_cnt = 2;
 
-#endif      
+    reset_uart_handler_flags();
     
+#endif      
     
   }
 
@@ -833,14 +690,16 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     
     // TODO:
     // rtc_sync_rtc_to_gps_time(get_pointer_to_rmc());
+    // and then we should allready switch it off and save the sentence becasue we are all done...
   }
-  
-  // DB_LED3_SWAP;
 
+  // DB_LED3_SWAP;
 }
 
 
-static uint8_t check_against_header(char *const t_buffer){
+
+
+static uint8_t check_against_header(const char *t_buffer){
   
   uint8_t hlooper = 0;
   uint8_t ret_value = false;
@@ -889,9 +748,9 @@ static void reset_uart_handler_flags(void){
   
   // DB_PRINT("\r\nUR\r\n");
   
-  UART_GPS_FLG.startbyte_found = false;
-  UART_GPS_FLG.startword_found = false;
-  UART_GPS_FLG.endbyte_found = false;
+  UART_GPS_FLG.startbyte_found = FALSE;
+  UART_GPS_FLG.startword_found = FALSE;
+  UART_GPS_FLG.endbyte_found = FALSE;
   // temp_buff_pnt = temp_buffer;
   temp_buff_pnt = &(sentence_buffer.gps_buffer[0]);
   temp_buff_pnt_cnt = cMax_Sentence_length_GPS;

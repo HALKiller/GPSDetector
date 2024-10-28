@@ -20,14 +20,17 @@
 #include "ring_buffer.h"
 
 
-#define TMR0_ADJUSTMENT (uint8_t)4
+#define TMR0_ADJUSTMENT 4
 
 // eRTC related -------------------------
 #define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
 
 
-static volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
-static volatile uint32_t eRTC_second_cnt = 0u;
+volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
+volatile uint32_t eRTC_second_cnt = 0u;
+
+// static volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
+// static volatile uint32_t eRTC_second_cnt = 0u;
 
 static void eRTC_clock_incrementer(void);
 
@@ -42,17 +45,17 @@ void __interrupt() isr(void){
   
   // becaseu on the first run there is going to be F_CLOCK
   
-  DB_LED2_SWAP;
+  
 
-	if(RCSTAbits.OERR == TRUE)
+	if(RCSTAbits.OERR == true)
 	{
-		RCSTAbits.CREN = FALSE;
+		RCSTAbits.CREN = false;
 		asm ("nop");
-		RCSTAbits.CREN = TRUE;
+		RCSTAbits.CREN = true;
 	}
 
 
-	while((RX_IE == TRUE) && (RX_IF == TRUE))
+	while((RX_IE == true) && (RX_IF == true))
 	{			
 		
 		rx_data = RCREG;
@@ -64,10 +67,10 @@ void __interrupt() isr(void){
 	
 	// OF time = 2.04ms
 	
-	if((TMR0_IE == TRUE) && (TMR0_IF == TRUE))
+	if((TMR0_IE == true) && (TMR0_IF == true))
 	{
 	
-		TMR0_IF = FALSE;
+		TMR0_IF = false;
 		TMR0 = TMR0 + TMR0_ADJUSTMENT;
 		handlers_generic_set_handler_FLG(e_2ms_of_handler);
 
@@ -76,31 +79,37 @@ void __interrupt() isr(void){
 // well then --> lets use TMR_4" purely for the coloring of the LEDS of the BAT_Level...
 
 
-	if((TMR4_IE == TRUE) && (TMR4_IF == TRUE))
+	if((TMR4_IE == true) && (TMR4_IF == true))
 	{
 		
     tmr4_of_cnt--;
     
-    if((FAST_CLOCK == FALSE) || (tmr4_of_cnt == (uint8_t)0u))
+    if((FAST_CLOCK == false) || (tmr4_of_cnt == (uint8_t)0u))
     {
     
+      
+      
       eRTC_clock_incrementer();
       
-      if(SWITCH_CLOCK == TRUE)
+      if(SWITCH_CLOCK == true)
       {
         handlers_generic_set_handler_FLG(e_switch_clock_handler);
-        TMR4_ON = FALSE; // stop the Timer
-        SWITCH_CLOCK = FALSE;
+        TMR4ON = false; // stop the Timer
+        SWITCH_CLOCK = false;
       }
       else
       {
+        
+        DB_LED2_SWAP;
+        
+        
         handlers_generic_set_handler_FLG(e_200ms_h);
         tmr4_of_cnt = tmr4_200ms_of;
       }
       tmr4_of_cnt = tmr4_200ms_of;
 		}
     
-		TMR4_IF = FALSE;
+		TMR4_IF = false;
 
 	}
 	
@@ -116,13 +125,22 @@ static void eRTC_clock_incrementer(void){
   if(eRTC_second_cnt >= SECONDS_PER_DAY)
   {
     
-    eRTC_second_cnt = 0u;
+    eRTC_second_cnt = 0;
     
   }
     
 }
 
 
+void eRTC_clock_reset(void){
+
+  eRTC_second_cnt = 0u;
+  
+  tmr4_of_cnt = (uint8_t)10u;
+
+
+
+}
 
 
 

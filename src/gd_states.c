@@ -65,16 +65,16 @@ static gpsd_state_t detector_state;
 
 #define STANDARD_SLEEP_TIME_DEBUGGING 1 // 4 seconds --> nice!!
 
-#define SEND_APP_STRINGS 0
+#define SEND_APP_STRINGS 1
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
 
-#if 1
+#if 0
 
 
-#elif 1
+#elif 0
 // const char *app_txt[] = {
 const char * const app_txt[] = {
   
@@ -225,7 +225,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.last_state = detector_state.actual_state;
   
-#if DEBUGGING_IS_ON  && 0
+#if DEBUGGING_IS_ON  && 1
   DB_PRINT("last state: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
 #endif
@@ -235,7 +235,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.actual_state = next_state;
   
-#if DEBUGGING_IS_ON&&0 
+#if DEBUGGING_IS_ON&&1 
   DB_PRINT("New state: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
 #endif  
@@ -268,7 +268,7 @@ static void f_E_STARTUP_STATE_handler(void){
 
 
   handlers_generic_set_handler_FLG(e_startup_h);
-  
+  DB_PRINT("FLG_SET\r\n");
 
 }
 

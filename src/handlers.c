@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 
-#define USE_FUNC_PNT_HANDLER 0
+#define USE_FUNC_PNT_HANDLER 1
 
 // set_handler_FLG(e_tilt_sensor_h);
 static void f_tilt_sensor_to_check(void);
@@ -64,7 +64,7 @@ static void set_tmr_200ms_handler_dependencies_flgs(void);
 static void set_tmr_1000ms_handler_dependencies_flgs(void);
 
 static void f_gps_on(void);
-
+static void f_gps_has_position(void);
 static void reset_swoff_tmr_of_cnt(void);
 
 static void swoff_tmr_handler(void);
@@ -104,9 +104,9 @@ static const HandlersHandlerType Handler_arr[] =
   
 	{ e_rx_luz_com_h,                     empty_function },	
 	{ e_reset_swoff_tmr_of_cnt_handler,   reset_swoff_tmr_of_cnt },	
-	{ e_startup_h,                        empty_function },
+	{ e_startup_h,                        f_gd_on },
   // { e_swoff_tmr_handler,               swoff_tmr_handler },
-  { e_gps_has_full_position_h,               empty_function }, // TODO: write handler
+  { e_gps_has_full_position_h,          f_gps_has_position }, // TODO: write handler
   
 	{ e_ertc_handler_start,               empty_function },	
 
@@ -311,6 +311,8 @@ empty_function ();
         case 15:
 empty_function ();	
         break;
+        default:
+        
         
         
       }
@@ -539,8 +541,10 @@ static void f_tilt_sensor_to_check(void){
   
   tilt_sensor_get_state();
 
+  DB_LED3_SWAP;
   
 }
+
 
 
 static void f_gps_on(void){
@@ -553,6 +557,24 @@ static void f_gps_on(void){
   
   
   
+  
+}
+
+static void f_gps_has_position(void){
+  
+  
+  // well, then we need to do all the things blablabla..
+  
+  gps_stop();
+  // * and then extract all the importan tinformation towards the necessary structures
+  // * calculate the sleep time
+  // * prepare the message allready as far as possible
+  // * 
+// ("GPS has position!\r\n");
+// #endif    
+  // TODO swap state to --> Pre tx wait or sleep
+  // gd_states_switch_to_next_state();
+
   
 }
 
@@ -576,6 +598,8 @@ static void f_gd_on(void){
   // reset all handlers because there should not be any allready active
   Handler_FLGS = (uint8_t)0u;
   
+  tilt_sensor_init();
+  
   if(FAST_CLOCK == FALSE)
   {
     init_clock();
@@ -590,6 +614,9 @@ static void f_gd_on(void){
 	GLOBAL_IE = TRUE;
   TMR4_ON = TRUE;
   
+  eRTC_clock_reset();
+  
+  DB_PRINT("f_gd_on");
   
 }
 
@@ -610,6 +637,10 @@ static void f_gd_off(void){
   }
 
   DB_PRINT("DETECTOR IS OFF\r\n");
+  while(TXSTAbits.TRMT == FALSE)
+  {
+    // waiting loop for finisheg the transmission
+  }  
   
   
   PERIPHERIC_IE = FALSE;
@@ -660,9 +691,12 @@ static void f_gd_off(void){
  
   INTCONbits.INTE = FALSE;
 
+  // TODO: 
+  // wait for clck to stailize before tx_DP_PRINT info...
+  
   gd_states_switch_to_next_state(E_STARTUP_STATE);
-  
-  
+  DB_PRINT("SUP\r\n");
+  DB_LED3_SWAP;
 }
 
 
@@ -983,6 +1017,10 @@ static void seg_7d_refresh(void){
 	refresh_7Sd();
 	
 }
+
+
+
+
 
 
 static void swoff_tmr_handler(void){

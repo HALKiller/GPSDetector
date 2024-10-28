@@ -60,18 +60,6 @@
 //  * * * * * * * * * * * * *  B S P related    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  B S P related    * * * * * * * * * * * * *  //
 
-// this is the version with two pcb
-#define HW_VERSION_V10 0
-
-// this is the version with only a single pcb
-#define HW_VERSION_V20 0
-
-// charging IMAN in this version --> no max so far...
-#define GdL_V30 0
-
-// that is the pcb with the MAX6969 Chip for the seg_7_d
-#define GdL_V20_1 0 
-
 #define HW_GPS_DETECTOR 1
 
 

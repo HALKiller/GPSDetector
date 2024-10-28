@@ -133,14 +133,12 @@ void init_UART_calculated(uint32_t baudrate){
   
   uint32_t clck = MIPS * 4000000u;
   
-  
-  
-  
-  
+
   
 }
 
 #endif
+
 
 void uart_init_slow_clock(void){
   
