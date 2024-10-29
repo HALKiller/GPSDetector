@@ -143,8 +143,8 @@ void init_UART_calculated(uint32_t baudrate){
 void uart_init_slow_clock(void){
   
     // 1953 BAUD
-  BRG16 = 0u;
-  BRGH = 0u;
+  BRG16 = 1u;
+  BRGH = 1u;
   SPBRG = 3u;
   SYNC = FALSE;
   SPEN = TRUE;

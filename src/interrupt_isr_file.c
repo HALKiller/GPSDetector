@@ -13,7 +13,7 @@
 #include "io_port_sfr_names.h"
 #include "generic_union_flgs.h"
 #include "timers.h"
-
+#include "e_rtc.h"
 // #include "UART.h"
 
 
@@ -26,13 +26,13 @@
 #define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
 
 
-volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
-volatile uint32_t eRTC_second_cnt = 0u;
+
+// volatile uint32_t eRTC_second_cnt = 0u;
 
 // static volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
 // static volatile uint32_t eRTC_second_cnt = 0u;
 
-static void eRTC_clock_incrementer(void);
+// static void eRTC_clock_incrementer(void);
 
 
 
@@ -87,8 +87,6 @@ void __interrupt() isr(void){
     if((FAST_CLOCK == false) || (tmr4_of_cnt == (uint8_t)0u))
     {
     
-      
-      
       eRTC_clock_incrementer();
       
       if(SWITCH_CLOCK == true)
@@ -100,12 +98,13 @@ void __interrupt() isr(void){
       else
       {
         
-        DB_LED2_SWAP;
-        
+        // DB_LED2_SWAP;
         
         handlers_generic_set_handler_FLG(e_200ms_h);
         tmr4_of_cnt = tmr4_200ms_of;
+        
       }
+      
       tmr4_of_cnt = tmr4_200ms_of;
 		}
     
@@ -116,34 +115,6 @@ void __interrupt() isr(void){
 
 
 }
-
-
-static void eRTC_clock_incrementer(void){
-  
-  eRTC_second_cnt = eRTC_second_cnt + 2u;
-  
-  if(eRTC_second_cnt >= SECONDS_PER_DAY)
-  {
-    
-    eRTC_second_cnt = 0;
-    
-  }
-    
-}
-
-
-void eRTC_clock_reset(void){
-
-  eRTC_second_cnt = 0u;
-  
-  tmr4_of_cnt = (uint8_t)10u;
-
-
-
-}
-
-
-
 
 
 

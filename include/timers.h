@@ -267,7 +267,7 @@ extern uint8_t tmr4_200ms_of;
 
 extern volatile uint8_t tmr4_of_cnt;
 
-extern volatile uint32_t eRTC_second_cnt;
+
 
 
 

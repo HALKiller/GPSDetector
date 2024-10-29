@@ -26,6 +26,7 @@
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
 
+#define TEST_ERTC_SLOW_CLOCK 1
 
 // this define reduces the data_arrays to a lower 
 // sizer so that the whoel project keeps on compiling
@@ -99,7 +100,9 @@ wat
 
 #define ADC_BAT_DB_IS_ON 0  // To read out the ADC from the bat measurement
 
-// Debugging defines 
+
+//  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
+//  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
 #if DEBUGGING_IS_ON
 
 #define LANGUAGE_SPANISH 0
@@ -113,6 +116,12 @@ wat
 #define DB_LED_1_OFF (DB_LED_1 = false)
 
 #define DB_PRINT(str) send_string((const unsigned char *)(str))
+
+
+#define RUN_ERTC_TEST 1
+
+
+
 
 #else
   
@@ -133,7 +142,9 @@ wat
 
 
 
+#define SWOFF_GIE bool temp_GIE = GLOBAL_IE;GIE = false;
 
+#define SWON_GIE GIE = temp_GIE;
 
 
 

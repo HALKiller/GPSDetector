@@ -77,6 +77,8 @@ typedef struct gps_gsa_sentence_type{
 
 void gps_init(void);
 
+uint32_t gps_rtc_get_second_cnt(void);
+
 void gps_startup_initializer(void);
 
 void gps_reinit(void);

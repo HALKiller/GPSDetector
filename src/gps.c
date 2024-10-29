@@ -31,7 +31,7 @@
 
 #include "handlers.h"
 
-// #include "rtc.h"
+#include "e_rtc.h"
 
 #include "my_assert.h"
 
@@ -65,13 +65,14 @@ union	udt_UART_GPS_FLGS {
     unsigned gsa_position_is_good     : 1;
 
     unsigned timeout_tmr_is_running   : 1;
-    
-		unsigned free										  : 5;		
+    unsigned rtc_test_first_run       : 1;
+		unsigned free										  : 4;		
 	};
 };
 
 static union udt_UART_GPS_FLGS UART_GPS_FLG;
 
+static uint32_t gps_rtc_time = 0;
 
 typedef struct udt_gps_type{
   
@@ -115,6 +116,8 @@ static const char *sentences[] = {
   "$GNRMC",
   "$GPGSA",
   "$GNGSA",
+  "$EESLf",
+  "$EESLR",
   
 };
 
@@ -150,6 +153,7 @@ const uint8_t *const sentences[] = {
 #define MAX_DATA_LENGTH_GPS_SENTENCE 82
 
 #endif
+
 
 #if MY_DEBUGGING_IS_ON
 
@@ -224,6 +228,8 @@ static void process_rmc_sentence(void);
 
 static void Debugging_read_out_rmc(void);
 
+static void convert_utc_to_gps_rtc_time(void);
+
 // static void move_data_to_GPS_struct(void);
 
 
@@ -248,9 +254,26 @@ static void Debugging_read_out_rmc(void);
 void gps_init(void){
   
   // NONE
+  UART_GPS_FLG.rtc_test_first_run = FALSE;
+ 
+ 
  
 }
 
+
+uint32_t gps_rtc_get_second_cnt(void){
+  
+  bool temp_GIE = GLOBAL_IE;
+
+	GIE = false;
+
+  uint32_t ret_val = gps_rtc_time;
+  
+  GIE = temp_GIE;
+  
+  return ret_val;
+  
+}
 
 void gps_startup_initializer(void){
 
@@ -574,10 +597,15 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 #if 1
 
         DB_LED3_SWAP;
+#endif        
+
         sentence_handler(gps_inst.sentence_id);
+
+#if 1
         DB_LED3_SWAP;
         
 #endif
+
 
 #if MY_DEBUGGING_IS_ON
         
@@ -605,7 +633,13 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 #if DEBUGGING_IS_ON      
       else
       {
-
+        if((gps_inst.sentence_id == 4) || (gps_inst.sentence_id == 5))
+        {
+          
+          sentence_handler(gps_inst.sentence_id);
+          
+        }
+          
         // DB_PRINT("\r\n");
         // DB_PRINT(header_buffer);
         DB_PRINT("  CKerr\r\n"); 
@@ -683,16 +717,27 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     
   }
 
+#if RUN_ERTC_TEST
 // I need this timeout_tmr_is_running flag to avoid race conditions in the handlers	
-  if((!UART_GPS_FLG.timeout_tmr_is_running) && (UART_GPS_FLG.gsa_position_is_good) && (UART_GPS_FLG.rmc_time_is_good))
+
+  if((UART_GPS_FLG.rtc_test_first_run == FALSE) && 
+     (UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
+
+  
   {
-    handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
+    
+    DB_PRINT("Syncing\r\n");
+    UART_GPS_FLG.rtc_test_first_run = TRUE;
+    // convert_utc_to_gps_rtc_time();
+    eRTC_clock_sync_to_gps(gps_rtc_time);
+    
+    // handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
     
     // TODO:
     // rtc_sync_rtc_to_gps_time(get_pointer_to_rmc());
     // and then we should allready switch it off and save the sentence becasue we are all done...
   }
-
+#endif
   // DB_LED3_SWAP;
 }
 
@@ -862,7 +907,38 @@ uint8_t temp_char = 0;
 
 
 
+#if DEBUGGING_IS_ON
 
+static void sentence_handler(uint8_t sentence_id){
+  
+  switch(sentence_id)
+  {
+    
+    case 0:
+    case 1:
+      process_rmc_sentence();
+    break;
+    
+    case 2:   
+    case 3:
+      process_gsa_sentence();
+    break;
+    case 4:
+      RESET();
+    break;
+    case 5:
+      UART_GPS_FLG.rtc_test_first_run = FALSE;
+    break;
+    default:
+      assert(false);
+    break;
+
+  }
+  
+}
+
+#else
+  
 static void sentence_handler(uint8_t sentence_id){
   
   switch(sentence_id)
@@ -884,10 +960,9 @@ static void sentence_handler(uint8_t sentence_id){
 
   }
   
-
-  
-  
 }
+
+#endif
 
 
 static void process_gsa_sentence(void){
@@ -944,7 +1019,20 @@ static void process_gsa_sentence(void){
   
 }
 
-#if 1
+
+static void convert_utc_to_gps_rtc_time(void){
+  
+  gps_rtc_time = rmc_sentence.UtcOfPosition.Horas * SECONDS_PER_HOUR;
+  gps_rtc_time = gps_rtc_time + rmc_sentence.UtcOfPosition.Minutos * SECONDS_PER_MINUTE; 
+  gps_rtc_time = (gps_rtc_time + rmc_sentence.UtcOfPosition.Segundos);
+  
+  
+  
+}
+
+
+
+#if 0
 
 static void process_rmc_sentence(void){
   
@@ -1098,6 +1186,11 @@ static void process_rmc_sentence(void){
   gNoProcesaMasGsa = false;
 #endif
 
+  if(UART_GPS_FLG.rmc_time_is_good == TRUE)
+  {
+    convert_utc_to_gps_rtc_time();
+  }
+  
 
   
   

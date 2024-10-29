@@ -32,6 +32,9 @@
 // TODO: --> becaseu of tmr4 config move it
 #include "Init_all.h"
 #include "gps.h"
+
+#include "e_rtc.h"
+
 #include <stdint.h>
 
 
@@ -411,13 +414,18 @@ static uint8_t test_handler_FLG(uint8_t handler_flg_spot){
 
 
 static void set_handler_FLG(uint8_t handler_flg_spot){
+
+
+
+  // SWOFF_GIE
 	
   bool temp_GIE = GLOBAL_IE;
 
 	GIE = false;
 	
 	Handler_FLGS = set_single_bit_in_int(Handler_FLGS, handler_flg_spot);
-	
+
+// SWON_GIE	
 	GIE = temp_GIE;
 	
 }
@@ -524,17 +532,88 @@ static void process_next_char_from_input(void){
 
 
 
-
-
+#if 1
 
 static void set_tmr_200ms_handler_dependencies_flgs(void){
+
+#if TEST_ERTC_SLOW_CLOCK
 	
+  static uint16_t s_cnt = 0;
+  
+  s_cnt++;
+  
+#endif
+  
+  
+  if(s_cnt >= 5)
+  {
+    DB_PRINT("\r\nE: ");
+    
+    
+    
+    ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
+    ertc_convert_to_str();
+    
+    DB_PRINT("G: ");
+    ertc_convert_to_real_time(gps_rtc_get_second_cnt());
+    ertc_convert_to_str();
+    
+    
+    // DB_PRINT("U");
+#if TEST_ERTC_SLOW_CLOCK && 0   
+    if(FAST_CLOCK == TRUE)
+    {
+     
+     SWITCH_CLOCK = TRUE;
+     uart_init_slow_clock();
+ 
+    }
+#endif    
+    
+    s_cnt = 0;
+   
+  }
 	
 	set_handler_FLG(e_tilt_sensor_h);
   
 }
 
+#else
+  
 
+static void set_tmr_200ms_handler_dependencies_flgs(void){
+
+#if TEST_ERTC_SLOW_CLOCK
+	
+  static uint16_t s_cnt = 0;
+  
+  s_cnt++;
+  
+#endif
+  
+  // DB_PRINT("JA\r\n");
+  if(s_cnt >= 5)
+  {
+    if(FAST_CLOCK == TRUE)
+    {
+     
+      ertc_convert_to_real_time();
+      ertc_convert_to_str();
+    }
+    else
+    {
+      uart_init_slow_clock();
+    }
+    // DB_PRINT("O.k.\r\n");
+    s_cnt = 0;
+    SWITCH_CLOCK = TRUE;
+  }
+	
+	set_handler_FLG(e_tilt_sensor_h);
+  
+}
+
+#endif
 
 static void f_tilt_sensor_to_check(void){
   
