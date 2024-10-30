@@ -245,8 +245,30 @@ wat
 
 
 
+#if MIPS == 8
 
+#define TMR0_CFG (uint8_t)0x84u
 
+#elif MIPS == 4
+
+#define TMR0_CFG (uint8_t)0x83u
+
+#elif MIPS == 2
+
+#define TMR0_CFG (uint8_t)0x82u
+
+#elif MIPS == 1
+
+#define TMR0_CFG (uint8_t)0x81u
+
+#else
+  
+
+ wat
+
+#endif
+
+#define  TMR0_CFG_SLOW_CLCK (uint8_t)0x88u
 
 void configure_tmr4(void);
 

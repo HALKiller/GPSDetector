@@ -120,7 +120,7 @@ wat
 
 #define RUN_ERTC_TEST 1
 
-
+#define RUN_TMR0_TEST_SLOW_CLCK 0
 
 
 #else

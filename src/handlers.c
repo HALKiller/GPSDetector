@@ -531,8 +531,53 @@ static void process_next_char_from_input(void){
 }
 
 
+#if RUN_TMR0_TEST_SLOW_CLCK
 
+
+static void set_tmr_200ms_handler_dependencies_flgs(void){
+
+#if TEST_ERTC_SLOW_CLOCK
+	
+  static uint16_t s_cnt = 0;
+  
+  s_cnt++;
+  
+#endif
+  
 #if 1
+  if(s_cnt >= 5)
+  {
+    DB_PRINT("\r\nE: ");
+    
+    ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
+    ertc_convert_to_str();
+    
+    DB_PRINT("G: ");
+    ertc_convert_to_real_time(gps_rtc_get_second_cnt());
+    ertc_convert_to_str();
+    
+    
+
+#if TEST_ERTC_SLOW_CLOCK && 0   
+    if(FAST_CLOCK == TRUE)
+    {
+     
+     SWITCH_CLOCK = TRUE;
+     uart_init_slow_clock();
+ 
+    }
+#endif    
+    
+    s_cnt = 0;
+   
+  }
+#endif	
+	set_handler_FLG(e_tilt_sensor_h);
+  
+}
+
+
+#elif TEST_ERTC_SLOW_CLOCK
 
 static void set_tmr_200ms_handler_dependencies_flgs(void){
 
@@ -620,7 +665,7 @@ static void f_tilt_sensor_to_check(void){
   
   tilt_sensor_get_state();
 
-  DB_LED3_SWAP;
+ 
   
 }
 
@@ -775,7 +820,7 @@ static void f_gd_off(void){
   
   gd_states_switch_to_next_state(E_STARTUP_STATE);
   DB_PRINT("SUP\r\n");
-  DB_LED3_SWAP;
+
 }
 
 
@@ -841,18 +886,18 @@ static void fn_clock_switching(void){
   // therefore the eRTC TMR stopped allready
   if(FAST_CLOCK == true)
   {
-    
-    
+    DB_PRINT("C0\r\n");
+    uart_init_slow_clock();
     set_slow_clock();
     configure_tmr4();
     
   }
   else
   {
-    
+    DB_PRINT("C1\r\n");
     init_clock ();
     configure_tmr4();
-    
+    init_UART();
   }
   
   TMR4_ON = true;

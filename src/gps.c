@@ -1,3 +1,9 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+
+
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 
 
@@ -36,6 +42,10 @@
 #include "my_assert.h"
 
 #include "extension_strings.h"
+
+#if DEBUGGING_IS_ON
+#include "generic_union_flgs.h"
+#endif
 
 // #include <stdint.h>
 // #include <stdbool.h>
@@ -116,9 +126,9 @@ static const char *sentences[] = {
   "$GNRMC",
   "$GPGSA",
   "$GNGSA",
-  "$EESLf",
-  "$EESLR",
-  
+  "$EESLf", // Reset MCU
+  "$EESLr", // prepare for new syncing rtc to gps
+  "$EESLs", // set for clock switch  
 };
 
 #else
@@ -570,7 +580,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   DB_PRINT(db_char);
 #endif  
 
-  DB_LED2_SWAP;
+  // DB_LED2_SWAP;
 
   UART_GPS_FLG.receiving_chars_is_good = TRUE;
 
@@ -594,17 +604,10 @@ void values_to_gps_rx_buffer(uint8_t n_char){
         
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
         // we have now the full string in memory--> therefore we should be able to extract the different sub strings into the GPS_struct...
-#if 1
-
-        DB_LED3_SWAP;
-#endif        
 
         sentence_handler(gps_inst.sentence_id);
 
-#if 1
-        DB_LED3_SWAP;
-        
-#endif
+
 
 
 #if MY_DEBUGGING_IS_ON
@@ -633,7 +636,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 #if DEBUGGING_IS_ON      
       else
       {
-        if((gps_inst.sentence_id == 4) || (gps_inst.sentence_id == 5))
+        if((gps_inst.sentence_id >= 4))
         {
           
           sentence_handler(gps_inst.sentence_id);
@@ -928,7 +931,15 @@ static void sentence_handler(uint8_t sentence_id){
     break;
     case 5:
       UART_GPS_FLG.rtc_test_first_run = FALSE;
+      UART_GPS_FLG.gsa_position_is_good = FALSE;
+      UART_GPS_FLG.rmc_time_is_good = FALSE;
     break;
+    case 6:
+      SWITCH_CLOCK = TRUE;
+      DB_LED3_SWAP;
+    break;
+
+    
     default:
       assert(false);
     break;
@@ -1020,16 +1031,55 @@ static void process_gsa_sentence(void){
 }
 
 
+#if 1
+
 static void convert_utc_to_gps_rtc_time(void){
   
-  gps_rtc_time = rmc_sentence.UtcOfPosition.Horas * SECONDS_PER_HOUR;
-  gps_rtc_time = gps_rtc_time + rmc_sentence.UtcOfPosition.Minutos * SECONDS_PER_MINUTE; 
-  gps_rtc_time = (gps_rtc_time + rmc_sentence.UtcOfPosition.Segundos);
+
+  gps_rtc_time = (uint32_t)rmc_sentence.UtcOfPosition.Horas * SECONDS_PER_HOUR;
   
+  gps_rtc_time = gps_rtc_time + (uint16_t)rmc_sentence.UtcOfPosition.Minutos * SECONDS_PER_MINUTE; 
+
+  gps_rtc_time = (gps_rtc_time + rmc_sentence.UtcOfPosition.Segundos);
   
   
 }
 
+#else
+  
+
+static void convert_utc_to_gps_rtc_time(void){
+  
+  
+  DB_PRINT("g_t: ");
+  
+  UART_int(rmc_sentence.UtcOfPosition.Horas);
+  DB_PRINT(" ");
+  UART_int(rmc_sentence.UtcOfPosition.Minutos);
+  DB_PRINT(" ");
+  UART_int(rmc_sentence.UtcOfPosition.Segundos);
+  
+  
+  
+  DB_PRINT(" ");
+  
+  gps_rtc_time = (uint32_t)rmc_sentence.UtcOfPosition.Horas * SECONDS_PER_HOUR;
+  
+  UART_int(gps_rtc_time);
+  DB_PRINT(" ");
+  
+  gps_rtc_time = gps_rtc_time + (uint16_t)rmc_sentence.UtcOfPosition.Minutos * SECONDS_PER_MINUTE; 
+  
+  UART_int(gps_rtc_time);
+  DB_PRINT(" ");
+  
+  gps_rtc_time = (gps_rtc_time + rmc_sentence.UtcOfPosition.Segundos);
+  
+  UART_int(gps_rtc_time);
+  
+}
+
+#endif
 
 
 #if 0

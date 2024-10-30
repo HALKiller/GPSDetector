@@ -20,19 +20,10 @@
 #include "ring_buffer.h"
 
 
-#define TMR0_ADJUSTMENT 4
+#define TMR0_ADJUSTMENT (uint8_t)0xB1u
 
 // eRTC related -------------------------
 #define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
-
-
-
-// volatile uint32_t eRTC_second_cnt = 0u;
-
-// static volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
-// static volatile uint32_t eRTC_second_cnt = 0u;
-
-// static void eRTC_clock_incrementer(void);
 
 
 
@@ -69,16 +60,19 @@ void __interrupt() isr(void){
 	
 	if((TMR0_IE == true) && (TMR0_IF == true))
 	{
-	
+    DB_LED2_SWAP;
 		TMR0_IF = false;
-		TMR0 = TMR0 + TMR0_ADJUSTMENT;
-		handlers_generic_set_handler_FLG(e_2ms_of_handler);
+    if(FAST_CLOCK == false)
+    {
+      TMR0 = TMR0 + TMR0_ADJUSTMENT;
+    }
+		
+		// handlers_generic_set_handler_FLG(e_2ms_of_handler);
 
 	}
   
-// well then --> lets use TMR_4" purely for the coloring of the LEDS of the BAT_Level...
 
-
+  // this is basically the e_rtc clocking here...
 	if((TMR4_IE == true) && (TMR4_IF == true))
 	{
 		

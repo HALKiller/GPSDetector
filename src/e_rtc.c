@@ -1,3 +1,8 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+
+
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 
 
@@ -104,29 +109,115 @@ uint32_t eRTC_get_second_cnt(void){
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
 
 
+
+#if 1
+
 void ertc_convert_to_real_time(uint32_t in_time){
   
   uint32_t temp_timer = in_time;  // eRTC_second_cnt / 10;
   
   ertc.hours = (uint8_t)(temp_timer / SECONDS_PER_HOUR);
-  ertc.minutes = (uint8_t)((temp_timer - (ertc.hours * SECONDS_PER_HOUR)) / MINUTES_PER_HOUR);
-  ertc.seconds = (uint8_t)(temp_timer - (ertc.hours * SECONDS_PER_HOUR) - ertc.minutes * SECONDS_PER_MINUTE);
   
+  ertc.minutes = (uint8_t)( (temp_timer - ((uint32_t)ertc.hours * SECONDS_PER_HOUR)) / MINUTES_PER_HOUR);
+
+  ertc.seconds = (uint8_t)(temp_timer - ((uint32_t)ertc.hours * SECONDS_PER_HOUR) - (uint16_t)ertc.minutes * SECONDS_PER_MINUTE);
+
+}
+
+
+#elif 1
+
+void ertc_convert_to_real_time(uint32_t in_time){
+  
+  uint32_t temp_timer = in_time;  // eRTC_second_cnt / 10;
+  
+  UART_int(temp_timer);
+  DB_PRINT("  ");
+  
+  ertc.hours = (uint8_t)(temp_timer / SECONDS_PER_HOUR);
+  
+  UART_int(ertc.hours);
+  DB_PRINT("  ");
+  
+  temp_timer = temp_timer - (uint32_t)ertc.hours * SECONDS_PER_HOUR;
+  UART_int(temp_timer);
+  DB_PRINT("  ");
+  
+  
+  ertc.minutes = (uint8_t)(temp_timer / MINUTES_PER_HOUR);
+  
+  
+  UART_int(ertc.minutes);
+  DB_PRINT("  ");
+  
+  temp_timer = temp_timer - (uint16_t)ertc.minutes * SECONDS_PER_MINUTE;
+  UART_int(temp_timer);
+  DB_PRINT("  ");
+  
+  
+  
+  ertc.seconds = temp_timer;  // (uint8_t)(temp_timer - (ertc.hours * SECONDS_PER_HOUR) - ertc.minutes * SECONDS_PER_MINUTE);
+  
+  UART_int(ertc.seconds);
+  DB_PRINT("  ");
   
   
 }
+
+
+#else
+  
+void ertc_convert_to_real_time(uint32_t in_time){
+  
+  uint32_t temp_timer = in_time;  // eRTC_second_cnt / 10;
+  
+  UART_int(temp_timer);
+  DB_PRINT("  ");
+  
+  ertc.hours = (uint8_t)(temp_timer / SECONDS_PER_HOUR);
+  
+  UART_int(ertc.hours);
+  DB_PRINT("  ");
+  
+  
+  ertc.minutes = (uint8_t)( (temp_timer - ((uint32_t)ertc.hours * SECONDS_PER_HOUR)) / MINUTES_PER_HOUR);
+  
+  UART_int(ertc.minutes);
+  DB_PRINT("  ");
+  
+  ertc.seconds = (uint8_t)(temp_timer - ((uint32_t)ertc.hours * SECONDS_PER_HOUR) - (uint16_t)ertc.minutes * SECONDS_PER_MINUTE);
+  
+  UART_int(ertc.seconds);
+  DB_PRINT("  ");
+  
+  
+}
+
+#endif
 
 
 void ertc_convert_to_str(void){
   
   
   my_time_t *const the_time = &ertc;
-  uint8_t time_str[9];
+  uint8_t time_str[11];
+#if 1
+
+  DecimalUint8ToA(time_str, the_time->hours, 2, false );
+  
+  time_str[2] = ':';
+  time_str[5] = ':';
+  
+  DecimalUint8ToA(time_str + 3, the_time->minutes, 2, false );
+  DecimalUint8ToA(time_str + 6, the_time->seconds, 2, true );
+
+#else
   
   DecimalUint8ToA(time_str, the_time->hours, 2, false );
   DecimalUint8ToA(time_str + 2, the_time->minutes, 2, false );
   DecimalUint8ToA(time_str + 4, the_time->seconds, 2, true );
-  
+ 
+#endif 
   
   DB_PRINT(time_str);
   DB_PRINT("\r\n");
