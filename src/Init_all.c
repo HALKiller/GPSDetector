@@ -31,6 +31,8 @@
 
 #include "gd_states.h"
 
+#include "pwm_luz.h"
+
 #include "xc.h"
 
 
@@ -48,6 +50,7 @@ static void next_clock(void);
 
 static void init_wdt(void);
 static void init_IO_PORTS(void);
+static void load_gps_detector_config_from_eeprom(void);
 // static void init_tmr0(void);
 // static void init_tmr1(void);
 // static void configure_tmr2(void);
@@ -98,7 +101,7 @@ void init_all(void){
   
   tilt_sensor_init();
   
-  
+  init_detector_config();
   
   
 #if DEBUGGING_IS_ON&&0
@@ -154,7 +157,7 @@ void init_all(void){
 	RX_IE = TRUE;
   
 	TMR0_IF = FALSE;
-	TMR0_IE = TRUE;
+	TMR0_IE = FALSE;
 
 
 	PERIPHERIC_IE = TRUE;
@@ -278,7 +281,7 @@ void init_all(void){
 	RX_IE = TRUE;
   
 	TMR0_IF = FALSE;
-	TMR0_IE = TRUE;
+	TMR0_IE = FALSE;
 
 
 	PERIPHERIC_IE = TRUE;
@@ -428,7 +431,7 @@ void init_all(void){
 	RX_IF = FALSE;
 	RX_IE = TRUE;
 	TMR0_IF = FALSE;
-	TMR0_IE = TRUE;
+	TMR0_IE = FALSE;
   
 
 	PERIPHERIC_IE = TRUE;
@@ -460,7 +463,7 @@ void init_all(void){
 
   GLOBAL_IE = FALSE;
   
-  TMR0_IE = TRUE;
+  TMR0_IE = FALSE;
   
   TMR4_ON = TRUE;
   
@@ -777,6 +780,91 @@ static void init_IO_PORTS(void){
 }
 
 
+
+#if 1
+
+static void load_gps_detector_config_from_eeprom(void)
+{
+  #if 0
+  int8_t i;
+  
+  uint8_t gd_number = 0u;
+ 
+  for ( i = 0; i < 3u; i++ )
+  {
+    gd_number = gd_number * 10u + ( LeerEeprom ( 0x3Eu + i ) & 0xFu );
+  }
+  
+  
+  gd.number = gd_number;  
+  gd.transmit_time  = LeerEeprom ( 0x42u );
+  gd.syncro_time    = LeerEeprom ( 0x43u ); 
+  gd.max_detectores = LeerEeprom ( 0x47u );
+  
+  
+  for ( i = 0; i < 4; i++ )
+  {
+    FTW0[i] = LeerEeprom ( 0x22u + i );
+    FTW1[i] = LeerEeprom ( 0x27u + i );
+    FTW2[i] = LeerEeprom ( 0x2Cu + i );
+    FTW3[i] = LeerEeprom ( 0x31u + i );
+  }
+  pwm_luz.pwm_value = LeerEeprom ( 0x44u );
+  
+  i = LeerEeprom ( 0x45u );
+  pwm_luz.off_time          = i & 0x0F;
+  pwm_luz.on_time           = ( i >> 4 ) & 0x0F;
+
+  i = LeerEeprom ( 0x46u );
+  gActivarDoblePeriodo       = !((t_byte *)&i)->b0;
+  gLucesActivas              = !((t_byte *)&i)->b5;
+  gTrueSi150FalseSi300       = ((t_byte *)&i)->b4;
+  gTransmisionContinua       = ((t_byte *)&i)->b1;
+#endif
+}
+
+
+#else
+  
+static void load_gps_detector_config_from_eeprom(void)
+{
+  uint8_t i;
+  
+  uint8_t NumeroDeBaliza;
+  
+  NumeroDeBaliza = 0;
+  
+  for ( i = 0; i < 3; i++ )
+  {
+    NumeroDeBaliza = NumeroDeBaliza * 10 + ( LeerEeprom ( 0x3E + i ) & 0xF );
+  }
+  
+  gNumeroDeBaliza = NumeroDeBaliza;
+  gTiempoDuracionTransmision = LeerEeprom ( 0x42 );
+  gSegundosSincronismo       = LeerEeprom ( 0x43 );
+  gPorcentajePwm             = LeerEeprom ( 0x44 );
+  gTotalBalizas              = LeerEeprom ( 0x47 );
+  for ( i = 0; i < 4; i++ )
+  {
+    FTW0[i] = LeerEeprom ( 0x22 + i );
+    FTW1[i] = LeerEeprom ( 0x27 + i );
+    FTW2[i] = LeerEeprom ( 0x2C + i );
+    FTW3[i] = LeerEeprom ( 0x31 + i );
+  }
+
+  i = LeerEeprom ( 0x45 );
+  gSegundosLuzEnOff          = i & 0x0F;
+  gSegundosLuzEnOn           = ( i >> 4 ) & 0x0F;
+
+  i = LeerEeprom ( 0x46 );
+  gActivarDoblePeriodo       = !((t_byte *)&i)->b0;
+  gLucesActivas              = !((t_byte *)&i)->b5;
+  gTrueSi150FalseSi300       = ((t_byte *)&i)->b4;
+  gTransmisionContinua       = ((t_byte *)&i)->b1;
+
+}
+
+#endif
 
 // EOF
 

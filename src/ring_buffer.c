@@ -18,12 +18,22 @@
 
 
 
-#define RING_BUFFER_SIZE 10
+#define RING_BUFFER_SIZE (uint8_t)10u
 #define NOT_SEARCH_THE_BUG 1
 
 #if 1
 
+#if MISRA_COMPLIANT == 1
 
+static struct r_buffer{
+	unsigned char data[RING_BUFFER_SIZE];
+	int8_t read_index;
+	int8_t write_index;
+	uint8_t buffer_length;
+}ring_buff;
+
+#else
+  
 struct r_buffer{
 	unsigned char data[RING_BUFFER_SIZE];
 	uint8_t read_index;
@@ -31,7 +41,7 @@ struct r_buffer{
 	uint8_t buffer_length;
 }ring_buff;
 
-
+#endif
 const uint8_t const_buffer_size = RING_BUFFER_SIZE;
 
 
@@ -51,7 +61,7 @@ void set_data_value_into_buffer(uint8_t next_char){
 		ring_buff.write_index++;
 		if(ring_buff.write_index == const_buffer_size)
 		{
-			ring_buff.write_index = 0;
+			ring_buff.write_index = 0u;
 		}		
 	}
 
@@ -212,12 +222,12 @@ void flush_ring_buffer(void){
 
 #if NOT_SEARCH_THE_BUG	
 	
-	RCSTAbits.CREN = false;
-	ring_buff.write_index = 0;
-	ring_buff.read_index = 0;
-	ring_buff.buffer_length = 0;
+	RCSTAbits.CREN = FALSE;
+	ring_buff.write_index = 0u;
+	ring_buff.read_index = 0u;
+	ring_buff.buffer_length = 0u;
 	reset_ring_buffer_handler_FLG();
-	RCSTAbits.CREN = true;
+	RCSTAbits.CREN = TRUE;
 
 #endif	
 }

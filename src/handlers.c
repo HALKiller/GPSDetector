@@ -34,6 +34,7 @@
 #include "gps.h"
 
 #include "e_rtc.h"
+#include "pwm_luz.h"
 
 #include <stdint.h>
 
@@ -49,7 +50,7 @@ static void f_tilt_sensor_to_check(void);
 
 static void set_handler_FLG(uint8_t handler_flg_spot);
 static void reset_handler_FLG(uint8_t handler_flg_spot);
-static uint8_t test_handler_FLG(uint8_t handler_flg_spot);
+// static uint8_t test_handler_FLG(uint8_t handler_flg_spot);
 
 static void set_tmr_2ms_handler_dependencies_flgs(void);
 
@@ -128,6 +129,14 @@ union8_t gFLAGS;
 
 static const uint8_t const_MAXIMUM_HANDLERS = 16;
 
+static const uint16_t shifts[16] = {
+	
+	(1U << 0), (1U << 1), (1U << 2), (1U << 3), 
+	(1U << 4), (1U << 5), (1U << 6), (1U << 7), 
+  (1U << 8), (1U << 9), (1U << 10), (1U << 11), 
+	(1U << 12), (1U << 13), (1U << 14), (1U << 14), 
+	
+};
 
 //  **********************  MACRO DEFINITIONS  ************************  //
 #define TIME_BASE 2
@@ -180,6 +189,7 @@ void init_handler_flg(void){
 
 #if USE_FUNC_PNT_HANDLER
 
+
 void get_the_next_handler(void){
 
 uint8_t handler_runs_once_flg = false;	
@@ -211,16 +221,64 @@ uint8_t handler_id = 0;
 
 			(*Handler_arr[handler_id].func)();
 			
-				// this is a special case and gets reset in the actual function
-			// if((handler_id != e_ring_buffer_handler) && (handler_id != e_gd_off_h))
       if(handler_id != e_ring_buffer_handler)
 			{
 				reset_handler_FLG(handler_id);
 			}
-      // else
-      // {
-        // UWT("EXIT!\r\n");
-      // }
+   
+      // break;
+			handler_id = NUM_HANDLERS;
+			
+		}
+    mask = mask << 1;
+	}
+
+}
+
+
+
+
+#elif 1
+
+
+void get_the_next_handler(void){
+
+uint8_t handler_runs_once_flg = false;	
+uint8_t handler_id = 0;	
+	
+  
+  uint16_t temp_handler_FLGS = Handler_FLGS;
+
+  // Create a mask by shifting 1 to the left by n_bit positions
+  unsigned int mask = 1U; //  << n_bit;
+
+  // Return whether the specific bit is set
+  // return (b_field & mask) != 0; // Returns 1 if the bit is set, 0 otherwise
+
+
+  while(Handler_FLGS == 0u)
+  {
+    CLRWDT();
+    DB_LED1_SWAP;
+  }
+
+  temp_handler_FLGS = Handler_FLGS;
+
+	for(handler_id = 0; handler_id < NUM_HANDLERS; handler_id++)
+	{
+    
+		if((temp_handler_FLGS & mask) != 0)
+		{
+
+			(*Handler_arr[handler_id].func)();
+			
+				
+			
+      if(handler_id != e_ring_buffer_handler)
+			{
+				reset_handler_FLG(handler_id);
+			}
+   
 
 			handler_id = NUM_HANDLERS;
 			
@@ -394,6 +452,7 @@ static void reset_swoff_tmr_of_cnt(void){
 
 //  **********************  PRIVATE FUNCTIONS BODY  ************************  //
 
+#if 0
 
 static uint8_t test_handler_FLG(uint8_t handler_flg_spot){
 
@@ -408,14 +467,26 @@ static uint8_t test_handler_FLG(uint8_t handler_flg_spot){
 	
 }
 
+#endif
 
 // PRIVATE --> these handlers are getting, set, tested and reset 
 // locally here and are therefore of private nature
 
+#if 0
+unsigned int set_single_bit_in_int(unsigned int b_field, uint8_t n_bit){
+  unsigned int workint = 1;
 
+	b_field = b_field | (workint << n_bit);	// sets the bit....
+	return b_field;
+}
+
+#endif
+
+
+// the two version: 
+// with function call: 8MIPS ->  12.1us, 500kHz --> 750us
+// with preconditioned bitshifting inside: 8MIPS --> 7.6us, 500kHz -> 463us
 static void set_handler_FLG(uint8_t handler_flg_spot){
-
-
 
   // SWOFF_GIE
 	
@@ -423,13 +494,46 @@ static void set_handler_FLG(uint8_t handler_flg_spot){
 
 	GIE = false;
 	
+#if 1
+  // this is much fster...
+	Handler_FLGS = Handler_FLGS | (shifts[handler_flg_spot]);	// sets the bit....
+	
+ #else
+  
 	Handler_FLGS = set_single_bit_in_int(Handler_FLGS, handler_flg_spot);
 
-// SWON_GIE	
+#endif
+
+
+  // SWON_GIE	
 	GIE = temp_GIE;
 	
 }
 
+#if 1
+
+static void reset_handler_FLG(uint8_t handler_flg_spot){
+	
+  bool temp_GIE = GLOBAL_IE;
+
+	GIE = false;
+
+  unsigned int workint = 1;
+
+	// Handler_FLGS = clear_single_bit_in_int(Handler_FLGS, handler_flg_spot);
+
+	Handler_FLGS = Handler_FLGS & ~(shifts[handler_flg_spot]);
+  
+  // Handler_FLGS = Handler_FLGS & ~(workint << handler_flg_spot);
+  
+  
+	GIE = temp_GIE;	
+	
+
+}
+
+#else
+  
 
 static void reset_handler_FLG(uint8_t handler_flg_spot){
 	
@@ -444,7 +548,7 @@ static void reset_handler_FLG(uint8_t handler_flg_spot){
 
 }
 
-
+#endif
 
 static void set_tmr_2ms_handler_dependencies_flgs(void){
 	
@@ -512,9 +616,7 @@ static void set_tmr_2ms_handler_dependencies_flgs(void){
 
 static void process_next_char_from_input(void){
 	
-	// we reset only here and if the ret_value from the btn_press is true
-	
-	// set_handler_FLG(e_reset_swoff_tmr_of_cnt_handler);
+
   
   uint8_t rx_data;
 
@@ -544,35 +646,101 @@ static void set_tmr_200ms_handler_dependencies_flgs(void){
   
 #endif
   
-#if 1
-  if(s_cnt >= 5)
-  {
-    DB_PRINT("\r\nE: ");
-    
-    ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
-    ertc_convert_to_str();
-    
-    DB_PRINT("G: ");
-    ertc_convert_to_real_time(gps_rtc_get_second_cnt());
-    ertc_convert_to_str();
-    
-    
 
-#if TEST_ERTC_SLOW_CLOCK && 0   
-    if(FAST_CLOCK == TRUE)
+  // if(FAST_CLOCK == TRUE)
+  // {
+    if(s_cnt >= 5)
     {
+      
+      if(DEBUG_FLG_PRINT_TIME == TRUE)
+      {
+        DB_PRINT("\r\nE: ");
+      
+        ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
+        ertc_convert_to_str();
+        
+        DB_PRINT("G: ");
+        ertc_convert_to_real_time(gps_rtc_get_second_cnt());
+        ertc_convert_to_str();
+      }
+      
+
+
+      s_cnt = 0;
      
-     SWITCH_CLOCK = TRUE;
-     uart_init_slow_clock();
- 
     }
-#endif    
-    
-    s_cnt = 0;
-   
+
+  
+  if(LUZ_ENABLED == TRUE)
+  {
+    pwm_luz_time_update();
   }
-#endif	
-	set_handler_FLG(e_tilt_sensor_h);
+  
+  
+// measure the setting time...
+
+  
+  f_tilt_sensor_to_check();
+  
+ 
+	// set_handler_FLG(e_tilt_sensor_h);
+ 
+ 
+}
+
+#elif 1
+
+static void set_tmr_200ms_handler_dependencies_flgs(void){
+
+#if TEST_ERTC_SLOW_CLOCK
+	
+  static uint16_t s_cnt = 0;
+  
+  s_cnt++;
+  
+#endif
+  
+
+  if(FAST_CLOCK == TRUE)
+  {
+    if(s_cnt >= 5)
+    {
+      DB_PRINT("\r\nE: ");
+      
+      ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
+      ertc_convert_to_str();
+      
+      DB_PRINT("G: ");
+      ertc_convert_to_real_time(gps_rtc_get_second_cnt());
+      ertc_convert_to_str();
+
+      s_cnt = 0;
+     
+    }
+
+  }
+  else
+  {
+    if(s_cnt >= 300)
+    {
+      DB_PRINT("\r\nE: ");
+      
+      ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
+      ertc_convert_to_str();
+      
+      DB_PRINT("G: ");
+      ertc_convert_to_real_time(gps_rtc_get_second_cnt());
+      ertc_convert_to_str();
+
+      s_cnt = 0;
+     
+    }
+  }
+  
+  
+  f_tilt_sensor_to_check();
+  
+	// set_handler_FLG(e_tilt_sensor_h);
   
 }
 
@@ -663,8 +831,9 @@ static void set_tmr_200ms_handler_dependencies_flgs(void){
 static void f_tilt_sensor_to_check(void){
   
   
-  tilt_sensor_get_state();
-
+  // tilt_sensor_get_state();
+  update_detector_position_state_handler();
+  
  
   
 }
@@ -728,9 +897,9 @@ static void f_gd_on(void){
   {
     init_clock();
     configure_tmr4();
-
+    
   }
-  
+  init_UART();
   TMR4_IF = FALSE;
   TMR4_IE = TRUE;
   

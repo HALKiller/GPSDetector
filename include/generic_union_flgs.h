@@ -23,8 +23,18 @@ typedef union udt_generic_8bit_union{
 
 extern union8_t gFLAGS;
 
-#define SWITCH_CLOCK gFLAGS.b0
-#define FAST_CLOCK gFLAGS.b1
+// TODO: --> reset on startup the correct ones
+#define SWITCH_CLOCK    gFLAGS.b0
+#define FAST_CLOCK      gFLAGS.b1
+#define LUZ_ENABLED     gFLAGS.b2 
+// #define LUZ_HANDLER_ON  gFLAGS.b3 // that is getting set when the sensor measures it is dark
+// #define DOUBLE_PERIOD   gFLAGS.b4
+// #define TX_150BPS       gFLAGS.b5
+#define DEBUG_FLG_PRINT_TIME gFLAGS.b7
+
+
+
+
 
 typedef union udt_generic_16bit_union{	
 	

@@ -98,6 +98,8 @@
 // --------   AN_Channels names  ---------------
 #define BATERIA_ADC_CHANNEL 3
 #define LDR_ANALOG_CHANNEL 4
+#define LDR_ADC_CHANNEL 3
+
 #define VREF_ADC_CHANNEL 0x1F
 
 

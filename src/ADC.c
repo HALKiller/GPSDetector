@@ -16,7 +16,7 @@
 
 #include "UART.h"
 
-
+#define USE_OLD_ADC_IMPLEMENTATION 1
 
 #define ADC_CHANNEL ADCON0bits.CHS
 
@@ -26,6 +26,111 @@
 
 
 
+
+#if USE_OLD_ADC_IMPLEMENTATION
+
+
+// this version should be fine now for both chips...
+void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
+{
+	
+	// Configuración ADC:
+	
+	// Se selecciona el reloj de conversión
+
+  ADCON1bits.ADCS = 0b001;  // Fosc/8 --> because Errata in this Chip!    0b11; // Reloj RC
+	 // Se selecciona la referencia de voltaje
+  ADCON1bits.ADPREF = 0; // Se selecciona AVDD = VDD
+  ADCON1bits.ADNREF = 0; // Se selecciona AVSS = VSS
+	
+
+
+
+  // Se selecciona el canal a convertir
+  ADCON0bits.CHS = canal;
+  // Se selecciona el formato del resultado
+  // 0 - Justificación a la izquierda, 1 - Justificación a la derecha
+  // Ejemplo de valor de adc de 10 bits obtenido : 0b1100111001
+  /* ADFM = 0 para 0b1100111001
+   *   ADRESH   |  ADRESL
+   * 0b11001110 | 0b01xxxxxx (las x serán 0)
+   */
+  /* ADFM = 1 para 0b1100111001
+   *   ADRESH   |  ADRESL
+   * 0bxxxxxx11 | 0b00111001 (las x serán 0)
+   */
+  ADCON1bits.ADFM = JustificacionOrdenBits;
+  // Se enciende el módulo ADC
+  ADCON0bits.ADON = 1;
+	
+		__delay_us( 250 ); // Tiempo de adquisición sobreestimado
+
+	#if 1
+	if(canal == BATERIA_ADC_CHANNEL)
+	{
+		__delay_us( 750 );
+	}
+	#endif
+
+  ADCON0bits.GO_nDONE = 1;
+  //ADCON0bits.GO_DONE = 1;
+  // Apaga todas las interrupciones y espera a salir por la conversión ADC
+#if 0
+
+#if REDUCE_ROM_USAGE
+	GIE = false;
+#else	
+  RCIE   = false;
+  TMR1IE = false;
+  TMR2IE = false;
+  T0IE   = false;
+#endif	
+#endif
+
+//  ACTIVAR_WATCHDOG_TIMER();
+#if 1
+
+	NOP();
+	while(ADCON0bits.GO_nDONE == true)
+  {
+    // loop until flag is set
+  }
+
+#else
+
+  do
+  {
+    NOP();
+  } while ( ADCON0bits.GO_nDONE );
+	
+	
+#endif	
+	
+#if 0
+#if REDUCE_ROM_USAGE
+	GIE = true;
+#else		
+	
+  // Tras la conversión, que vuelva a encender el resto de interrupciones
+  RCIE   = true;
+  TMR1IE = true;
+  TMR1IE = true;
+  T0IE   = true;
+
+#endif
+
+#endif
+
+ 
+  ADCON0bits.ADON = 0;
+
+	
+
+}
+
+
+
+#else
 
 void init_ADC(void){
 	
@@ -37,6 +142,7 @@ void init_ADC(void){
 #else
 	MISSING
 #endif	
+
 	ADCON1bits.ADFM = FALSE;	// left justified in taht case...
 	ADCON1bits.ADNREF = FALSE;	// Vss = -Vref
 	ADCON1bits.ADPREF = FALSE;	// Vdd = +Vref
@@ -79,5 +185,5 @@ uint8_t adc_samples_channel(uint8_t channel_to_sample){
 	
 }
 
-
+#endif
 

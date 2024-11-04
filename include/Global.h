@@ -43,7 +43,7 @@
 
 
 // if to use the device driver calls or directly the sfr calls...
-#define USE_DEVICE_DRIVER 1
+#define USE_DEVICE_DRIVER 0
 
 
 
@@ -120,7 +120,7 @@ wat
 
 #define RUN_ERTC_TEST 1
 
-#define RUN_TMR0_TEST_SLOW_CLCK 0
+#define RUN_TMR0_TEST_SLOW_CLCK 1
 
 
 #else
@@ -154,7 +154,15 @@ wat
 
 #define MIPS 8
 
+#define SLOW_CLCK LOW_500KHZ
+
 #define LOW_CLOCK_FREQ 31250
+
+#define LOW_31_25KHZ 3125
+#define LOW_500KHZ 500
+
+// 3125KHZ
+
 
 #define EXTERNAL_CLOCK	0
 
@@ -226,7 +234,7 @@ error again --> that MIPS is not standard so far --> write it extra out
 #define SENSOR_IS_TOP_MOUNTED ((uint8_t)1u) // because the signal is invertred depending on the sid of mounting
 
 
-
+#define TIME_BASE_200_CNT 5u  // becaseu for one second we need 5x200ms
 
 
 

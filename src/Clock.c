@@ -107,7 +107,7 @@ void set_slow_clock(void){
 
   OSCCONbits.SCS = 0x00u;  // 0x2u;
   
-  OSCCONbits.IRCF = CLOCK_3125KHZ_MF_CLOCK;  //0x0C; // 31.25kHz   0x7;
+  OSCCONbits.IRCF = CLOCK_500KHZ_MF_CLOCK;  // CLOCK_3125KHZ_MF_CLOCK;  //0x0C; // 31.25kHz   0x7;
   
   OSCCONbits.SPLLEN = 0u;
   

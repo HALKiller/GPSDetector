@@ -45,6 +45,7 @@
 
 #if DEBUGGING_IS_ON
 #include "generic_union_flgs.h"
+#include "pwm_luz.h"
 #endif
 
 // #include <stdint.h>
@@ -129,6 +130,8 @@ static const char *sentences[] = {
   "$EESLf", // Reset MCU
   "$EESLr", // prepare for new syncing rtc to gps
   "$EESLs", // set for clock switch  
+  "$EESLp", // set for luz on off
+  "$EESLa", // DEBUG_FLG_PRINT_TIME
 };
 
 #else
@@ -938,8 +941,12 @@ static void sentence_handler(uint8_t sentence_id){
       SWITCH_CLOCK = TRUE;
       DB_LED3_SWAP;
     break;
-
-    
+    case 7:
+      swap_luz_on_off();
+    break;
+    case 8:
+      DEBUG_FLG_PRINT_TIME = !DEBUG_FLG_PRINT_TIME;
+    break;
     default:
       assert(false);
     break;

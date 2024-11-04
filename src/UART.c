@@ -139,6 +139,7 @@ void init_UART_calculated(uint32_t baudrate){
 
 #endif
 
+#if SLOW_CLCK==LOW_31_25KHZ
 
 void uart_init_slow_clock(void){
   
@@ -156,6 +157,34 @@ void uart_init_slow_clock(void){
 
   
 }
+
+#elif SLOW_CLCK==LOW_500KHZ
+
+void uart_init_slow_clock(void){
+  
+    // 9600 BAUD
+  BRG16 = 1u;
+  BRGH = 1u;
+  SPBRG = 12u;
+  SYNC = FALSE;
+  SPEN = TRUE;
+  CREN = TRUE;
+  TXEN = TRUE;
+#if DEBUG_16F1936_GPS_FORCE_RCIE	
+  RCIE = TRUE;
+#endif
+
+
+  
+}
+
+#else
+  
+err here...
+
+#endif
+
+
 
 
 #if MIPS==1

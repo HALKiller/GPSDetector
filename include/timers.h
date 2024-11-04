@@ -238,28 +238,48 @@ wat
 // #define  eRTC_TMR_CNT = (uint8_t)10;        
     
 // 31.25kHz Clock and 200ms
+
+#if SLOW_CLCK == LOW_31_25KHZ // 0 // SLOW_CLCK == 3125KHZ
+
 #define  eRTC_TMR_PSA_SLOW_CLCK  TMR4_01_PRESCALER;
 #define  eRTC_TMR_POST_SLOW_CLCK TMR4_11_POSTSCALER;
 #define  eRTC_TMR_PR_SLOW_CLCK   (uint8_t)142;	
 #define  eRTC_TMR_CNT_SLOW_CLCK  (uint8_t)1; 
 
+#define  TMR0_CFG_SLOW_CLCK (uint8_t)0x88u
+
+#elif SLOW_CLCK == LOW_500KHZ
+
+#define  eRTC_TMR_PSA_SLOW_CLCK  TMR4_16_PRESCALER;
+#define  eRTC_TMR_POST_SLOW_CLCK TMR4_11_POSTSCALER;
+#define  eRTC_TMR_PR_SLOW_CLCK   (uint8_t)142;	
+#define  eRTC_TMR_CNT_SLOW_CLCK  (uint8_t)1;   
+
+#define  TMR0_CFG_SLOW_CLCK (uint8_t)0x88u
+
+#else
+  
+err here --> undefined so far
+
+
+#endif
 
 
 #if MIPS == 8
 
-#define TMR0_CFG (uint8_t)0x84u
+#define TMR0_CFG (uint8_t)0x85u
 
 #elif MIPS == 4
 
-#define TMR0_CFG (uint8_t)0x83u
+#define TMR0_CFG (uint8_t)0x84u
 
 #elif MIPS == 2
 
-#define TMR0_CFG (uint8_t)0x82u
+#define TMR0_CFG (uint8_t)0x83u
 
 #elif MIPS == 1
 
-#define TMR0_CFG (uint8_t)0x81u
+#define TMR0_CFG (uint8_t)0x82u
 
 #else
   
@@ -268,7 +288,12 @@ wat
 
 #endif
 
-#define  TMR0_CFG_SLOW_CLCK (uint8_t)0x88u
+
+
+
+
+
+
 
 void configure_tmr4(void);
 
@@ -281,13 +306,13 @@ void init_tmr0(void);
 
 void init_tmr1(void);
 
-void eRTC_clock_reset(void);
+// void eRTC_clock_reset(void);
 
 
 
 extern uint8_t tmr4_200ms_of;
 
-extern volatile uint8_t tmr4_of_cnt;
+// extern volatile uint8_t tmr4_of_cnt;
 
 
 

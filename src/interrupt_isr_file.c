@@ -14,18 +14,21 @@
 #include "generic_union_flgs.h"
 #include "timers.h"
 #include "e_rtc.h"
+#include "pwm_luz.h"
+
 // #include "UART.h"
 
 
 #include "ring_buffer.h"
 
 
-#define TMR0_ADJUSTMENT (uint8_t)0xB1u
+#define TMR0_ADJUSTMENT (uint8_t)0x05u
+// #define TMR0_ADJUSTMENT (uint8_t)0x65u
 
 // eRTC related -------------------------
 #define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
 
-
+static uint8_t pwm_of_cnt = 0;
 
 
 void __interrupt() isr(void){
@@ -57,17 +60,36 @@ void __interrupt() isr(void){
 
 	
 	// OF time = 2.04ms
-	
+	// this is only going to be for the PWM --> 
+  // therfore we need that still to be handled  
+  // when to switch on and off this is a percentage value and therefroe i can always cnt till 10 and
+  // then reset the luz
 	if((TMR0_IE == true) && (TMR0_IF == true))
 	{
-    DB_LED2_SWAP;
-		TMR0_IF = false;
+    
+    pwm_of_cnt++;
+    
+    if(pwm_of_cnt == get_pwm_luz_pwm_value()) // pwm_luz.pwm_value)
+    {
+      LED = 0u;
+      DB_LED_2 = 0u;
+    }
+    
+    if(pwm_of_cnt >= 10u)
+    {
+      LED = 1u;
+      DB_LED_2 = 1u;
+      pwm_of_cnt = 0u;
+    }
+    
+		
     if(FAST_CLOCK == false)
     {
       TMR0 = TMR0 + TMR0_ADJUSTMENT;
     }
-		
-		// handlers_generic_set_handler_FLG(e_2ms_of_handler);
+    
+		TMR0_IF = false;
+    // DB_LED2_SWAP;
 
 	}
   

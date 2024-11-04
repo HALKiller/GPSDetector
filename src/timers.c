@@ -34,6 +34,7 @@ uint8_t tmr4_200ms_of = 10;
  
 
 
+
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
 
@@ -56,20 +57,16 @@ void configure_tmr4(void){
   
   if(FAST_CLOCK == TRUE)
   {
+    
     T4_PRESCALER = eRTC_TMR_PSA;
     T4_POSTSCALER = eRTC_TMR_POST;
     PR4 = eRTC_TMR_PR;	
     tmr4_200ms_of = eRTC_TMR_CNT;
     
     
-    OPTION_REG = TMR0_CFG;  // (uint8_t)0x81u;
+    OPTION_REG = TMR0_CFG;
     
-    
-    // T4_PRESCALER = TMR4_64_PRESCALER;
-    // T4_POSTSCALER = TMR4_10_POSTSCALER;
-    // PR4 = (uint8_t)250u;	
-    // tmr4_200ms_of = (uint8_t)10u;
-    // with a cnt to 50 for 1000ms
+
   }
   else
   {
@@ -80,11 +77,8 @@ void configure_tmr4(void){
     // directly to 200ms
     
     OPTION_REG = TMR0_CFG_SLOW_CLCK;
-#if RUN_TMR0_TEST_SLOW_CLCK
     
-    TMR0_IE = true;
-    
-#endif    
+ 
   }
 
 
@@ -96,13 +90,10 @@ void init_tmr0(void){
 
 
 
-
-
-
 	OPTION_REG = TMR0_CFG;  // (uint8_t)0x81u;
-	// OPTION_REGbits.PS = TMR0_004_PRESCALER;
+
   
-	TMR0_IE = TRUE;
+	TMR0_IE = FALSE;
 	TMR0_IF = FALSE;
 	
 

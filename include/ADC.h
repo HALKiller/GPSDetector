@@ -1,31 +1,30 @@
 #ifndef ADC_H
 #define ADC_H
 
-#include <stdint.h>
+#include "Global.h"	// for the adc alternativ int pin channel selection
 
 
 
-void init_ADC(void);
-
-uint8_t adc_samples_channel(uint8_t channel_to_sample);
-
-// uint16_t get_mv_from_adc_result_buffer_slot(uint8_t buffer_slot);
-
-// void set_mv_from_adc_result_into_result_buffer(uint16_t converted_adc_result, uint8_t buffer_slot);
+#define LDR_ADC_CHANNEL 3
+// LDR_ANALOG_CHANNEL
+// #define BATERIA_ADC_CHANNEL 4
 
 
-
-// uint16_t get_adc_from_adc_result_buffer_slot(uint8_t buffer_slot);
-
-// void set_adc_from_adc_result_into_result_buffer(uint16_t adc_result, uint8_t buffer_slot);
+#define LEFT_JUSTIFIED 0
+#define RIGHT_JUSTIFIED 1
 
 
 
 
 
+void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal);
 
 
 
+
+// void init_ADC(void);
+
+// uint8_t adc_samples_channel(uint8_t channel_to_sample);
 
 
 

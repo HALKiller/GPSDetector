@@ -27,6 +27,8 @@
 
 #include "device_driver_config.h"
 
+#include "io_port_sfr_names.h"
+
 #include "gd_states.h"
 
 #if DEBUGGING_IS_ON
@@ -65,7 +67,7 @@ static struct udt_tilt_sensor_type tilt_sensor;
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
-static void update_detector_position_state_handler(uint8_t read_state);
+// static void update_detector_position_state_handler(uint8_t read_state);
 
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
@@ -82,6 +84,7 @@ void tilt_sensor_init(void){
  
 }
 
+#if 0
 
 tilt_sensor_states_t tilt_sensor_get_detector_state(void){
   
@@ -113,13 +116,68 @@ void tilt_sensor_get_state(void){
   
 }
 
-
+#endif
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
 
 
+#if 1
 
+// a count algorithm in function of the last read state --> therefroe we are changoing the state only on 
+// count > than threshold. and there can be two different thresholds for up and downcount.
+void update_detector_position_state_handler(void){
+
+
+  uint8_t read_state = TILT_SENSOR;
+
+	if(read_state == SENSOR_IS_TOP_MOUNTED)
+	{
+   
+   
+    if(tilt_sensor.detector_is_on != TS_ON_STATE)
+    {
+      tilt_sensor.on_cnt++;
+      tilt_sensor.off_cnt = (uint8_t)0u;
+      
+      if(tilt_sensor.on_cnt > CONST_ON_CNT_DEBOUNCED)
+      {
+        tilt_sensor.detector_is_on = TS_ON_STATE;
+        gd_states_switch_to_next_state(E_GPS_CHECK_ON_ACTIVATION);
+      }
+      
+    }
+   
+
+
+	}
+	else
+	{
+    
+    if(tilt_sensor.detector_is_on != TS_OFF_STATE)
+    {
+      tilt_sensor.off_cnt++;
+      tilt_sensor.on_cnt = (uint8_t)0u;
+      
+      if(tilt_sensor.off_cnt > CONST_OFF_CNT_DEBOUNCED)
+      {
+        tilt_sensor.detector_is_on = TS_OFF_STATE;
+        gd_states_switch_to_next_state(E_OFF_STATE);
+      }
+      
+    }
+    
+
+	}
+	
+	
+}
+
+
+
+
+#else
+  
 // a count algorithm in function of the last read state --> therefroe we are changoing the state only on 
 // count > than threshold. and there can be two different thresholds for up and downcount.
 static void update_detector_position_state_handler(uint8_t read_state){
@@ -185,7 +243,7 @@ static void update_detector_position_state_handler(uint8_t read_state){
 }
 
 
-
+#endif
 
 
 // EOF

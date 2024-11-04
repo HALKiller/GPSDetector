@@ -125,7 +125,7 @@ void ertc_convert_to_real_time(uint32_t in_time){
 }
 
 
-#elif 1
+#else
 
 void ertc_convert_to_real_time(uint32_t in_time){
   
@@ -165,33 +165,8 @@ void ertc_convert_to_real_time(uint32_t in_time){
 }
 
 
-#else
-  
-void ertc_convert_to_real_time(uint32_t in_time){
-  
-  uint32_t temp_timer = in_time;  // eRTC_second_cnt / 10;
-  
-  UART_int(temp_timer);
-  DB_PRINT("  ");
-  
-  ertc.hours = (uint8_t)(temp_timer / SECONDS_PER_HOUR);
-  
-  UART_int(ertc.hours);
-  DB_PRINT("  ");
-  
-  
-  ertc.minutes = (uint8_t)( (temp_timer - ((uint32_t)ertc.hours * SECONDS_PER_HOUR)) / MINUTES_PER_HOUR);
-  
-  UART_int(ertc.minutes);
-  DB_PRINT("  ");
-  
-  ertc.seconds = (uint8_t)(temp_timer - ((uint32_t)ertc.hours * SECONDS_PER_HOUR) - (uint16_t)ertc.minutes * SECONDS_PER_MINUTE);
-  
-  UART_int(ertc.seconds);
-  DB_PRINT("  ");
-  
-  
-}
+
+
 
 #endif
 
