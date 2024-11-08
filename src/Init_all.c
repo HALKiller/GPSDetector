@@ -50,10 +50,8 @@ static void next_clock(void);
 
 static void init_wdt(void);
 static void init_IO_PORTS(void);
-static void load_gps_detector_config_from_eeprom(void);
-// static void init_tmr0(void);
-// static void init_tmr1(void);
-// static void configure_tmr2(void);
+
+
 
 
 static uint8_t t_status __at(0x16F); // (0xA0);
@@ -61,15 +59,14 @@ static uint8_t t_status __at(0x16F); // (0xA0);
 
 
 
-#if 1
 
 void init_all(void){
 
-#if DEBUGGING_IS_ON	
-  uint8_t db_cnt = 0;
+
+#if DEBUGGING_IS_ON
   uint8_t t_var = MIPS;
 #endif
-  
+
   CLRWDT();
 
 	
@@ -89,22 +86,46 @@ void init_all(void){
   // TODO:
   // gFLGS reset ons startup
   
-	configure_tmr4();
+
 		
-	init_uart_flags();
+	// init_uart_flags();
 	
 	init_UART();
 	
 	init_IO_PORTS();
   
+#if DEBUGGING_IS_ON
+	UWT("BUILD: ");
+	UWT(__DATE__);
+	UWT("  ");
+	UWT(__TIME__);
+	UWT("\r\n");
+	UWT("MIPS: ");
+	UART_int(t_var);
+	UART_CRLF;
+#endif
+  
+  
+  configure_tmr4();
+  
+  
+  
   gd_states_initialize();
   
+  
+  
   tilt_sensor_init();
+  
+  
   
   init_detector_config();
   
   
+  
+  
 #if DEBUGGING_IS_ON&&0
+
+
 
   UWT("LAT: ");
   UART_int(LATA);
@@ -141,17 +162,7 @@ void init_all(void){
 
 	init_handler_flg();
 
-#if DEBUGGING_IS_ON
-	UWT("BUILD: ");
-	UWT(__DATE__);
-	UWT("  ");
-	UWT(__TIME__);
-	UWT("\r\n");
-	UWT("MIPS: ");
-	UART_int(t_var);
-	UART_CRLF;
-#endif
- 
+
 
 	RX_IF = FALSE;
 	RX_IE = TRUE;
@@ -185,487 +196,6 @@ void init_all(void){
 
 
 
-#elif 1
-// testing the INT PIN
-void init_all(void){
-
-#if DEBUGGING_IS_ON	
-  uint8_t db_cnt = 0;
-  uint8_t t_var = MIPS;
-#endif
-  
-  CLRWDT();
-
-	
-  init_clock();
-
-// datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5);
-
-  
-	
-	// init_tmr0();
-	
-	// init_tmr1();
-	
-	// configure_tmr2();
-	
-  // TODO:
-  // gFLGS reset ons startup
-  
-	configure_tmr4();
-		
-	init_uart_flags();
-	
-	init_UART();
-	
-	init_IO_PORTS();
-  
-  // gd_states_initialize();
-  
-  // tilt_sensor_init();
-  
-  
-  
-  
-#if DEBUGGING_IS_ON&&0
-
-  UWT("LAT: ");
-  UART_int(LATA);
-  UART_CRLF;
-  
-  UART_int(LATB);
-  UART_CRLF;
-  
-  UART_int(LATC);
-  UART_CRLF;
-  
-   UWT("TRIS: ");
-  UART_int(TRISA);
-  UART_CRLF;
-  
-  UART_int(TRISB);
-  UART_CRLF;
-  
-  UART_int(TRISC);
-  UART_CRLF;
-  
-  
-  UWT("ANSEL: ");
-  UART_int(ANSELA);
-  UART_CRLF;
-  
-  UART_int(ANSELB);
-  UART_CRLF;
-  
-
-  
-#endif  
-
-
-	init_handler_flg();
-
-#if DEBUGGING_IS_ON
-	UWT("BUILD: ");
-	UWT(__DATE__);
-	UWT("  ");
-	UWT(__TIME__);
-	UWT("\r\n");
-	UWT("MIPS: ");
-	UART_int(t_var);
-	UART_CRLF;
-#endif
- 
-
-	RX_IF = FALSE;
-	RX_IE = TRUE;
-  
-	TMR0_IF = FALSE;
-	TMR0_IE = FALSE;
-
-
-	PERIPHERIC_IE = TRUE;
-	GLOBAL_IE = FALSE;
-
-
-  TMR4_IF = FALSE;
-  TMR4_IE = TRUE;
-  
-  TMR4_ON = TRUE;
-  
-  OPTION_REGbits.INTEDG = TRUE;
-  INTCONbits.INTE = TRUE;
-  INTCONbits.INTF = FALSE;
-  while(1)
-  {
-    if(INTCONbits.INTF == TRUE)
-    {
-      UWT("Fired!\r\n");
-      INTCONbits.INTF = false;
-    }
-    else
-    {
-      UWT("Not_fired\r\n");
-      
-    }
-    __delay_ms(500);
-  }
-
-
-	
-}
-
-
-
-
-
-
-#elif 1
-
-
-
-void init_all(void){
-	
-  uint8_t db_cnt = 0;
-  uint8_t last_state = 0;
-  
-  
-  CLRWDT();
-
-	// set_clock_speed(FAST_CLOCK_OSC);
-  init_clock();
-
-// datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5);
-
-	init_uart_flags();
-	
-	init_UART();
-	
-	init_IO_PORTS();
-  
-
-
-	init_handler_flg();
-
-
-	UWT("BUILD: ");
-	UWT(__DATE__);
-	UWT("  ");
-	UWT(__TIME__);
-	UWT("\r\n");
-	UWT("MIPS: ");
-	UART_int(MIPS);
-	UART_CRLF;
- 
-  while(1)
-  {
-    
-    
-    if(last_state != temp_tilt_sensor_tester())
-    {
-      next_clock();
-      last_state = !last_state;
-    }
-    
-    
-    CLRWDT();
-    DB_LED_2 = !DB_LED_2;
-    
-    
-    
-  }
-
-	
-}
-
-
-
-
-#else
-  
-
-void init_all(void){
-	
-  uint8_t db_cnt = 0;
-
-  CLRWDT();
-
-	set_clock_speed(FAST_CLOCK_OSC);
-  // init_clock();
-
-// datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5);
-
-  DB_LED_1 = false; // just to make sure...
-	
-	init_tmr0();
-	
-	init_tmr1();
-	
-	configure_tmr2();
-	
-	configure_tmr4();
-		
-	init_uart_flags();
-	
-	init_UART();
-	
-	init_IO_PORTS();
-  
-
-
-	init_handler_flg();
-
-
-	UWT("BUILD: ");
-	UWT(__DATE__);
-	UWT("  ");
-	UWT(__TIME__);
-	UWT("\r\n");
-	UWT("MIPS: ");
-	UART_int(MIPS);
-	UART_CRLF;
- 
-	
-	RX_IF = FALSE;
-	RX_IE = TRUE;
-	TMR0_IF = FALSE;
-	TMR0_IE = FALSE;
-  
-
-	PERIPHERIC_IE = TRUE;
-	GLOBAL_IE = TRUE;
-	
-
-
-
-#if 1
-  
-#if MHZ32_TEST     
-  UWT("Fast clock\r\n");
-#else  
-  UWT("Slow clock\r\n");
-  // checking the different speeds...
-  set_clock_speed(SLOW_CLOCK_OSC);
-#endif  
-
-
-
-
-  FVRCONbits.FVREN = 0;
-  FVRCONbits.ADFVR = 0;
-  
-  // RCSTAbits.CREN = false;
-	// TXSTAbits.TXEN = false;
-  
-  // RCSTAbits.SPEN = false; // serial port disabled
-
-  GLOBAL_IE = FALSE;
-  
-  TMR0_IE = FALSE;
-  
-  TMR4_ON = TRUE;
-  
-  init_wdt();
-
-  CLRWDT();
-
-#if 1
-
-  DB_LED_1 = !DB_LED_1;
-
-  while(db_cnt < 2)
-  {
-    SLEEP();
-    DB_LED_2 = !DB_LED_2;
-    db_cnt++;
-  }
-  
-  DB_LED_1 = !DB_LED_1;
-  CLRWDT();
-#endif  
-  // init_wdt();
-  
-  GLOBAL_IE = FALSE;
-  
-	while(db_cnt < 200)
-	{
-    
-    
-#if MHZ32_TEST   
-
-    UWT("RND\r\n");
-    while(TMR4_IF == FALSE);
-    DB_LED_1 = !DB_LED_1;
-    SLEEP();
-    db_cnt++;
-    if(db_cnt == 50)
-    {
-      
-      db_cnt = 0;
-      CLRWDT();
-      SLEEP();
-      DB_LED_2 = !DB_LED_2;
-    }
-    TMR4_IF = FALSE;
-    CLRWDT();    
-    
-#else // 31.25kHz testing
-  
-    while(TMR4_IF == FALSE)
-    {
-      CLRWDT();
-    }
-    
-    TMR4_IF = FALSE;
-    
-    DB_LED_1 = !DB_LED_1;
-    
-    CLRWDT();
-    SLEEP();
-    DB_LED_2 = !DB_LED_2;
-    
-#endif  
-    db_cnt++;
-  }
-  
-  
-#elif 1  
-	while(1)
-	{
-    
-    
-    
-    
-    
-    DB_LED_1 = true;   
-    __delay_ms(200);
-    DB_LED_1 = false;
-   
-    
-    
-    
-    IO_Set_channel(IO_DB_LED_2);
-    __delay_ms(200);
-    IO_Clear_channel(IO_DB_LED_2);
-    __delay_ms(200);
-
-
-
-    DB_LED_1 = true;   
-    __delay_ms(200);
-    DB_LED_1 = false;
-
-	
-    // CLRWDT();
-    UWT("Status transfered var: ");
-    t_status = t_status & 0x18;
-    UART_int(t_status);
-  
-  
-  }
-  
-#endif	
-  
-#if 1  
-
-	
-  init_wdt();
-   
-  CLRWDT();
-  
-  UWT("WDT_test\r\n");
-  
-#endif
-
-#if 0  
-
-  FVRCONbits.FVREN = 0;
-  FVRCONbits.ADFVR = 0;
-  
-  RCSTAbits.CREN = FALSE;
-	TXSTAbits.TXEN = FALSE;
-  GIE = FALSE;
-  
-
-  
-
-  while(1)
-  {
-    SLEEP();
-
-  }
- #endif 
-  
-
-
-
-	
-}
-
-
-
-static void next_clock(void){
-  
-  static uint8_t speed = 1;
-  uint8_t fs_clock = 1;
-  if(fs_clock)
-  {
-    UWT("\r\nNext clock: ");
-    UART_int(speed);
-    __delay_ms(500);
-    
-    speed = clock_slowdown();
-  }
-  else
-  {
-    init_clock();
-    // init_clock_2();
-    // _delay_ms(50);
-    __delay_ms(500);
-  }
-  
-  fs_clock = !fs_clock;
-  
-  
-}
-
-
-
-
-static uint8_t temp_tilt_sensor_tester(void){
-  
-  static uint8_t state_cnt = 125;
-  uint8_t ret_val = 0;
-  
-  uint8_t state = TILT_SENSOR;
-  
-  if(state == 1u)
-  {
-    state_cnt++;
-    if(state_cnt > 250)
-    {
-      ret_val = 1u;
-      state_cnt = 250;
-    }
-  }
-  else
-  {
-    state_cnt--;
-    if(state_cnt < 1)
-    {
-      ret_val = 0u;
-      state_cnt = 1;
-    }
-  }
-
-  
-  return ret_val;
-  
-}
-
-#endif
 
 static void init_wdt(void){
 	
@@ -781,90 +311,7 @@ static void init_IO_PORTS(void){
 
 
 
-#if 1
 
-static void load_gps_detector_config_from_eeprom(void)
-{
-  #if 0
-  int8_t i;
-  
-  uint8_t gd_number = 0u;
- 
-  for ( i = 0; i < 3u; i++ )
-  {
-    gd_number = gd_number * 10u + ( LeerEeprom ( 0x3Eu + i ) & 0xFu );
-  }
-  
-  
-  gd.number = gd_number;  
-  gd.transmit_time  = LeerEeprom ( 0x42u );
-  gd.syncro_time    = LeerEeprom ( 0x43u ); 
-  gd.max_detectores = LeerEeprom ( 0x47u );
-  
-  
-  for ( i = 0; i < 4; i++ )
-  {
-    FTW0[i] = LeerEeprom ( 0x22u + i );
-    FTW1[i] = LeerEeprom ( 0x27u + i );
-    FTW2[i] = LeerEeprom ( 0x2Cu + i );
-    FTW3[i] = LeerEeprom ( 0x31u + i );
-  }
-  pwm_luz.pwm_value = LeerEeprom ( 0x44u );
-  
-  i = LeerEeprom ( 0x45u );
-  pwm_luz.off_time          = i & 0x0F;
-  pwm_luz.on_time           = ( i >> 4 ) & 0x0F;
-
-  i = LeerEeprom ( 0x46u );
-  gActivarDoblePeriodo       = !((t_byte *)&i)->b0;
-  gLucesActivas              = !((t_byte *)&i)->b5;
-  gTrueSi150FalseSi300       = ((t_byte *)&i)->b4;
-  gTransmisionContinua       = ((t_byte *)&i)->b1;
-#endif
-}
-
-
-#else
-  
-static void load_gps_detector_config_from_eeprom(void)
-{
-  uint8_t i;
-  
-  uint8_t NumeroDeBaliza;
-  
-  NumeroDeBaliza = 0;
-  
-  for ( i = 0; i < 3; i++ )
-  {
-    NumeroDeBaliza = NumeroDeBaliza * 10 + ( LeerEeprom ( 0x3E + i ) & 0xF );
-  }
-  
-  gNumeroDeBaliza = NumeroDeBaliza;
-  gTiempoDuracionTransmision = LeerEeprom ( 0x42 );
-  gSegundosSincronismo       = LeerEeprom ( 0x43 );
-  gPorcentajePwm             = LeerEeprom ( 0x44 );
-  gTotalBalizas              = LeerEeprom ( 0x47 );
-  for ( i = 0; i < 4; i++ )
-  {
-    FTW0[i] = LeerEeprom ( 0x22 + i );
-    FTW1[i] = LeerEeprom ( 0x27 + i );
-    FTW2[i] = LeerEeprom ( 0x2C + i );
-    FTW3[i] = LeerEeprom ( 0x31 + i );
-  }
-
-  i = LeerEeprom ( 0x45 );
-  gSegundosLuzEnOff          = i & 0x0F;
-  gSegundosLuzEnOn           = ( i >> 4 ) & 0x0F;
-
-  i = LeerEeprom ( 0x46 );
-  gActivarDoblePeriodo       = !((t_byte *)&i)->b0;
-  gLucesActivas              = !((t_byte *)&i)->b5;
-  gTrueSi150FalseSi300       = ((t_byte *)&i)->b4;
-  gTransmisionContinua       = ((t_byte *)&i)->b1;
-
-}
-
-#endif
 
 // EOF
 

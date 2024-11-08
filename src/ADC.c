@@ -34,9 +34,6 @@
 void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
 {
 	
-	// Configuración ADC:
-	
-	// Se selecciona el reloj de conversión
 
   ADCON1bits.ADCS = 0b001;  // Fosc/8 --> because Errata in this Chip!    0b11; // Reloj RC
 	 // Se selecciona la referencia de voltaje
@@ -63,7 +60,7 @@ void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
   // Se enciende el módulo ADC
   ADCON0bits.ADON = 1;
 	
-		__delay_us( 250 ); // Tiempo de adquisición sobreestimado
+	__delay_us( 250 ); // Tiempo de adquisición sobreestimado
 
 	#if 1
 	if(canal == BATERIA_ADC_CHANNEL)

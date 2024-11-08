@@ -101,6 +101,20 @@ wat
 #define ADC_BAT_DB_IS_ON 0  // To read out the ADC from the bat measurement
 
 
+
+extern const uint16_t shifts[16];
+
+
+
+
+
+
+
+
+
+
+
+
 //  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
 #if DEBUGGING_IS_ON
@@ -114,6 +128,9 @@ wat
 #define DB_LED1_SWAP DB_LED_1=!DB_LED_1
 #define DB_LED_1_ON (DB_LED_1 = true)
 #define DB_LED_1_OFF (DB_LED_1 = false)
+
+#define DB_LED_2_ON (DB_LED_2 = true)
+#define DB_LED_2_OFF (DB_LED_2 = false)
 
 #define DB_PRINT(str) send_string((const unsigned char *)(str))
 
@@ -129,8 +146,11 @@ wat
 #define DB_SWAP
 #define DB_LED1_SWAP
 
-#define DB_LED_1_ON 
+#define DB_LED_1_ON
 #define DB_LED_1_OFF
+
+#define DB_LED_2_ON
+#define DB_LED_2_OFF
 
 #define DB_LED2_SWAP
 
@@ -142,9 +162,9 @@ wat
 
 
 
-#define SWOFF_GIE bool temp_GIE = GLOBAL_IE;GIE = false;
+// #define SWOFF_GIE bool temp_GIE = GLOBAL_IE;GIE = false;
 
-#define SWON_GIE GIE = temp_GIE;
+// #define SWON_GIE GIE = temp_GIE;
 
 
 
@@ -152,7 +172,7 @@ wat
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 
-#define MIPS 8
+#define MIPS 8u
 
 #define SLOW_CLCK LOW_500KHZ
 
@@ -192,6 +212,8 @@ error--> we always need MIPS
 error again --> that MIPS is not standard so far --> write it extra out
 
 #endif
+
+
 
 #endif
 

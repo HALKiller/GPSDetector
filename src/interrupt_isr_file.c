@@ -26,7 +26,7 @@
 // #define TMR0_ADJUSTMENT (uint8_t)0x65u
 
 // eRTC related -------------------------
-#define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
+// #define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
 
 static uint8_t pwm_of_cnt = 0;
 
@@ -57,7 +57,13 @@ void __interrupt() isr(void){
 		
 	}
 
-
+// this finds usage only for the transmission of SPI and messages from the DDS and also
+// in the rx_luz part
+  if((TMR2_IE == true) && (TMR2_IF == true))
+  {
+    TMR2_ON = false;
+    TMR2_IF = false;
+  }
 	
 	// OF time = 2.04ms
 	// this is only going to be for the PWM --> 
@@ -72,13 +78,13 @@ void __interrupt() isr(void){
     if(pwm_of_cnt == get_pwm_luz_pwm_value()) // pwm_luz.pwm_value)
     {
       LED = 0u;
-      DB_LED_2 = 0u;
+      DB_LED_2_OFF;
     }
     
     if(pwm_of_cnt >= 10u)
     {
       LED = 1u;
-      DB_LED_2 = 1u;
+      DB_LED_2_ON;
       pwm_of_cnt = 0u;
     }
     

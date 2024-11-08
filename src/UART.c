@@ -32,7 +32,7 @@
 
 #define LOCAL_DB_UART 0
 
-
+#if 0
 struct udt_uart{
 	union
   {
@@ -53,6 +53,7 @@ struct udt_uart{
 	uint8_t header[HEADER_LENGTH + 1];
 }huart;
 
+#endif
 
 //  **********************  CONSTANT EXPRESSIONS  ************************  //
 
@@ -83,7 +84,7 @@ const uint8_t rx_header[] = "$EESL";
 
 //  **********************  STATIC DATA DECLARATIONS  ************************  //
 
-uint8_t tx_data[CHARS_TO_RECEIVE + 2];	// 1 orderbyte + 34 data + 1 chcksum + 1 NULL_Terminator
+// uint8_t tx_data[CHARS_TO_RECEIVE + 2];	// 1 orderbyte + 34 data + 1 chcksum + 1 NULL_Terminator
 
 
 
@@ -113,6 +114,8 @@ static void prepare_tx_handler(void);
 
 //  **********************  PUBLIC FUNCTIONS BODY  ************************  //
 
+#if 0
+
 void init_uart_flags(void){
 	
 	
@@ -125,7 +128,8 @@ void init_uart_flags(void){
 	
 }
 
-#if 0
+
+
 // this one functions now in the way that we parse into it the 
 // baudrate and the CLockspeed --> therefroe it calcultaes by
 // itself the necessary settings
@@ -427,6 +431,200 @@ void send_character(uint8_t the_char){
 	
 }
 
+
+
+
+inline void uart_swoff_reception(void){
+	
+	RCSTAbits.CREN = false;
+	
+}
+
+// PRIVATE functions *******************
+
+
+static void transmit_char(uint8_t n_char){
+	
+	
+	while(!TRANSMIT_BUFFER_FULL);
+	
+	TRANSMIT_BUFFER = n_char;
+	
+	
+}
+
+
+
+
+
+
+
+
+#undef LOCAL_DB_UART
+
+
+
+
+
+// UNUSED_NOW 
+#if 0 
+
+
+uint8_t *get_pnt_to_uart_rx_buffer(void){
+  
+  return &tx_data[0];
+  
+  
+}
+
+static uint8_t chcksum_checker(void){
+  
+  uint8_t ret_value = 0u;
+  uint8_t hlooper = 0u;
+  uint8_t chcksum = 0u;
+  
+  for(hlooper = 0; hlooper < CHARS_TO_RECEIVE; hlooper++)
+  {
+    
+    chcksum = chcksum ^ tx_data[hlooper + 1u];
+    
+  }
+
+#if 0
+
+	UWT("chcksum: ");
+	UART_int(chcksum);
+
+	return false;
+  
+#else		
+	
+	return chcksum;
+  
+#endif	
+
+}
+
+
+static void prepare_tx_handler(void){
+	
+	
+	// RCSTAbits.CREN = false;
+	// handlers_generic_set_handler_FLG(e_tx_to_gps);
+	
+}
+
+
+static void check_on_startbyte(uint8_t the_data){
+	
+	if(STARTBYTE == the_data)
+	{
+
+#if LOCAL_DB_UART&&0
+  
+  UWT("D\r\n");
+
+#endif	
+		reset_header_reception();
+		STARTBYTE_FOUND = true;
+		// *(huart.header_pnt) = the_data;
+		// huart.header_pnt++;	
+		// huart.header_lencnt++;
+		
+	}
+	
+	if(STARTBYTE_FOUND == true)
+	{
+		
+#if LOCAL_DB_UART&&0
+  
+  UWT("E\r\n");
+
+#endif	
+		*(huart.header_pnt) = the_data;
+		huart.header_pnt++;	
+		huart.header_lencnt++;
+		if(huart.header_lencnt >= HEADER_LENGTH)
+		{
+      #if LOCAL_DB_UART&&0
+  
+  UWT("F\r\n");
+
+#endif	
+			if(received_new_header() == true)
+			{
+				// reset everything to this ...
+				HEADER_FOUND = true;
+				NEXT_CHAR_IS_ORDER_BYTE = true;
+				huart.data_lencnt = 0;
+				huart.data_pnt = &tx_data[0];
+			}
+			reset_header_reception();
+		}
+	}
+
+#if LOCAL_DB_UART&&0
+  
+  UWT("Header flgs: ");
+  UART_int(huart.FLGS.reg);
+  // UART_int(rndcnt++);
+#endif
+
+}
+
+
+
+static uint8_t received_new_header(void){
+	
+	uint8_t ret_value = false;
+	
+	if(strcmp((const char *)&huart.header[0], (char *)&rx_header[0]) == false)
+	{
+		ret_value = true;
+#if LOCAL_DB_UART&&0
+  
+  UWT("G\r\n");
+
+#endif	
+	}
+  
+#if LOCAL_DB_UART&&0
+  
+  UWT("H\r\n");
+  UWT(&huart.header);
+  UWT(&rx_header[0]);
+#endif	
+  
+	return ret_value;
+}
+
+
+
+static void reset_header_reception(void){
+	
+	huart.header_pnt = &huart.header[0];
+	huart.header_lencnt = 0;
+	huart.header[5] = NULL_TERMINATOR;
+	STARTBYTE_FOUND = false;
+	
+	
+}
+
+
+
+static void reset_data_reception(void){
+	
+	// reset_header_reception();
+	huart.data_lencnt = 0;
+	huart.data_pnt = &tx_data[0];
+	HEADER_FOUND = false;
+	NEXT_CHAR_IS_ORDER_BYTE = false;
+	
+	
+}
+
+
+
 #if DB_LED_PWM
 
 uint8_t check_next_char(void){
@@ -695,191 +893,7 @@ db_data[3] = NULL_TERMINATOR;
 
 #endif
 
-uint8_t *get_pnt_to_uart_rx_buffer(void){
-  
-  return &tx_data[0];
-  
-  
-}
-
-inline void uart_swoff_reception(void){
-	
-	RCSTAbits.CREN = false;
-	
-}
-
-// PRIVATE functions *******************
-
-
-static void prepare_tx_handler(void){
-	
-	
-	// RCSTAbits.CREN = false;
-	// handlers_generic_set_handler_FLG(e_tx_to_gps);
-	
-}
-
-
-static void check_on_startbyte(uint8_t the_data){
-	
-	if(STARTBYTE == the_data)
-	{
-
-#if LOCAL_DB_UART&&0
-  
-  UWT("D\r\n");
-
-#endif	
-		reset_header_reception();
-		STARTBYTE_FOUND = true;
-		// *(huart.header_pnt) = the_data;
-		// huart.header_pnt++;	
-		// huart.header_lencnt++;
-		
-	}
-	
-	if(STARTBYTE_FOUND == true)
-	{
-		
-#if LOCAL_DB_UART&&0
-  
-  UWT("E\r\n");
-
-#endif	
-		*(huart.header_pnt) = the_data;
-		huart.header_pnt++;	
-		huart.header_lencnt++;
-		if(huart.header_lencnt >= HEADER_LENGTH)
-		{
-      #if LOCAL_DB_UART&&0
-  
-  UWT("F\r\n");
-
-#endif	
-			if(received_new_header() == true)
-			{
-				// reset everything to this ...
-				HEADER_FOUND = true;
-				NEXT_CHAR_IS_ORDER_BYTE = true;
-				huart.data_lencnt = 0;
-				huart.data_pnt = &tx_data[0];
-			}
-			reset_header_reception();
-		}
-	}
-
-#if LOCAL_DB_UART&&0
-  
-  UWT("Header flgs: ");
-  UART_int(huart.FLGS.reg);
-  // UART_int(rndcnt++);
-#endif
-
-}
-
-
-
-static uint8_t received_new_header(void){
-	
-	uint8_t ret_value = false;
-	
-	if(strcmp((const char *)&huart.header[0], (char *)&rx_header[0]) == false)
-	{
-		ret_value = true;
-#if LOCAL_DB_UART&&0
-  
-  UWT("G\r\n");
-
-#endif	
-	}
-  
-#if LOCAL_DB_UART&&0
-  
-  UWT("H\r\n");
-  UWT(&huart.header);
-  UWT(&rx_header[0]);
-#endif	
-  
-	return ret_value;
-}
-
-
-
-static void reset_header_reception(void){
-	
-	huart.header_pnt = &huart.header[0];
-	huart.header_lencnt = 0;
-	huart.header[5] = NULL_TERMINATOR;
-	STARTBYTE_FOUND = false;
-	
-	
-}
-
-
-
-static void reset_data_reception(void){
-	
-	// reset_header_reception();
-	huart.data_lencnt = 0;
-	huart.data_pnt = &tx_data[0];
-	HEADER_FOUND = false;
-	NEXT_CHAR_IS_ORDER_BYTE = false;
-	
-	
-}
-
-
-static void transmit_char(uint8_t n_char){
-	
-	
-	while(!TRANSMIT_BUFFER_FULL);
-	
-	TRANSMIT_BUFFER = n_char;
-	
-	
-}
-
-
-static uint8_t chcksum_checker(void){
-  
-  uint8_t ret_value = 0u;
-  uint8_t hlooper = 0u;
-  uint8_t chcksum = 0u;
-  
-  for(hlooper = 0; hlooper < CHARS_TO_RECEIVE; hlooper++)
-  {
-    
-    chcksum = chcksum ^ tx_data[hlooper + 1u];
-    
-  }
-
-#if 0
-
-	UWT("chcksum: ");
-	UART_int(chcksum);
-
-	return false;
-  
-#else		
-	
-	return chcksum;
-  
-#endif	
-
-}
-
-
-
-
-
-#undef LOCAL_DB_UART
-
-
-
-
-
-
-
+#endif  // If UNUSED NOW
 
 
 

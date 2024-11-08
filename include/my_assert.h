@@ -21,7 +21,7 @@
  
 
  
-void assert_init(void (*assert_indicator)(void));
+// void assert_init(void (*assert_indicator)(void));
 #if ENABLE_ASSERTIONS==1
 void assertion_failure(char *expr, char* file);
 #define m_assert(expr) \
@@ -34,7 +34,8 @@ void assertion_failure(char *expr, char* file);
  
 #elif 1 // PVS conform
 
-void assert_init(void (*assert_indicator)(void));
+// void assert_init(void (*assert_indicator)(void));
+
 #if ENABLE_ASSERTIONS==1
 void assertion_failure(char* expr, char* file, uint16_t linenum);
 #define assert(expr) \
@@ -52,7 +53,7 @@ void assertion_failure(char* expr, char* file, uint16_t linenum);
 
 
  
-void assert_init(void (*assert_indicator)(void));
+// void assert_init(void (*assert_indicator)(void));
 #if ENABLE_ASSERTIONS==1
 void assertion_failure(char* expr, char* file, uint16_t linenum);
 #define assert(expr) \
@@ -69,7 +70,7 @@ void assertion_failure(char* expr, char* file, uint16_t linenum);
  
 
  
-void assert_init(void (*assert_indicator)(void));
+// void assert_init(void (*assert_indicator)(void));
 #if ENABLE_ASSERTIONS==1
 void assertion_failure(char* expr, char* file, int linenum);
 #define m_assert(expr) \

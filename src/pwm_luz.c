@@ -25,6 +25,8 @@
 
 #include "ADC.h"
 
+#include <string.h>
+
 #include <stdint.h>
 
 
@@ -71,21 +73,26 @@ static const uint16_t shifter[16] = {
 
 #define PWM_LUZ_PWM_VALUE_EEPROM_ADDRESS 0x44u
 
-#define  BIT_SLOT_DOUBLE_PERIOD 0u
-#define  BIT_SLOT_ALWAYS_TRANSMIT 1u
-#define  BIT_SLOT_TX_150BPS 4u
-#define  BIT_SLOT_LUZ_ENABLED 5u
+#define  BIT_SLOT_DOUBLE_PERIOD 0
+#define  BIT_SLOT_ALWAYS_TRANSMIT 1
+#define  BIT_SLOT_TX_150BPS 4
+#define  BIT_SLOT_LUZ_ENABLED 5
 
 
 #if DEBUGGING_IS_ON
-#define MEASURE_ILUMINATION_TIME_CNT_BASE 5u*TIME_BASE_200_CNT    // the time between measurements of the ilum.sensor
+#define MEASURE_ILUMINATION_TIME_CNT_BASE 15u*TIME_BASE_200_CNT    // the time between measurements of the ilum.sensor
 #else
 #define MEASURE_ILUMINATION_TIME_CNT_BASE 45u*TIME_BASE_200_CNT    // the time between measurements of the ilum.sensor
 #endif
 
 
+#define PWM_LUZ_DEBUG 0
 
-
+#if PWM_LUZ_DEBUG
+#define LED_SIMUL DB_LED_2
+#else
+#define LED_SIMUL  
+#endif
 
 
 
@@ -93,7 +100,7 @@ static const uint16_t shifter[16] = {
 // #define LUZ_ENABLED     pwm_flgs.b0 // from the eeprom cfg
 #define LUZ_HANDLER_ON  pwm_flgs.b1 // that is getting set when the sensor measures it is dark
 #define DOUBLE_PERIOD   pwm_flgs.b2
-#define TX_150BPS       pwm_flgs.b3
+// #define TX_150BPS       pwm_flgs.b3
 #define ALWAYS_TRANSMIT pwm_flgs.b4
 #define PWM_IS_ON       pwm_flgs.b5 // when the TMR0_IE gers set 
 
@@ -105,10 +112,12 @@ static union8_t pwm_flgs;
 static struct udt_m pwm_luz;
 static uint8_t measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
 static struct udt_detector gd;
-static uint8_t FTW0[4];
-static uint8_t FTW1[4];
-static uint8_t FTW2[4];
-static uint8_t FTW3[4];
+
+
+uint8_t FTW0[4];
+uint8_t FTW1[4];
+uint8_t FTW2[4];
+uint8_t FTW3[4];
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
@@ -118,8 +127,6 @@ static void measure_ilumination(void);
 
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
-
-#if 1
 
 static void db_printing_bits(uint8_t onoff_bit){
   
@@ -168,131 +175,67 @@ void init_detector_config(void){
   pwm_luz.pwm_value = LeerEeprom ( 0x44u );
   
   ee_retval = LeerEeprom ( 0x45u );
+  
   pwm_luz.off_time = TIME_BASE_200_CNT * (uint8_t)((ee_retval & 0x0Fu));
+  
   pwm_luz.on_time = TIME_BASE_200_CNT * (uint8_t)(( ee_retval >> 4 ) & 0x0Fu);
   
   pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;  // becaseu we start with the pwm in off state...
   
   ee_retval = LeerEeprom ( 0x46u );
-  
+ 
+#if DEBUGGING_IS_ON 
+
   DB_PRINT("CFG: ");
   
   UART_int(ee_retval);
   
   DB_PRINT("\r\n");
   
+#endif
+  
 #if 1
 
-  DOUBLE_PERIOD  = !(ee_retval & shifter[BIT_SLOT_DOUBLE_PERIOD]);
+  DOUBLE_PERIOD  = !(ee_retval & shifts[BIT_SLOT_DOUBLE_PERIOD]);
 
-  LUZ_ENABLED = !(ee_retval & shifter[BIT_SLOT_LUZ_ENABLED]);
+  LUZ_ENABLED = !(ee_retval & shifts[BIT_SLOT_LUZ_ENABLED]);
   
-  TX_150BPS = (ee_retval & shifter[BIT_SLOT_TX_150BPS]);
+  TX_150BPS = (ee_retval & shifts[BIT_SLOT_TX_150BPS]);
   
-  ALWAYS_TRANSMIT = (ee_retval & shifter[BIT_SLOT_ALWAYS_TRANSMIT]);
+  ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
 
   
 #elif 1
 
 
-  DOUBLE_PERIOD  = !(ee_retval & shifter[BIT_SLOT_DOUBLE_PERIOD]);
+  DOUBLE_PERIOD  = !(ee_retval & shifts[BIT_SLOT_DOUBLE_PERIOD]);
   
   db_printing_bits(DOUBLE_PERIOD);
 
-  LUZ_ENABLED = !(ee_retval & shifter[BIT_SLOT_LUZ_ENABLED]);
+  LUZ_ENABLED = !(ee_retval & shifts[BIT_SLOT_LUZ_ENABLED]);
   
   db_printing_bits(LUZ_ENABLED);
   
-  TX_150BPS = (ee_retval & shifter[BIT_SLOT_TX_150BPS]);
+  TX_150BPS = (ee_retval & shifts[BIT_SLOT_TX_150BPS]);
   
   db_printing_bits(TX_150BPS);
   
-  ALWAYS_TRANSMIT = (ee_retval & shifter[BIT_SLOT_ALWAYS_TRANSMIT]);
+  ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
 
   db_printing_bits(ALWAYS_TRANSMIT);
 
 
 #else  
   
-  DOUBLE_PERIOD  = !((t_byte *)&i)->b0;
-  
-  // gActivarDoblePeriodo       = !((t_byte *)&i)->b0;
 
-  LUZ_ENABLED = !((t_byte *)&i)->b5;
-  TX_150BPS    = ((t_byte *)&i)->b4;  
-  // gTrueSi150FalseSi300       = ((t_byte *)&i)->b4;
-  ALWAYS_TRANSMIT       = ((t_byte *)&i)->b1;
   
 #endif
   
   
 }
 
-#else
-  
-void init_detector_config(void){
-  
-  int8_t i;
-  
-  uint8_t ee_retval = 0u;
-  uint8_t gd_number = 0u;
- 
-  for ( i = 0; i < 3u; i++ )
-  {
-    gd_number = gd_number * 10u + ( LeerEeprom ( 0x3Eu + i ) & 0xFu );
-  }
-  
-  
-  gd.number = gd_number;  
-  gd.transmit_time  = LeerEeprom ( 0x42u );
-  gd.syncro_time    = LeerEeprom ( 0x43u ); 
-  gd.max_detectores = LeerEeprom ( 0x47u );
-  
-  
-  for ( i = 0; i < 4; i++ )
-  {
-    FTW0[i] = LeerEeprom ( 0x22u + i );
-    FTW1[i] = LeerEeprom ( 0x27u + i );
-    FTW2[i] = LeerEeprom ( 0x2Cu + i );
-    FTW3[i] = LeerEeprom ( 0x31u + i );
-  }
-  
-  
-  pwm_luz.pwm_value = LeerEeprom ( 0x44u );
-  
-  i = LeerEeprom ( 0x45u );
-  pwm_luz.off_time          = i & 0x0F;
-  pwm_luz.on_time           = ( i >> 4 ) & 0x0F;
 
-  i = LeerEeprom ( 0x46u );
-  
-#if 0
 
-  DOUBLE_PERIOD  = !(i & shifter[BIT_SLOT_DOUBLE_PERIOD]);
-  
-  // gActivarDoblePeriodo       = !((t_byte *)&i)->b0;
-
-  LUZ_ENABLED = !((t_byte *)&i)->b5;
-  TX_150BPS    = ((t_byte *)&i)->b4;  
-  // gTrueSi150FalseSi300       = ((t_byte *)&i)->b4;
-  ALWAYS_TRANSMIT       = ((t_byte *)&i)->b1;
-
-#else  
-  DOUBLE_PERIOD  = !((t_byte *)&i)->b0;
-  
-  // gActivarDoblePeriodo       = !((t_byte *)&i)->b0;
-
-  LUZ_ENABLED = !((t_byte *)&i)->b5;
-  TX_150BPS    = ((t_byte *)&i)->b4;  
-  // gTrueSi150FalseSi300       = ((t_byte *)&i)->b4;
-  ALWAYS_TRANSMIT       = ((t_byte *)&i)->b1;
-  
-  #endif
-  
-  
-}
-
-#endif
 
 
 
@@ -306,10 +249,6 @@ void pwm_luz_time_update(void){
   {
     if(--pwm_luz.pwm_onoff_time_cnt == 0u)
     {
-      
-      
-      DB_LED3_SWAP;
-      
       // we swap on_and_off
       if(PWM_IS_ON == TRUE)
       {
@@ -317,7 +256,9 @@ void pwm_luz_time_update(void){
         TMR0_IE = FALSE;
         PWM_IS_ON = FALSE;
         LED = FALSE;
-        DB_LED_2 = FALSE;
+#if PWM_LUZ_DEBUG
+        LED_SIMUL = FALSE;
+#endif        
       }
       else
       {
@@ -326,8 +267,10 @@ void pwm_luz_time_update(void){
         PWM_IS_ON = TRUE;
       }
     }
+#if DEBUGGING_IS_ON  && 0    
     UWT("\r\nONOFFcnt: ");
     UART_int(pwm_luz.pwm_onoff_time_cnt);
+#endif    
   }
   
   
@@ -341,19 +284,7 @@ void pwm_luz_time_update(void){
     
     measure_ilumination();
     
-    
-    
   }
-  
-  
-
-  
-  
-  
-  
-  
-  
-  
   
 }
 
@@ -381,29 +312,18 @@ void swap_luz_on_off(void){
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
 
 
-uint8_t read_ilum_sensor(void)
-{
+uint8_t read_ilum_sensor(void){
+
 	uint8_t ret_value;
-	
-	// gADC_is_active = true;
-	
-	// swoff_global_interrupt();
+
+#if 0
   ConversionAdc(LEFT_JUSTIFIED, LDR_ADC_CHANNEL);
-	ret_value = ADRESH;
-	// restore_global_interrupt();
+#endif	
+  ret_value = ADRESH;
 	
 	return ret_value;
 	
 }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -417,13 +337,18 @@ static void measure_ilumination(void){
   // TODO:
   // measure the adc from the sensor and compare to thresholde
   // if there is a change --> run the change setter for on or for off
+#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG   
   DB_PRINT("\r\nIlum: ");
-  
+#endif  
   
   TMR0_IE = FALSE;
   LED = false;  // so that we are not measuring the LED
-  DB_LED_2 = FALSE;
-  t_val = read_ilum_sensor();  
+#if PWM_LUZ_DEBUG
+  LED_SIMUL = FALSE;
+#endif        
+  
+  t_val = read_ilum_sensor(); 
+  
   TMR0_IE = temp_IE;
   
 #if INVERTED_LDR_SENSOR
@@ -432,11 +357,11 @@ static void measure_ilumination(void){
   temp_flg = ( t_val > LUZ_ADC_DARK_THRESHOLD );
 #endif
 
+#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG
   UART_int(t_val);
   DB_PRINT("\r\n");
-  
+#endif  
 
-  // if(LUZ_HANDLER_ON != get_ilum_value_adc())
   if(LUZ_HANDLER_ON != temp_flg)
   {
     
@@ -444,17 +369,15 @@ static void measure_ilumination(void){
     
     if(LUZ_HANDLER_ON == FALSE)
     {
- 
-      
+
       TMR0_IE = false;
       LED = false;
-      DB_LED_2 = FALSE;
-      
-      
+#if PWM_LUZ_DEBUG
+      LED_SIMUL = FALSE;
+#endif        
+  
     }
   }
-
-
 }
 
 

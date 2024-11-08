@@ -8,6 +8,7 @@
 
 #define NOT_IN_USE 0
 
+
 uint8_t AToUint8_t(uint8_t  * s, uint8_t ndigits)
 {
   uint8_t a, b, c;
@@ -22,6 +23,26 @@ uint8_t AToUint8_t(uint8_t  * s, uint8_t ndigits)
   return a;
 }
 
+#if 1
+
+uint8_t * Uint8_tStrchr(uint8_t  *ptr, uint8_t chr){
+
+  while (*ptr != 0) 
+  {
+      if (*ptr == chr) 
+      {
+        return ptr;
+      }
+      ptr++;
+  }
+  
+  return NULL;
+  
+}
+
+#else
+  
+//we are searching for a certain char here it seems...
 uint8_t * Uint8_tStrchr(uint8_t  * ptr, uint8_t chr)
 {
   do
@@ -34,6 +55,7 @@ uint8_t * Uint8_tStrchr(uint8_t  * ptr, uint8_t chr)
   return 0;
 }
 
+#endif
 
 
 

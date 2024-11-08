@@ -29,7 +29,7 @@ extern union8_t gFLAGS;
 #define LUZ_ENABLED     gFLAGS.b2 
 // #define LUZ_HANDLER_ON  gFLAGS.b3 // that is getting set when the sensor measures it is dark
 // #define DOUBLE_PERIOD   gFLAGS.b4
-// #define TX_150BPS       gFLAGS.b5
+#define TX_150BPS       gFLAGS.b5
 #define DEBUG_FLG_PRINT_TIME gFLAGS.b7
 
 

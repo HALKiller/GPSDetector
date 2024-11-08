@@ -71,40 +71,43 @@ static gpsd_state_t detector_state;
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
 
-#if 0
+#if DEBUGGING_IS_ON&&0
 
+  static const char *app_txt[] = {
+    
+    "E_RESET_STATE\r\n",
+    "E_LUZ_COM_STATE\r\n",
+    "E_STARTUP_STATE\r\n",
+    "E_GPS_CHECK_ON_ACTIVATION\r\n",
+    "E_TRANSMISSION_STATE\r\n",
+    "E_SEARCH_POSITION_STATE\r\n",
+    "E_SLEEP_BEFORE_TRANSMISSION_STATE\r\n",
+    "E_SLEEP_BEFORE_SEARCH_STATE\r\n",
+    "E_OFF_STATE\r\n",
+    "E_>\r\n",
+    
+  };
 
 #elif 0
 // const char *app_txt[] = {
-const char * const app_txt[] = {
-  
-  "E_0\r\n",
-  "E_1\r\n",
-  "E_2\r\n",
-  "E_3\r\n",
-  "E_4\r\n",
-  "E_5\r\n",
-  "E_6\r\n",
-  "E_7\r\n",
-  "E_8\r\n",
-  "E_9\r\n",
-  
-};
+  const char * const app_txt[] = {
+    
+    "E_0\r\n",
+    "E_1\r\n",
+    "E_2\r\n",
+    "E_3\r\n",
+    "E_4\r\n",
+    "E_5\r\n",
+    "E_6\r\n",
+    "E_7\r\n",
+    "E_8\r\n",
+    "E_9\r\n",
+    
+  };
+
 #else
-static const char *app_txt[] = {
   
-  "E_RESET_STATE\r\n",
-  "E_LUZ_COM_STATE\r\n",
-  "E_STARTUP_STATE\r\n",
-  "E_GPS_CHECK_ON_ACTIVATION\r\n",
-  "E_TRANSMISSION_STATE\r\n",
-  "E_SEARCH_POSITION_STATE\r\n",
-  "E_SLEEP_BEFORE_TRANSMISSION_STATE\r\n",
-  "E_SLEEP_BEFORE_SEARCH_STATE\r\n",
-  "E_OFF_STATE\r\n",
-  "E_>\r\n",
-  
-};
+
 #endif
 
 
@@ -220,12 +223,11 @@ void gd_states_initialize(void){
 // threfore it worries only about the actual state and which is going to be the next one...
 void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
-  
   assert(next_state < E_NUM_STATES);
   
   detector_state.last_state = detector_state.actual_state;
   
-#if DEBUGGING_IS_ON  && 1
+#if DEBUGGING_IS_ON&&0
   DB_PRINT("last state: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
 #endif
@@ -235,10 +237,11 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.actual_state = next_state;
   
-#if DEBUGGING_IS_ON&&1 
+#if DEBUGGING_IS_ON&&0
   DB_PRINT("New state: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
 #endif  
+
   
 }
 

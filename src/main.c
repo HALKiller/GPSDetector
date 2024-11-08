@@ -46,6 +46,10 @@
 #include "handlers.h"
 
 #include "io_port_sfr_names.h"
+
+#include "my_assert.h"
+
+
 // #include <stdint.h>    
 
 /******************************************************************************/
@@ -58,22 +62,25 @@
 void main(void)
 {
 #if DEBUGGING_IS_ON
+
   const unsigned char SW_version[] = "GPSDetector_v.1.0_db\r\n";
+  
 #else
+  
   const unsigned char SW_version[] = "GPSDetector_v.1.0_rc\r\n";
+  
 #endif
+
 
 	init_all();
 
   UWT(&SW_version[0]);
-  
-	while(1)
-	{
-    CLRWDT();
-    // DB_LED1_SWAP;
-		get_the_next_handler();
 
-	}
+	get_the_next_handler();
+
+  // becasue we should never ever get back here 
+  // --> we reset the stackptr
+  assert(false);
 
 }
 

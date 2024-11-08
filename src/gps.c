@@ -168,13 +168,8 @@ const uint8_t *const sentences[] = {
 #endif
 
 
-#if MY_DEBUGGING_IS_ON
 
-#define MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION 1
-
-#else
-  #define MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION 4
-#endif
+#define MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION 4
 
 
 #define const_STARTWORDCOUNT_LEN 6
@@ -363,7 +358,7 @@ void gps_reinit(void){
 #endif  
   
   
-#if 1 
+
 
 
   // TODO:
@@ -372,11 +367,9 @@ void gps_reinit(void){
   
   // tmr_handlers_start(GPS_TIME_OUT_TIMER);
   
-  
-  
   UART_GPS_FLG.timeout_tmr_is_running = TRUE;
-  
-#endif  
+
+
 
 }
 
@@ -610,31 +603,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 
         sentence_handler(gps_inst.sentence_id);
 
-
-
-
-#if MY_DEBUGGING_IS_ON
-        
-        if(UART_GPS_FLG.debugging_send_sentences == TRUE)
-        {
-          strcat((char*)&sentence_buffer.gps_buffer, (char*)&finisher[0]);
-          UWT(DEBUG_UART, sentence_buffer.gps_buffer);
-          
-          Debugging_read_out_rmc();
- 
-        }
-        
-        // rtc_time_got_set
-        
-        // if( (UART_GPS_FLG.debugging_sync_time == true) && (UART_GPS_FLG.rmc_time_is_good == true) )
-          
-        if( (UART_GPS_FLG.rmc_time_is_good == TRUE) && ((UART_GPS_FLG.debugging_sync_time == TRUE) || (rtc_time_got_set() == FALSE) ))
-        
-        {
-          UART_GPS_FLG.debugging_sync_time = FALSE;
-          rtc_sync_rtc_to_gps_time(get_pointer_to_rmc());
-        }
-#endif          
+         
       }
 #if DEBUGGING_IS_ON      
       else
@@ -1089,12 +1058,341 @@ static void convert_utc_to_gps_rtc_time(void){
 #endif
 
 
-#if 0
+#if 1
+
 
 static void process_rmc_sentence(void){
   
+  uint8_t *search_pnt;
+  
+  uint8_t* comma_pnt;
+  // selectortrama = 0x10; // 0b0001 0000
+  search_pnt = Uint8_tStrchr( sentence_buffer.gps_buffer, ',' ) + 1;
+  
+  UART_GPS_FLG.rmc_time_is_good = false;
+  
+ // El primer valor que se encuentra es la hora UTC, que siempre aparece en todo tipo de tramas RMC
+  rmc_sentence.UtcOfPosition.Horas    = AToUint8_t( search_pnt, 2 );
+  rmc_sentence.UtcOfPosition.Minutos  = AToUint8_t( search_pnt + 2, 2 );
+  rmc_sentence.UtcOfPosition.Segundos = AToUint8_t( search_pnt + 4, 2 );
+
+  // Haya o no haya posición, siempre estará un indicador sobre el estado:
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] == 'V' )
+  {
+    rmc_sentence.Status = SV;
+  }
+  else if ( search_pnt[0] == 'A' )
+  {
+    rmc_sentence.Status = SA;
+    UART_GPS_FLG.rmc_time_is_good = true;
+  }
+  
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  // Si lo siguiente que se encuentra es con un carácter `,`, quiere decir que no hay valor de latitud válido
+  if ( search_pnt[0] == ',' )
+  {
+    rmc_sentence.HayLatitud = false;
+  }
+  else
+  {
+    rmc_sentence.HayLatitud = true;
+    rmc_sentence.Latitude.Grados  = AToUint8_t( search_pnt, 2 );
+    rmc_sentence.Latitude.Minutos = AToUint8_t( search_pnt + 2, 2 );
+    rmc_sentence.Latitude.Decimas = AToUint8_t( search_pnt + 5, 2 ) * 0x0064 + AToUint8_t( search_pnt + 7, 2 );
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( true == rmc_sentence.HayLatitud )
+  {
+//          rmc_sentence.LatiDirection = (enum eLatitude) ( search_pnt + 1 )[0] == 'S';
+    if ( search_pnt[0] == 'N' )
+    {
+      rmc_sentence.LatiDirection = N;
+    }
+    else if ( search_pnt[0] == 'S' )
+    {
+      rmc_sentence.LatiDirection = S;
+    }
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] == ',' )
+  {
+    rmc_sentence.HayLongitud = false;
+  }
+  else
+  {
+    rmc_sentence.HayLongitud = true;
+    rmc_sentence.Longitude.Grados  = AToUint8_t( search_pnt, 3);
+    rmc_sentence.Longitude.Minutos = AToUint8_t( search_pnt + 3, 2);
+    rmc_sentence.Longitude.Decimas = AToUint8_t( search_pnt + 6, 2 ) * 0x0064 + AToUint8_t( search_pnt + 8, 2 );
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( true == rmc_sentence.HayLongitud )
+  {
+//          rmc_sentence.LongDirection = (enum eLongitude) ( search_pnt + 1 )[0] == 'W';
+    if ( search_pnt[0] == 'W' )
+    {
+      rmc_sentence.LongDirection = W;
+    }
+    else if ( search_pnt[0] == 'E' )
+    {
+      rmc_sentence.LongDirection = E;
+    }
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] != ',' )
+  {
+    comma_pnt = Uint8_tStrchr( search_pnt, '.' );
+    rmc_sentence.SpeedOvertheGround.ParteEntera  = AToUint8_t( search_pnt, (uint8_t)(comma_pnt - search_pnt));
+    
+    search_pnt = Uint8_tStrchr( search_pnt, '.' ) + 1;
+    comma_pnt = Uint8_tStrchr( search_pnt, ',' );
+    rmc_sentence.SpeedOvertheGround.ParteDecimal  = AToUint8_t( search_pnt, (uint8_t)(comma_pnt - search_pnt));
+    
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] != ',' )
+  {
+    if ( Uint8_tStrchr( search_pnt, '.' ) - search_pnt <= 2 )
+    {
+      comma_pnt = Uint8_tStrchr( search_pnt, '.' );
+      rmc_sentence.Degrees.ParteEntera = AToUint8_t( search_pnt, (uint8_t)(comma_pnt - search_pnt));
+    }
+    else
+    {
+      comma_pnt = Uint8_tStrchr( search_pnt, '.' );
+      rmc_sentence.Degrees.ParteEntera = AToUint8_t( search_pnt, 1 ) * 0x0064 + AToUint8_t( search_pnt + 1, (uint8_t)(comma_pnt - search_pnt - 1 ));
+      // rmc_sentence.Degrees.ParteEntera = AToUint8_t( search_pnt, 1 ) * 0x0064 + AToUint8_t( search_pnt + 1, Uint8_tStrchr( search_pnt, '.' ) - search_pnt - 1 );
+    }
+    search_pnt = Uint8_tStrchr( search_pnt, '.' ) + 1;
+    comma_pnt = Uint8_tStrchr( search_pnt, ',' );
+    rmc_sentence.Degrees.ParteDecimal  = AToUint8_t( search_pnt, (uint8_t)(comma_pnt - search_pnt));
+  }
+
+  // La fecha
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  rmc_sentence.Date.Dia  = AToUint8_t( search_pnt, 2 );
+  rmc_sentence.Date.Mes  = AToUint8_t( search_pnt + 2, 2 );
+  rmc_sentence.Date.Anyo = AToUint8_t( search_pnt + 4, 2 );
+
+  // Variación magnética
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+
+  // Dirección de la variación magnética
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  switch( search_pnt[0] )
+  {
+    case 'A':
+      rmc_sentence.ModeIndicator = PA;
+      break;
+    case 'D':
+      rmc_sentence.ModeIndicator = PD;
+      break;
+    case 'E':
+      rmc_sentence.ModeIndicator = PE;
+      break;
+    case 'M':
+      rmc_sentence.ModeIndicator = PM;
+      break;
+    case 'S':
+      rmc_sentence.ModeIndicator = PS;
+      break;
+    case 'N':
+      // Fall through (tanto el caso default como N son el mismo)
+    default:
+      rmc_sentence.ModeIndicator = PN;
+      break;
+  }
+
+#if 0  
+  gSeHaProcesadoRmc = true;
+  gNoProcesaMasGsa = false;
+#endif
+
+  if(UART_GPS_FLG.rmc_time_is_good == TRUE)
+  {
+    convert_utc_to_gps_rtc_time();
+  }
+  
+
+  
   
 }
+
+
+#elif 0
+
+static void process_rmc_sentence(void){
+  
+  uint8_t *search_pnt;
+  
+  uint8_t* comma_pnt;
+  // selectortrama = 0x10; // 0b0001 0000
+  search_pnt = Uint8_tStrchr( sentence_buffer.gps_buffer, ',' ) + 1;
+  
+  UART_GPS_FLG.rmc_time_is_good = false;
+  
+ // El primer valor que se encuentra es la hora UTC, que siempre aparece en todo tipo de tramas RMC
+  rmc_sentence.UtcOfPosition.Horas    = AToUint8_t( search_pnt, 2 );
+  rmc_sentence.UtcOfPosition.Minutos  = AToUint8_t( search_pnt + 2, 2 );
+  rmc_sentence.UtcOfPosition.Segundos = AToUint8_t( search_pnt + 4, 2 );
+
+  // Haya o no haya posición, siempre estará un indicador sobre el estado:
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] == 'V' )
+  {
+    rmc_sentence.Status = SV;
+  }
+  else if ( search_pnt[0] == 'A' )
+  {
+    rmc_sentence.Status = SA;
+    UART_GPS_FLG.rmc_time_is_good = true;
+  }
+  
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  // Si lo siguiente que se encuentra es con un carácter `,`, quiere decir que no hay valor de latitud válido
+  if ( search_pnt[0] == ',' )
+  {
+    rmc_sentence.HayLatitud = false;
+  }
+  else
+  {
+    rmc_sentence.HayLatitud = true;
+    rmc_sentence.Latitude.Grados  = AToUint8_t( search_pnt, 2 );
+    rmc_sentence.Latitude.Minutos = AToUint8_t( search_pnt + 2, 2 );
+    rmc_sentence.Latitude.Decimas = AToUint8_t( search_pnt + 5, 2 ) * 0x0064 + AToUint8_t( search_pnt + 7, 2 );
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( true == rmc_sentence.HayLatitud )
+  {
+//          rmc_sentence.LatiDirection = (enum eLatitude) ( search_pnt + 1 )[0] == 'S';
+    if ( search_pnt[0] == 'N' )
+    {
+      rmc_sentence.LatiDirection = N;
+    }
+    else if ( search_pnt[0] == 'S' )
+    {
+      rmc_sentence.LatiDirection = S;
+    }
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] == ',' )
+  {
+    rmc_sentence.HayLongitud = false;
+  }
+  else
+  {
+    rmc_sentence.HayLongitud = true;
+    rmc_sentence.Longitude.Grados  = AToUint8_t( search_pnt, 3);
+    rmc_sentence.Longitude.Minutos = AToUint8_t( search_pnt + 3, 2);
+    rmc_sentence.Longitude.Decimas = AToUint8_t( search_pnt + 6, 2 ) * 0x0064 + AToUint8_t( search_pnt + 8, 2 );
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( true == rmc_sentence.HayLongitud )
+  {
+//          rmc_sentence.LongDirection = (enum eLongitude) ( search_pnt + 1 )[0] == 'W';
+    if ( search_pnt[0] == 'W' )
+    {
+      rmc_sentence.LongDirection = W;
+    }
+    else if ( search_pnt[0] == 'E' )
+    {
+      rmc_sentence.LongDirection = E;
+    }
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] != ',' )
+  {
+    rmc_sentence.SpeedOvertheGround.ParteEntera  = AToUint8_t( search_pnt, Uint8_tStrchr( search_pnt, '.' ) - search_pnt );
+    search_pnt = Uint8_tStrchr( search_pnt, '.' ) + 1;
+    rmc_sentence.SpeedOvertheGround.ParteDecimal  = AToUint8_t( search_pnt, Uint8_tStrchr( search_pnt, ',' ) - search_pnt );
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] != ',' )
+  {
+    if ( Uint8_tStrchr( search_pnt, '.' ) - search_pnt <= 2 )
+    {
+      comma_pnt = Uint8_tStrchr( search_pnt, '.' );
+      rmc_sentence.Degrees.ParteEntera = AToUint8_t( search_pnt, (uint8_t)(comma_pnt - search_pnt));
+    }
+    else
+    {
+      rmc_sentence.Degrees.ParteEntera = AToUint8_t( search_pnt, 1 ) * 0x0064 + AToUint8_t( search_pnt + 1, Uint8_tStrchr( search_pnt, '.' ) - search_pnt - 1 );
+    }
+    search_pnt = Uint8_tStrchr( search_pnt, '.' ) + 1;
+    rmc_sentence.Degrees.ParteDecimal  = AToUint8_t( search_pnt, Uint8_tStrchr( search_pnt, ',' ) - search_pnt );
+  }
+
+  // La fecha
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  rmc_sentence.Date.Dia  = AToUint8_t( search_pnt, 2 );
+  rmc_sentence.Date.Mes  = AToUint8_t( search_pnt + 2, 2 );
+  rmc_sentence.Date.Anyo = AToUint8_t( search_pnt + 4, 2 );
+
+  // Variación magnética
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+
+  // Dirección de la variación magnética
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  switch( search_pnt[0] )
+  {
+    case 'A':
+      rmc_sentence.ModeIndicator = PA;
+      break;
+    case 'D':
+      rmc_sentence.ModeIndicator = PD;
+      break;
+    case 'E':
+      rmc_sentence.ModeIndicator = PE;
+      break;
+    case 'M':
+      rmc_sentence.ModeIndicator = PM;
+      break;
+    case 'S':
+      rmc_sentence.ModeIndicator = PS;
+      break;
+    case 'N':
+      // Fall through (tanto el caso default como N son el mismo)
+    default:
+      rmc_sentence.ModeIndicator = PN;
+      break;
+  }
+
+#if 0  
+  gSeHaProcesadoRmc = true;
+  gNoProcesaMasGsa = false;
+#endif
+
+  if(UART_GPS_FLG.rmc_time_is_good == TRUE)
+  {
+    convert_utc_to_gps_rtc_time();
+  }
+  
+
+  
+  
+}
+
+
+
+
+
 #else
 
 static void process_rmc_sentence(void){

@@ -54,15 +54,24 @@
 
 #if HW_GPS_DETECTOR
 
+#if DEBUGGING_IS_ON
+#define USE_DBLED_PINS 1
+#else
+#define USE_DBLED_PINS 0  
+#endif
+
+// these i use when there is a pin to be checked and i use the three DB_LED for that...
+#if USE_DBLED_PINS
+
 
 // --------   PORT A  ---------------
-#define SYNC_AD9954 	LATAbits.LATA0		
-#define SDIO_AD9954 	LATAbits.LATA1		
-#define SCLK_AD9954 	LATAbits.LATA2	 
+#define SYNC_AD9954 	DB_LED_1  // LATAbits.LATA0		
+#define SDIO_AD9954 	DB_LED_2  // LATAbits.LATA1		
+#define SCLK_AD9954 	DB_LED_3  // LATAbits.LATA2	 
 #define BATERIA 	    PORTAbits.PORTA3   
 #define VDD_AD9954 	  LATAbits.LATA4 
 #define LDR 				  PORTAbits.PORTA5   
-#define FREE_RA6      LATAbits.LATA6
+#define FREE_RA6      LATAbits.LATA6  // becaseu that is always together with the DDS
 #define LED           LATAbits.LATA7
 
 
@@ -95,6 +104,48 @@
 
 
 
+#else
+
+// --------   PORT A  ---------------
+#define SYNC_AD9954 	LATAbits.LATA0		
+#define SDIO_AD9954 	LATAbits.LATA1		
+#define SCLK_AD9954 	LATAbits.LATA2	 
+#define BATERIA 	    PORTAbits.PORTA3   
+#define VDD_AD9954 	  LATAbits.LATA4 
+#define LDR 				  PORTAbits.PORTA5   
+#define FREE_RA6      LATAbits.LATA6  // becaseu that is always together with the DDS
+#define LED           LATAbits.LATA7
+
+
+
+// --------   PORT B  ---------------
+#define TILT_SENSOR 	PORTBbits.RB0
+#define FREE_RB1 	    LATBbits.LATB1
+#define PS0_AD9954 	  LATBbits.LATB2
+#define PS1_AD9954 	  LATBbits.LATB3
+#define UPDATE_AD9954 LATBbits.LATB4
+#define FREE_RB5 	    LATBbits.LATB5
+#define ICSPCLCK 			LATBbits.LATB6
+#define ICSPDAT 			LATBbits.LATB7
+// #define ICSPDAT 			PORTBbits.RB7
+
+
+// --------   PORT C  ---------------
+#define FREE_RC0 			LATCbits.LATC0
+#define FREE_RC1 			LATCbits.LATC1
+#define RESET_AD9954  LATCbits.LATC2
+#define FREE_RC3		  LATCbits.LATC3
+#define FREE_RC4		  LATCbits.LATC4
+#define GPS_VALIM			LATCbits.LATC5
+#define UART_TX_PC 		LATCbits.LATC6
+#define UART_RX_PC 		PORTCbits.RC7
+
+
+// --------   PORT E  ---------------
+#define MCLR 			PORTEbits.RE3
+
+#endif
+
 // --------   AN_Channels names  ---------------
 #define BATERIA_ADC_CHANNEL 3
 #define LDR_ANALOG_CHANNEL 4
@@ -109,11 +160,15 @@
 #define DB_LED_1 LED 
 #define DB_LED_2 GPS_VALIM 
 #define DB_LED_3 ICSPDAT
+
+
 #else
   
 #define DB_LED_1
 #define DB_LED_2
 #define DB_LED_3
+
+
 #endif
 
 

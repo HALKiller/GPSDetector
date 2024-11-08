@@ -31,7 +31,7 @@ typedef enum {
   e_gd_off_h,   // highest priority --> because when it swoffs, nothing else is important
   e_switch_clock_handler,          
   e_ring_buffer_handler,           
-  e_2ms_of_handler,	               
+  // e_2ms_of_handler,	               
   e_gd_on_h, 
    
   e_tilt_sensor_h,	               
@@ -39,7 +39,7 @@ typedef enum {
   e_gps_on_h,  
   e_prepare_msg_h,
   e_rx_luz_com_h,                  
-  e_reset_swoff_tmr_of_cnt_handler,
+  // e_reset_swoff_tmr_of_cnt_handler,
   e_startup_h, 
   e_gps_has_full_position_h,  
   e_ertc_handler_start, 

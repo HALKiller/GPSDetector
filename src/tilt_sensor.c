@@ -31,7 +31,7 @@
 
 #include "gd_states.h"
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 #include "UART.h"
 #endif
 
