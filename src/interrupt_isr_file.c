@@ -49,6 +49,7 @@ void __interrupt() isr(void){
 	}
 
 
+
 	while((RX_IE == true) && (RX_IF == true))
 	{			
 		
@@ -57,6 +58,8 @@ void __interrupt() isr(void){
 		
 	}
 
+
+
 // this finds usage only for the transmission of SPI and messages from the DDS and also
 // in the rx_luz part
   if((TMR2_IE == true) && (TMR2_IF == true))
@@ -64,6 +67,8 @@ void __interrupt() isr(void){
     TMR2_ON = false;
     TMR2_IF = false;
   }
+
+
 	
 	// OF time = 2.04ms
 	// this is only going to be for the PWM --> 
@@ -98,7 +103,8 @@ void __interrupt() isr(void){
     // DB_LED2_SWAP;
 
 	}
-  
+
+
 
   // this is basically the e_rtc clocking here...
 	if((TMR4_IE == true) && (TMR4_IF == true))
@@ -134,6 +140,8 @@ void __interrupt() isr(void){
 
 	}
 	
+
+
 
 
 }

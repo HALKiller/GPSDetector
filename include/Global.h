@@ -26,6 +26,8 @@
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
 
+
+
 #define TEST_ERTC_SLOW_CLOCK 1
 
 // this define reduces the data_arrays to a lower 
@@ -117,7 +119,7 @@ extern const uint16_t shifts[16];
 
 //  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 
 #define LANGUAGE_SPANISH 0
 

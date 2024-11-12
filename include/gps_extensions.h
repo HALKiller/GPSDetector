@@ -14,6 +14,7 @@
 #define MAX_SENTENCE_LENGTH	82
 #endif
 
+// #define MAX_SENTENCE_LENGTH	82
 
 enum eEstadoAntena
 {

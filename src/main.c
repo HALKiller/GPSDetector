@@ -41,11 +41,13 @@
 
 #include "UART.h"
 
+#include "generic_union_flgs.h"
+
 #include "Global.h"
 
 #include "handlers.h"
 
-#include "io_port_sfr_names.h"
+// #include "io_port_sfr_names.h"
 
 #include "my_assert.h"
 
@@ -56,11 +58,49 @@
 /* User Global Variable Declaration                                           */
 /******************************************************************************/
 
+union8_t gFLAGS;
+
+
+
 /******************************************************************************/
 /* Main Program                                                               */
 /******************************************************************************/
+#if 0
 void main(void)
 {
+  
+  
+// #if DEBUGGING_IS_ON
+
+  // const unsigned char SW_version[] = "GPSDetector_v.1.0_db\r\n";
+  
+// #else
+  
+  // const unsigned char SW_version[] = "GPSDetector_v.1.0_rc\r\n";
+  
+// #endif
+
+
+
+	init_all();
+
+  while(1);
+  // UWT(&SW_version[0]);
+
+	// get_the_next_handler();
+
+  // becasue we should never ever get back here 
+  // --> we reset the stackptr
+  // assert(false);
+
+}
+
+#else
+  /******************************************************************************/
+void main(void)
+{
+  
+  
 #if DEBUGGING_IS_ON
 
   const unsigned char SW_version[] = "GPSDetector_v.1.0_db\r\n";
@@ -84,7 +124,7 @@ void main(void)
 
 }
 
-
+#endif
 
 
 

@@ -43,7 +43,7 @@
 
 #include "extension_strings.h"
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 #include "generic_union_flgs.h"
 #include "pwm_luz.h"
 #endif
@@ -157,16 +157,18 @@ const uint8_t *const sentences[] = {
  
  
 // #define	RX_DATA_SIZE_GPS	64	// we expect 64 bytes...this is the buffer size basically....
-#if USE_REDUCED_RAM
 
-#define MAX_DATA_LENGTH_GPS_SENTENCE 15
+// #if USE_REDUCED_RAM
 
-#else
+// #define MAX_DATA_LENGTH_GPS_SENTENCE 15
+
+// #else
+
+// #define MAX_DATA_LENGTH_GPS_SENTENCE 82
+
+// #endif
 
 #define MAX_DATA_LENGTH_GPS_SENTENCE 82
-
-#endif
-
 
 
 #define MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION 4
@@ -299,41 +301,16 @@ void gps_startup_initializer(void){
 
 void gps_reinit(void){
 
-#if DEBUGGING_IS_ON    
-  uint8_t h_flg = 0;
-  
-  if(UART_GPS_FLG.debugging_send_sentences == TRUE)
-  {
-    h_flg = 1u;
-  }
-  
-  if(UART_GPS_FLG.debugging_sync_time == TRUE)
-  {
-    h_flg = h_flg + 2u;
-  }
 
-#endif
   
   UART_GPS_FLG.reg = 0u; // reset everything
 
-#if DEBUGGING_IS_ON    
-  UART_GPS_FLG.reg = UART_GPS_FLG.reg + h_flg;
-#endif  
+
   // this resets the temp_buffer and temp_buffer_pointer...
   reset_uart_handler_flags();
   
   
-#if 0  
-  if(UART_GPS_FLG.debugging_send_sentences)
-  {
-    UART_GPS_FLG.reg = 0u; // reset everything
-    UART_GPS_FLG.debugging_send_sentences = true;
-  }
-  else
-  {
-    UART_GPS_FLG.reg = 0; // reset everything;
-  }
-#endif 
+
   
   CREN = TRUE;
   RX_IE = TRUE;
@@ -351,11 +328,10 @@ void gps_reinit(void){
   
   
 // Becasue in debug mode the uart is always on becasue we are sending and receivng from there  
-#if !DEBUGGING_IS_ON  
+
   // TODO: init UART and GPS
   // uart_initialize(GPS_UART);
-  
-#endif  
+
   
   
 
@@ -605,22 +581,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 
          
       }
-#if DEBUGGING_IS_ON      
-      else
-      {
-        if((gps_inst.sentence_id >= 4))
-        {
-          
-          sentence_handler(gps_inst.sentence_id);
-          
-        }
-          
-        // DB_PRINT("\r\n");
-        // DB_PRINT(header_buffer);
-        DB_PRINT("  CKerr\r\n"); 
-        // the chcksum failed!!! we therefore just reset afterwards everything but do not save the received data...
-      }
-#endif
+
 
       reset_uart_handler_flags();
 			
@@ -882,7 +843,7 @@ uint8_t temp_char = 0;
 
 
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 
 static void sentence_handler(uint8_t sentence_id){
   
@@ -911,13 +872,13 @@ static void sentence_handler(uint8_t sentence_id){
       DB_LED3_SWAP;
     break;
     case 7:
-      swap_luz_on_off();
+      // swap_luz_on_off();
     break;
     case 8:
       DEBUG_FLG_PRINT_TIME = !DEBUG_FLG_PRINT_TIME;
     break;
     default:
-      assert(false);
+      // assert(false);
     break;
 
   }
@@ -942,7 +903,7 @@ static void sentence_handler(uint8_t sentence_id){
     break;
     
     default:
-      assert(false);
+      // assert(false);
     break;
 
   }

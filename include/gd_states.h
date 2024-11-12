@@ -36,14 +36,6 @@ void gd_states_initialize(void);
 
 void gd_states_switch_to_next_state(e_gpsd_states_t next_state);
 
-// void gd_states_set_gpsd_substate(e_gpsd_substate_t substate);
-
-// e_gpsd_substate_t gd_states_get_substate(void);
-
-// void gd_state_change_handler(void);
-
-// uint8_t gd_states_did_change(void);
-
 
 #else
 

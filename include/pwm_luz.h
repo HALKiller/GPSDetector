@@ -5,6 +5,8 @@
 
 #include "Global.h"
 
+#define USE_PWM_LUZ_FILE 0
+
 // because there is now a design where the fototransistor is on low side switching...
 #define INVERTED_LDR_SENSOR 1  
 
@@ -27,9 +29,6 @@ uint8_t get_pwm_luz_pwm_value(void);
 uint8_t read_ilum_sensor(void);
 
 
-#if DEBUGGING_IS_ON
-void swap_luz_on_off(void);
-#endif
 
 
 

@@ -50,8 +50,8 @@ struct udt_m{
   uint8_t on_time;
   uint8_t off_time;
   uint8_t pwm_onoff_time_cnt;
-  
   uint8_t pwm_value;
+  
 };
 
 
@@ -143,6 +143,16 @@ static void db_printing_bits(uint8_t onoff_bit){
   
 }
 
+#if 0
+void init_detector_config(void){
+  uint8_t t_var = 0x15;
+  UART_int(t_var);
+
+}
+
+#else
+  
+
 void init_detector_config(void){
   
   int8_t i;
@@ -184,7 +194,7 @@ void init_detector_config(void){
   
   ee_retval = LeerEeprom ( 0x46u );
  
-#if DEBUGGING_IS_ON 
+#if DEBUGGING_IS_ON&&0 
 
   DB_PRINT("CFG: ");
   
@@ -235,7 +245,7 @@ void init_detector_config(void){
 }
 
 
-
+#endif
 
 
 
@@ -267,7 +277,7 @@ void pwm_luz_time_update(void){
         PWM_IS_ON = TRUE;
       }
     }
-#if DEBUGGING_IS_ON  && 0    
+#if DEBUGGING_IS_ON&&0    
     UWT("\r\nONOFFcnt: ");
     UART_int(pwm_luz.pwm_onoff_time_cnt);
 #endif    
@@ -298,7 +308,7 @@ uint8_t get_pwm_luz_pwm_value(void){
 
 
 
-#if DEBUGGING_IS_ON
+#if 0
 void swap_luz_on_off(void){
   
   LUZ_HANDLER_ON = !LUZ_HANDLER_ON;

@@ -54,7 +54,7 @@
 
 #if HW_GPS_DETECTOR
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 #define USE_DBLED_PINS 1
 #else
 #define USE_DBLED_PINS 0  
@@ -155,7 +155,7 @@
 
 
 // --------   DEBUGGING  ---------------
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&1
 
 #define DB_LED_1 LED 
 #define DB_LED_2 GPS_VALIM 

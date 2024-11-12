@@ -11,27 +11,31 @@
 
 #include "Global.h"
 
-#include "UART.h"
-
 #include "Clock.h"
 
-#include "handlers.h"
+#include "UART.h"
+
+#include "pwm_luz.h"
 
 #include "timers.h"
 
+#include "gd_states.h"
+
+#include "handlers.h"
+
 #include "io_port_sfr_names.h"
 
-#include "device_driver_config.h"
+// #include "device_driver_config.h"
 
-#include "ADC.h"
+// #include "ADC.h"
 
-#include "generic_union_flgs.h"
+// #include "generic_union_flgs.h"
 
 #include "tilt_sensor.h"
 
-#include "gd_states.h"
 
-#include "pwm_luz.h"
+
+
 
 #include "xc.h"
 
@@ -42,13 +46,13 @@
 
 #define MHZ32_TEST 0
 
-static uint8_t temp_tilt_sensor_tester(void);
-static void next_clock(void);
+// static uint8_t temp_tilt_sensor_tester(void);
+// static void next_clock(void);
 
 
 
 
-static void init_wdt(void);
+// static void init_wdt(void);
 static void init_IO_PORTS(void);
 
 
@@ -56,14 +60,103 @@ static void init_IO_PORTS(void);
 
 static uint8_t t_status __at(0x16F); // (0xA0);
 
+#if 1
 
+void init_all(void){
+
+
+#if DEBUGGING_IS_ON&&0
+  uint8_t t_var = MIPS;
+#endif
+
+  CLRWDT();
+
+	
+  init_clock();
+
+
+
+// datasheet --> switching to the PLL can take +- 2ms --> 
+	__delay_ms(5);
+
+  
+	
+	// init_tmr0();
+	
+	// init_tmr1();
+	
+	// configure_tmr2();
+	
+  // TODO:
+  // gFLGS reset ons startup
+  init_UART();
+
+  init_detector_config();
+	
+	init_IO_PORTS();
+  
+#if DEBUGGING_IS_ON&&0
+	UWT("BUILD: ");
+	UWT(__DATE__);
+	UWT("  ");
+	UWT(__TIME__);
+	UWT("\r\n");
+	UWT("MIPS: ");
+	UART_int(t_var);
+	UART_CRLF;
+#endif
+  
+
+ 
+  configure_tmr4();
+  
+
+
+  gd_states_initialize();
+
+  tilt_sensor_init();
+  
+ 
+	init_handler_flg();
+
+	RX_IF = FALSE;
+	RX_IE = TRUE;
+  
+	TMR0_IF = FALSE;
+	TMR0_IE = FALSE;
+
+
+	PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = TRUE;
+
+
+  TMR4_IF = FALSE;
+  TMR4_IE = TRUE;
+  
+  TMR4_ON = TRUE;
+  
+  
+
+// for reference...
+  // TMR4ON = true;   // bad
+  // TMR4_ON = TRUE;  // good
+  // TMR4ON = TRUE;   // bad
+  // TMR4_ON = true;  // bad
+  
+
+
+	
+}
+
+
+#else
 
 
 
 void init_all(void){
 
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
   uint8_t t_var = MIPS;
 #endif
 
@@ -94,7 +187,7 @@ void init_all(void){
 	
 	init_IO_PORTS();
   
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 	UWT("BUILD: ");
 	UWT(__DATE__);
 	UWT("  ");
@@ -115,49 +208,8 @@ void init_all(void){
   
   
   tilt_sensor_init();
-  
-  
-  
+
   init_detector_config();
-  
-  
-  
-  
-#if DEBUGGING_IS_ON&&0
-
-
-
-  UWT("LAT: ");
-  UART_int(LATA);
-  UART_CRLF;
-  
-  UART_int(LATB);
-  UART_CRLF;
-  
-  UART_int(LATC);
-  UART_CRLF;
-  
-   UWT("TRIS: ");
-  UART_int(TRISA);
-  UART_CRLF;
-  
-  UART_int(TRISB);
-  UART_CRLF;
-  
-  UART_int(TRISC);
-  UART_CRLF;
-  
-  
-  UWT("ANSEL: ");
-  UART_int(ANSELA);
-  UART_CRLF;
-  
-  UART_int(ANSELB);
-  UART_CRLF;
-  
-
-  
-#endif  
 
 
 	init_handler_flg();
@@ -194,7 +246,7 @@ void init_all(void){
 	
 }
 
-
+#endif
 
 
 static void init_wdt(void){
@@ -310,7 +362,46 @@ static void init_IO_PORTS(void){
 }
 
 
+// OBSOLETE
 
+#if 0
+
+
+// from_here_1
+  UWT("LAT: ");
+  UART_int(LATA);
+  UART_CRLF;
+  
+  UART_int(LATB);
+  UART_CRLF;
+  
+  UART_int(LATC);
+  UART_CRLF;
+  
+   UWT("TRIS: ");
+  UART_int(TRISA);
+  UART_CRLF;
+  
+  UART_int(TRISB);
+  UART_CRLF;
+  
+  UART_int(TRISC);
+  UART_CRLF;
+  
+  
+  UWT("ANSEL: ");
+  UART_int(ANSELA);
+  UART_CRLF;
+  
+  UART_int(ANSELB);
+  UART_CRLF;
+// to_here_1
+
+
+// from_here_2
+// to_here_2
+
+#endif
 
 
 // EOF

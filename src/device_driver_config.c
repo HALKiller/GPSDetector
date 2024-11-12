@@ -465,7 +465,7 @@ void IO_Init(const IO_ConfigType *ConfigT)
   uint8_t volatile *sfr_pnt;
 	
 	// assuring that the const declarations are coherent...
-	assert(sizeof(IO_Config_Port) / sizeof(IO_Config_Port[0]) == NUM_DIGITAL_PINS);
+	// assert(sizeof(IO_Config_Port) / sizeof(IO_Config_Port[0]) == NUM_DIGITAL_PINS);
 	
 	for(hlooper = 0; hlooper < NUM_DIGITAL_PINS; hlooper++)
 	{
@@ -477,7 +477,7 @@ void IO_Init(const IO_ConfigType *ConfigT)
 		
     
     
-    assert((int8_t)ConfigT[hlooper].Channel == hlooper);
+    // assert((int8_t)ConfigT[hlooper].Channel == hlooper);
     
     set_channel_number_position(ConfigT[hlooper].Channel);
     

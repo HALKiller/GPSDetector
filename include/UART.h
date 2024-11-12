@@ -11,7 +11,12 @@
 
 #define UWF always_send_string
 
+#if DEBUGGING_IS_ON&&0
 #define UWT(str) send_string((const unsigned char *)(str))
+#else
+#define UWT(str)  
+#endif
+
 // #define UWT send_string
 #define UART_CRLF UWT("\r\n");
 // #define UART_CRLF UWT((const unsigned char *)"\r\n");
@@ -19,7 +24,7 @@
 #define USE_TX_ISR 0
 
 
-#define USE_THE_GENERIC 1
+#define USE_THE_GENERIC 0
 
 #if USE_THE_GENERIC&&0
 

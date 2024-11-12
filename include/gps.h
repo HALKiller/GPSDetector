@@ -98,6 +98,7 @@ void toggle_uart_readout_gps_sentence(void);
 RMC_sentence_t *get_pointer_to_rmc(void);
 
 uint8_t gps_rmc_time_is_good_test(void);
+
 void gps_set_debbugging_sync_time_flg(void);
 
 

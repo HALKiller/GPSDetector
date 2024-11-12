@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include "xc.h"
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 #include "generic_union_flgs.h"
 #endif
 
@@ -104,7 +104,7 @@ static uint8_t chcksum_checker(void);
 
 static void int_to_str_converter_32bits(uint32_t the_value, unsigned char *str_pnt);
 
-static void int_to_str_converter(uint16_t the_value, unsigned char *str_pnt);
+static void int_to_str_converter(uint16_t the_value, char *str_pnt);
 
 static void prepare_tx_handler(void);
 
@@ -384,7 +384,7 @@ void UART_int(uint16_t hvar){
 
 void UART_int(uint16_t hvar){
 
-  unsigned char str[8];
+  char str[8];
 
   // uint_to_str(hvar, str);
 
@@ -393,6 +393,170 @@ void UART_int(uint16_t hvar){
   UWT(&str[0]);
 	
 }
+
+
+
+static void int_to_str_converter(uint16_t the_value, char *str_pnt){
+	
+union {
+	uint32_t bcd;	// uint24_t bcd;
+	struct
+	{
+		uint8_t byte_0;
+		uint8_t byte_1;
+		uint8_t byte_2;
+		uint8_t byte_3;
+    uint8_t byte_4;
+	};
+
+	struct 
+	{
+		unsigned ones					: 4;
+		unsigned tens					: 4;
+		unsigned hundreds			: 4;
+		unsigned thousands		: 4;
+		unsigned t_thousands	: 4;
+		unsigned h_thousands	: 4;
+    unsigned million			: 4;
+		unsigned t_million		: 4;
+		unsigned h_million  	: 4;
+		unsigned billion    	: 4;
+	};
+}result;
+
+unsigned char *bcd_pnt = &result.byte_0;
+
+unsigned char hlooper = 0;
+unsigned char hlooper_2 = 0;
+unsigned char not_zero_flg = 0;
+
+char temp_string[11];
+char *temp_strpnt = &temp_string[10];
+
+	*temp_strpnt = NULL_TERMINATOR;
+	temp_strpnt--;
+		
+		
+		
+	result.bcd = 0;
+
+	for(hlooper = 0; hlooper < 3; hlooper++)
+	{
+		result.bcd = result.bcd << 1;
+		if(the_value >=32768)
+		{
+			result.bcd = result.bcd + 1;
+		}
+    
+		the_value = (the_value << 1) & 0xFFFF;
+	}
+
+	for(hlooper = 0; hlooper < 29; hlooper++)
+	{
+	
+		bcd_pnt = &result.byte_0;
+		for(hlooper_2 = 0; hlooper_2 < 5; hlooper_2++)
+		{
+
+			if((0x0F & *bcd_pnt) >= 5)
+			{
+				*bcd_pnt = *bcd_pnt + 3;		
+			}
+			if((0xF0 & *bcd_pnt) >= 80)
+			{
+				*bcd_pnt = *bcd_pnt + 48;
+			}
+			bcd_pnt++;
+		}
+		
+		result.bcd = result.bcd << 1;
+		if(the_value >=32768)
+		{
+			result.bcd = result.bcd + 1;
+		}
+		the_value = (the_value << 1) & 0xFFFF;;
+				
+	}
+	
+	#if 1	// because in the end was this the fastes...
+	*str_pnt = result.h_thousands + 0x30;
+	if(*str_pnt != 0x30){
+		not_zero_flg = true;
+		str_pnt++;
+	}
+	
+	*str_pnt = result.t_thousands+ 0x30;
+	if((*str_pnt != 0x30) || not_zero_flg){
+		not_zero_flg = true;
+		str_pnt++;;
+	}
+	
+	*str_pnt = result.thousands+ 0x30;
+	if((*str_pnt != 0x30) || not_zero_flg){
+		not_zero_flg = true;
+		str_pnt++;;
+	}
+
+	*str_pnt = result.hundreds+ 0x30;	
+	if((*str_pnt != 0x30) || not_zero_flg){
+		not_zero_flg = true;
+		str_pnt++;;
+	}
+
+	*str_pnt = result.tens+ 0x30;	
+	if((*str_pnt != 0x30) || not_zero_flg){
+		not_zero_flg = true;
+		str_pnt++;;
+	}
+	*str_pnt = result.ones+ 0x30;	
+	str_pnt++;
+	*str_pnt = NULL_TERMINATOR;	
+	
+#elif 1
+	
+
+	for(hlooper = 0; hlooper < 6; hlooper++){
+		bcd_pnt = (&result.byte_0 + (hlooper/2));
+		
+		if((hlooper % 2) == 0){	// we are with the low nibble...
+			*temp_strpnt = (*bcd_pnt & 0X0F) + 0x30;;
+		}else{	// we are with the high nibble
+			*temp_strpnt = ((*bcd_pnt & 0XF0) >> 4) + 0x30;;
+		}
+		temp_strpnt--;
+
+	
+	}
+	temp_strpnt++;
+	hlooper = 0;
+	while(hlooper < 6 && temp_strpnt != '\0'){
+		hlooper++;
+		if(not_zero_flg){
+			*str_pnt = *temp_strpnt;
+			str_pnt++;
+			// temp_strpnt++;
+		}else{
+			if(*temp_strpnt != '0'){
+				not_zero_flg = true;
+				*str_pnt = *temp_strpnt;
+				str_pnt++;
+			}
+			// temp_strpnt++;
+		}
+		temp_strpnt++;
+		
+	}
+	if(hlooper == 0){
+		*str_pnt == '0';
+		str_pnt++;
+		
+	}
+	*str_pnt = NULL_TERMINATOR;
+	
+	#endif
+}
+
+
 
 #endif
 
@@ -461,440 +625,6 @@ static void transmit_char(uint8_t n_char){
 
 
 #undef LOCAL_DB_UART
-
-
-
-
-
-// UNUSED_NOW 
-#if 0 
-
-
-uint8_t *get_pnt_to_uart_rx_buffer(void){
-  
-  return &tx_data[0];
-  
-  
-}
-
-static uint8_t chcksum_checker(void){
-  
-  uint8_t ret_value = 0u;
-  uint8_t hlooper = 0u;
-  uint8_t chcksum = 0u;
-  
-  for(hlooper = 0; hlooper < CHARS_TO_RECEIVE; hlooper++)
-  {
-    
-    chcksum = chcksum ^ tx_data[hlooper + 1u];
-    
-  }
-
-#if 0
-
-	UWT("chcksum: ");
-	UART_int(chcksum);
-
-	return false;
-  
-#else		
-	
-	return chcksum;
-  
-#endif	
-
-}
-
-
-static void prepare_tx_handler(void){
-	
-	
-	// RCSTAbits.CREN = false;
-	// handlers_generic_set_handler_FLG(e_tx_to_gps);
-	
-}
-
-
-static void check_on_startbyte(uint8_t the_data){
-	
-	if(STARTBYTE == the_data)
-	{
-
-#if LOCAL_DB_UART&&0
-  
-  UWT("D\r\n");
-
-#endif	
-		reset_header_reception();
-		STARTBYTE_FOUND = true;
-		// *(huart.header_pnt) = the_data;
-		// huart.header_pnt++;	
-		// huart.header_lencnt++;
-		
-	}
-	
-	if(STARTBYTE_FOUND == true)
-	{
-		
-#if LOCAL_DB_UART&&0
-  
-  UWT("E\r\n");
-
-#endif	
-		*(huart.header_pnt) = the_data;
-		huart.header_pnt++;	
-		huart.header_lencnt++;
-		if(huart.header_lencnt >= HEADER_LENGTH)
-		{
-      #if LOCAL_DB_UART&&0
-  
-  UWT("F\r\n");
-
-#endif	
-			if(received_new_header() == true)
-			{
-				// reset everything to this ...
-				HEADER_FOUND = true;
-				NEXT_CHAR_IS_ORDER_BYTE = true;
-				huart.data_lencnt = 0;
-				huart.data_pnt = &tx_data[0];
-			}
-			reset_header_reception();
-		}
-	}
-
-#if LOCAL_DB_UART&&0
-  
-  UWT("Header flgs: ");
-  UART_int(huart.FLGS.reg);
-  // UART_int(rndcnt++);
-#endif
-
-}
-
-
-
-static uint8_t received_new_header(void){
-	
-	uint8_t ret_value = false;
-	
-	if(strcmp((const char *)&huart.header[0], (char *)&rx_header[0]) == false)
-	{
-		ret_value = true;
-#if LOCAL_DB_UART&&0
-  
-  UWT("G\r\n");
-
-#endif	
-	}
-  
-#if LOCAL_DB_UART&&0
-  
-  UWT("H\r\n");
-  UWT(&huart.header);
-  UWT(&rx_header[0]);
-#endif	
-  
-	return ret_value;
-}
-
-
-
-static void reset_header_reception(void){
-	
-	huart.header_pnt = &huart.header[0];
-	huart.header_lencnt = 0;
-	huart.header[5] = NULL_TERMINATOR;
-	STARTBYTE_FOUND = false;
-	
-	
-}
-
-
-
-static void reset_data_reception(void){
-	
-	// reset_header_reception();
-	huart.data_lencnt = 0;
-	huart.data_pnt = &tx_data[0];
-	HEADER_FOUND = false;
-	NEXT_CHAR_IS_ORDER_BYTE = false;
-	
-	
-}
-
-
-
-#if DB_LED_PWM
-
-uint8_t check_next_char(void){
-	
-	uint8_t ret_value = 0;
-	uint8_t rx_data = 0;
-  
-
-	static uint8_t max_len = CHARS_TO_RECEIVE + 1;
-
-	
-#if LOCAL_DB_UART
-  
-uint8_t db_data[3];
-db_data[1] = CR;
-db_data[2] = LF;
-db_data[3] = NULL_TERMINATOR;
-#endif
-
-
-#if 0
-	rx_data = get_data_value_from_buffer();
-#else  
-  get_data_from_buffer_with_pnt(&rx_data);
-#endif	
-
-#if LOCAL_DB_UART&&0
-  
-  UWT("Next char: ");
-  UART_int(rx_data);
-  db_data[0] = rx_data;
-  UWT(db_data);
-  
-#endif
-	// first we check if there was allready a header found and 
-	// therefore we just add this one to the rest...
-	if(HEADER_FOUND == true)
-	{
-		// this would be the kind of order we have
-		if(NEXT_CHAR_IS_ORDER_BYTE == true)
-		{
-			NEXT_CHAR_IS_ORDER_BYTE = false;
-			
-			switch(rx_data)
-			{
-				case 'r':
-					// set handler flag, reset everything
-					*(huart.data_pnt) = rx_data;
-					huart.data_pnt++;
-					*(huart.data_pnt) = NULL_TERMINATOR;
-					huart.data_lencnt++;
-					prepare_tx_handler();
-					max_len = CHARS_TO_RECEIVE + 1;
-				break;
-				case 'w':
-					// basically nothing else to do
-					*(huart.data_pnt) = rx_data;
-					huart.data_pnt++;
-					huart.data_lencnt++;
-					max_len = CHARS_TO_RECEIVE + 1;
-				break;
-#if DB_LED_PWM
-				case 'd':
-					
-					*(huart.data_pnt) = rx_data;
-					huart.data_pnt++;
-					huart.data_lencnt++;
-					max_len = 1;
-				break;
-#endif					
-				default:
-					// reset everything
-#if LANGUAGE_SPANISH
-					UWT("\r\nMAL COMANDO BYTE\r\n");
-#else						
-					UWT("\r\nBAD ORDER BYTE\r\n");
-#endif					
-					reset_data_reception();
-				break;
-				
-				
-			}
-			// we accept only 'w' or 'r'
-		}
-		else
-		{
-			*(huart.data_pnt) = rx_data;
-			huart.data_pnt++;
-			huart.data_lencnt++;
-			if(huart.data_lencnt >= max_len)	// (CHARS_TO_RECEIVE + 1))
-			{
-#if DB_LED_PWM
-				UWT("rx: ");
-				UART_int(huart.data_lencnt);
-
-				if(max_len == 1)
-				{
-					UWT("Order received!\r\n");
-					set_led_var(rx_data);
-				}
-#endif				
-				
-				*(huart.data_pnt) = NULL_TERMINATOR;
-				reset_data_reception();
-				if(chcksum_checker() == false)
-				{
-					prepare_tx_handler();
-				}
-				else
-				{
-					ret_value = RX_PC_BAD_CHCKSUM;
-				}
-			}
-		}
-	}	
-
-	check_on_startbyte(rx_data);	
-	
-	// reset_swoff_tmr_of_cnt();
-	
-	return ret_value;
-	
-}
-
-#else
-	
-uint8_t check_next_char(void){
-	
-	uint8_t ret_value = 0;
-	uint8_t rx_data = 0;
-  static uint8_t max_len = CHARS_TO_RECEIVE + 1;
-
-	
-#if LOCAL_DB_UART
-  
-uint8_t db_data[3];
-db_data[1] = CR;
-db_data[2] = LF;
-db_data[3] = NULL_TERMINATOR;
-#endif
-
-
-#if 0
-	rx_data = get_data_value_from_buffer();
-#else  
-  get_data_from_buffer_with_pnt(&rx_data);
-#endif	
-
-
-#if DEBUGGING_IS_ON&&0
-  if((rx_data - 0x30u) < 0x08u)
-  {
-    UWT("Col: ");
-    UART_int((rx_data - 0x30u));
-    leds_update_shadow_led(e_LED_STATE, (rx_data - 0x30u));
-    leds_update_shadow_led(e_LED_ON_OFF, (rx_data - 0x30u));
-  }
-#endif  
-  
-
-#if LOCAL_DB_UART&&0
-  
-  UWT("Next char: ");
-  UART_int(rx_data);
-  db_data[0] = rx_data;
-  UWT(db_data);
-  
-#endif
-	// first we check if there was allready a header found and 
-	// therefore we just add this one to the rest...
-	if(HEADER_FOUND == TRUE)
-	{
-		// this would be the kind of order we have
-		if(NEXT_CHAR_IS_ORDER_BYTE == TRUE)
-		{
-				NEXT_CHAR_IS_ORDER_BYTE = FALSE;
-				
-				switch(rx_data)
-				{
-					case 's':
-#if DEBUGGING_IS_ON          
-            SWITCH_CLOCK = TRUE;
-#endif            
-					break;
-					case 'w':
-						// basically nothing else to do
-						*(huart.data_pnt) = rx_data;
-						huart.data_pnt++;
-						huart.data_lencnt++;
-						max_len = CHARS_TO_RECEIVE + 1;
-					break;
-
-					case 'n':
-						*(huart.data_pnt) = rx_data;
-						huart.data_pnt++;
-						huart.data_lencnt++;
-						// this max_len here is actually one shorter because i do not send a chcksum from the pc!!
-						// i rather create it afterwards...
-						max_len = 4;
-					break;
-					
-          case 'f':
-            RESET();
-          break;
-					default:
-						reset_data_reception();
-					break;
-					
-					
-				}
-			// we accept only 'w' or 'r'
-		}
-		else
-		{
-			*(huart.data_pnt) = rx_data;
-			huart.data_pnt++;
-			huart.data_lencnt++;
-			if(huart.data_lencnt >= max_len)	// (CHARS_TO_RECEIVE + 1))
-#if UART_BTN_SIMUL				
-			{
-				if(max_len == 4)
-				{
-					*(huart.data_pnt) = checksumming_chcksum_creator(&tx_data[1], 3);
-					max_len++;								
-				}
-				// *(huart.data_pnt) = checksumming_chcksum_creator(&tx_data[1], 3);
-				
-				reset_data_reception();
-				// checksumming_chcksum_creator
-				// if(chcksum_checker() == false)
-				if(checksumming_chcksum_checker(&tx_data[1], max_len - 1) == false)
-				{
-					prepare_tx_handler();
-				}
-				else
-				{
-					ret_value = RX_PC_BAD_CHCKSUM;
-				}
-			}
-#else
-			{
-				*(huart.data_pnt) = NULL_TERMINATOR;
-				reset_data_reception();
-#if 0				
-				if(chcksum_checker() == false)
-#else			
-				if(checksumming_chcksum_checker(&tx_data[1], max_len - 1) == false)
-#endif			
-				{
-					prepare_tx_handler();
-				}
-				else
-				{
-					ret_value = RX_PC_BAD_CHCKSUM;
-				}
-			}
-#endif			
-		}
-	}	
-
-	check_on_startbyte(rx_data);	
-
-	return ret_value;
-	
-}
-
-#endif
-
-#endif  // If UNUSED NOW
-
 
 
 

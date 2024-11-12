@@ -11,7 +11,7 @@
 //  **********************  INCLUDES BLOCK  ************************  //
 
 #include "handlers.h"
-#include "Aux_functions.h"
+// #include "Aux_functions.h"
 
 
 #include "timers.h"
@@ -53,33 +53,29 @@ static void f_tilt_sensor_to_check(void);
 
 static void set_handler_FLG(uint8_t handler_flg_spot);
 static void reset_handler_FLG(uint8_t handler_flg_spot);
-// static uint8_t test_handler_FLG(uint8_t handler_flg_spot);
-
-static void set_tmr_2ms_handler_dependencies_flgs(void);
-
 static void f_gd_off(void);
 
-static void prepare_sleep(void);
+
 static void fn_clock_switching(void);
 static void process_next_char_from_input(void);
 static void f_gd_on(void);
 
 static void f_prepare_msg(void);
 
-static void set_tmr_25ms_handler_dependencies_flgs(void);
+
 static void set_tmr_200ms_handler_dependencies_flgs(void);
-static void set_tmr_1000ms_handler_dependencies_flgs(void);
+
 
 static void f_gps_on(void);
 static void f_gps_has_position(void);
-static void reset_swoff_tmr_of_cnt(void);
 
-static void swoff_tmr_handler(void);
+
+
 
 static void err_handler_output(void);
 static void empty_function(void);
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 static void test_handler_array(void);
 #endif
 
@@ -95,11 +91,11 @@ typedef struct {
 static const HandlersHandlerType Handler_arr[] =
 {
 	
-	// { e_sleep_handler,	                  prepare_sleep	},	
+	
   { e_gd_off_h,                         f_gd_off },	  
 	{ e_switch_clock_handler,             fn_clock_switching },	
 	{ e_ring_buffer_handler,              process_next_char_from_input },
-	// { e_2ms_of_handler,	                  set_tmr_2ms_handler_dependencies_flgs	},
+	
 	{ e_gd_on_h,                          f_gd_on },	
   
   
@@ -111,7 +107,7 @@ static const HandlersHandlerType Handler_arr[] =
   
   
 	{ e_rx_luz_com_h,                     empty_function },	
-	// { e_reset_swoff_tmr_of_cnt_handler,   reset_swoff_tmr_of_cnt },	
+	
 	{ e_startup_h,                        f_gd_on },
   // { e_swoff_tmr_handler,               swoff_tmr_handler },
   { e_gps_has_full_position_h,          f_gps_has_position }, // TODO: write handler
@@ -127,7 +123,7 @@ static const HandlersHandlerType Handler_arr[] =
 
 
 
-union8_t gFLAGS;
+
 
 //  **********************  CONSTANT EXPRESSIONS  ************************  //
 
@@ -167,15 +163,9 @@ const uint16_t shifts[16] = {
 
 static volatile uint16_t Handler_FLGS = 0;
 
-
 static volatile uint8_t temp_clockspeed_flg = false;
 
-
-// static uint8_t swoff_tmr_cnt = 0;
-// static uint16_t of_cnt_2000ms = 0;
 static uint16_t of_cnt_200ms = 0;
-// static uint8_t of_cnt_100ms = 0;
-// static uint16_t of_cnt_seg_7d = 0;
 
 //  **********************  PUBLIC FUNCTIONS BODY  ************************  //
 
@@ -185,7 +175,9 @@ static uint16_t of_cnt_200ms = 0;
 void init_handler_flg(void){
 	
 	Handler_FLGS = (uint8_t)0u;
-#if DEBUGGING_IS_ON	
+  
+  
+#if DEBUGGING_IS_ON&&0	
 	test_handler_array();
 #endif  
 	
@@ -238,7 +230,7 @@ void get_the_next_handler(void){
     
     DB_LED2_SWAP;
     
-    assert(handler_id < NUM_HANDLERS);
+    // assert(handler_id < NUM_HANDLERS);
     
     (*Handler_arr[handler_id].func)();
     
@@ -402,7 +394,8 @@ void handlers_generic_set_handler_FLG(uint8_t handler_set){
 // the two version: 
 // with function call: 8MIPS ->  12.1us, 500kHz --> 750us
 // with preconditioned bitshifting inside: 8MIPS --> 7.6us, 500kHz -> 463us
-#pragma interrupt_level 1
+// #pragma interrupt_level 1
+
 static void set_handler_FLG(uint8_t handler_flg_spot){
 
 
@@ -455,20 +448,20 @@ static void reset_handler_FLG(uint8_t handler_flg_spot){
 
 
 
-static void process_next_char_from_input(void){
-	
-  uint8_t rx_data;
 
-// the actual gps input
-  get_data_from_buffer_with_pnt(&rx_data);
 
-  values_to_gps_rx_buffer(rx_data);
-  
 
+#if 0
+
+
+static void set_tmr_200ms_handler_dependencies_flgs(void){
+
+
+ 
+ 
 }
 
-
-#if RUN_TMR0_TEST_SLOW_CLCK
+#elif 1
 
 
 static void set_tmr_200ms_handler_dependencies_flgs(void){
@@ -482,8 +475,6 @@ static void set_tmr_200ms_handler_dependencies_flgs(void){
 #endif
   
 
-  // if(FAST_CLOCK == TRUE)
-  // {
     if(s_cnt >= 5)
     {
       
@@ -494,137 +485,36 @@ static void set_tmr_200ms_handler_dependencies_flgs(void){
         ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
         ertc_convert_to_str();
         
-        DB_PRINT("G: ");
-        ertc_convert_to_real_time(gps_rtc_get_second_cnt());
-        ertc_convert_to_str();
+        // DB_PRINT("G: ");
+        // ertc_convert_to_real_time(gps_rtc_get_second_cnt());
+        // ertc_convert_to_str();
       }
       
-      // AD9954Configura();
+      AD9954Configura();
 
       s_cnt = 0;
 
     }
 
-  
+
   if(LUZ_ENABLED == TRUE)
   {
     pwm_luz_time_update();
   }
-  
+
   
 // measure the setting time...
 
   
-  f_tilt_sensor_to_check();
+  // f_tilt_sensor_to_check();
   
  
-	// handlers_generic_set_handler_FLG(e_tilt_sensor_h);
- 
- 
-}
-
-#elif 1
-
-static void set_tmr_200ms_handler_dependencies_flgs(void){
-
-#if TEST_ERTC_SLOW_CLOCK
-	
-  static uint16_t s_cnt = 0;
-  
-  s_cnt++;
-  
-#endif
-  
-
-  if(FAST_CLOCK == TRUE)
-  {
-    if(s_cnt >= 5)
-    {
-      DB_PRINT("\r\nE: ");
-      
-      ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
-      ertc_convert_to_str();
-      
-      DB_PRINT("G: ");
-      ertc_convert_to_real_time(gps_rtc_get_second_cnt());
-      ertc_convert_to_str();
-
-      s_cnt = 0;
-     
-    }
-
-  }
-  else
-  {
-    if(s_cnt >= 300)
-    {
-      DB_PRINT("\r\nE: ");
-      
-      ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
-      ertc_convert_to_str();
-      
-      DB_PRINT("G: ");
-      ertc_convert_to_real_time(gps_rtc_get_second_cnt());
-      ertc_convert_to_str();
-
-      s_cnt = 0;
-     
-    }
-  }
-  
-  
-  f_tilt_sensor_to_check();
-  
-	// handlers_generic_set_handler_FLG(e_tilt_sensor_h);
-  
-}
-
-
-#elif TEST_ERTC_SLOW_CLOCK
-
-static void set_tmr_200ms_handler_dependencies_flgs(void){
-
-#if TEST_ERTC_SLOW_CLOCK
-	
-  static uint16_t s_cnt = 0;
-  
-  s_cnt++;
-  
-#endif
-  
-  
-  if(s_cnt >= 5)
-  {
-    DB_PRINT("\r\nE: ");
-    
-    
-    
-    ertc_convert_to_real_time(eRTC_get_second_cnt()/10);
-    ertc_convert_to_str();
-    
-    DB_PRINT("G: ");
-    ertc_convert_to_real_time(gps_rtc_get_second_cnt());
-    ertc_convert_to_str();
-    
-    
-    // DB_PRINT("U");
-#if TEST_ERTC_SLOW_CLOCK && 0   
-    if(FAST_CLOCK == TRUE)
-    {
-     
-     SWITCH_CLOCK = TRUE;
-     uart_init_slow_clock();
- 
-    }
-#endif    
-    
-    s_cnt = 0;
-   
-  }
-	
 	handlers_generic_set_handler_FLG(e_tilt_sensor_h);
-  
+ 
+ 
 }
+
+
 
 #else
   
@@ -663,6 +553,23 @@ static void set_tmr_200ms_handler_dependencies_flgs(void){
 
 #endif
 
+
+
+
+static void process_next_char_from_input(void){
+	
+  uint8_t rx_data;
+
+// the actual gps input
+  get_data_from_buffer_with_pnt(&rx_data);
+
+  values_to_gps_rx_buffer(rx_data);
+  
+
+}
+
+#if 1
+
 static void f_tilt_sensor_to_check(void){
   
   
@@ -672,8 +579,6 @@ static void f_tilt_sensor_to_check(void){
  
   
 }
-
-
 
 static void f_gps_on(void){
   
@@ -693,7 +598,10 @@ static void f_gps_has_position(void){
   
   // well, then we need to do all the things blablabla..
   
+  
   gps_stop();
+  
+  
   // * and then extract all the importan tinformation towards the necessary structures
   // * calculate the sleep time
   // * prepare the message allready as far as possible
@@ -706,8 +614,6 @@ static void f_gps_has_position(void){
   
 }
 
-
-
 static void f_prepare_msg(void){
   
   
@@ -717,7 +623,7 @@ static void f_prepare_msg(void){
 }
 
 
-#if 1
+
 
 // this only happens when exiting sleep mode,
 // therefore we just need the most basic things to start up, namely tmr4
@@ -804,7 +710,7 @@ static void f_gd_off(void){
   
   
   
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 // becasue in debugging we are sending ,sg and for that we will need speed in the clock
   if(FAST_CLOCK == FALSE)
   {
@@ -824,61 +730,6 @@ static void f_gd_off(void){
   DB_PRINT("SUP\r\n");
 
 }
-
-
-
-
-
-#else
-
-// this one is (almost) working
-static void f_gd_off(void){
-  
-  // when we enter here we do NOT need to take care of the oscillator timing related switch over
-  // because the WDT clock is so unreliable that we are not further bothered...
-  // --> that is going to be taken care of by the watch dog timer and sleep instruction...
-  
-  if(FAST_CLOCK == true)
-  {
-    // gd_states_set_gpsd_substate(E_TILT_SENSOR_IS_OFF);
-    DB_PRINT("DETECTOR IS OFF\r\n");
-    set_slow_clock();
-    configure_tmr4();
-    
-  }
-  
-  PERIPHERIC_IE = FALSE;
-	GLOBAL_IE = FALSE;
-  TMR4_IE = FALSE;
-  TMR4_ON = FALSE;
-  
-  LATC &= 0b11011011;
-  LATB &= 0b00100011;
-  LATA |= 0b01000000;
-  LATA &= 0b11101000;
-  
-  // And we need to swoff all the periferic ISR IE
-  
-  // and now set all the super low power things so that there is almost no consumption...
-  // and jsut checking the Input pin for activation
-  WDTCONbits.WDTPS = 0x0Au;
-  WDTCONbits.SWDTEN = 0x01u;  // wdton = true
-  OPTION_REGbits.INTEDG = TRUE;
-  INTCONbits.INTE = TRUE;
-  INTCONbits.INTF = FALSE;
-  while(INTCONbits.INTF == FALSE)
-  {
-    SLEEP();  // 512ms sleep
-    
-  }
-  
-  
-  handlers_generic_set_handler_FLG(e_tilt_sensor_h);
-  
-}
-
-
-#endif
 
 
 static void fn_clock_switching(void){
@@ -907,13 +758,83 @@ static void fn_clock_switching(void){
 }
 
 
+#else
+
+
+// static void process_next_char_from_input(void){
+// }
+
+static void f_tilt_sensor_to_check(void){
+  
+  
+
+  
+}
+
+
+
+static void f_gps_on(void){
+  
+  
+ 
+  
+  
+}
+
+static void f_gps_has_position(void){
+  
+
+  
+}
+
+
+
+static void f_prepare_msg(void){
+  
+  
+  
+  
+  
+}
+
+// this only happens when exiting sleep mode,
+// therefore we just need the most basic things to start up, namely tmr4
+static void f_gd_on(void){
+  
+
+  
+}
+
+
+
+// this one is (almost) working
+static void f_gd_off(void){
+ 
+  
+}
+
+
+
+
+static void fn_clock_switching(void){
+  
+  
+  
+}
+
+#endif
+
+
+
+
+
 
 
 
 static void err_handler_output(void){
 	
 	
-	UWT("\r\n  AN UNDEFINED ERROR OCURRED!\r\n");
+	DB_PRINT("\r\n UD ERROR !\r\n");
 	while(1);
 	
 }
@@ -921,7 +842,7 @@ static void err_handler_output(void){
 
 static void empty_function(void){
   
-#if DEBUGGING_IS_ON  
+#if DEBUGGING_IS_ON&&0  
   
 	return;
   
@@ -936,7 +857,7 @@ return; //  wat?
 
 
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
 
 // we can test that the array is synced with the enumeration
 // that is actually quite important!!
@@ -947,11 +868,11 @@ static void test_handler_array(void){
 	int8_t hlooper = 0;
 	
 	
-	assert(NUM_HANDLERS == (sizeof(Handler_arr)/sizeof(Handler_arr[0])));
+	// assert(NUM_HANDLERS == (sizeof(Handler_arr)/sizeof(Handler_arr[0])));
 
 	for(hlooper = 0; hlooper < NUM_HANDLERS; hlooper++)
 	{
-		assert(hlooper == Handler_arr[hlooper].Handlers)
+		// assert(hlooper == Handler_arr[hlooper].Handlers)
 	}
 #endif
 }
@@ -975,74 +896,6 @@ static void test_handler_array(void){
 //  * * * * * * * * * * * * * * * * * * *     U N U S E D   S T U F F     * * * * * * * * * * * * * * * * * * * * * * * * 
 //  * * * * * * * * * * * * * * * * * * *     U N U S E D   S T U F F     * * * * * * * * * * * * * * * * * * * * * * * * 
 
-#if 0 // OBSOLOTETE
-
-
-static void set_tmr_2ms_handler_dependencies_flgs(void){
-	
-	// every 2ms we test the btn and depending on theyr state we might do one thing ore another
-	// handlers_generic_set_handler_FLG(e_button_state_update_handler);
-	
-  static uint16_t rndcnt = 0xABCD;
-  
-	of_cnt_100ms++;
-	of_cnt_200ms++;
-	of_cnt_2000ms++;
-	of_cnt_seg_7d++;
-  
-
-	
-  // UWT("Ja\r\n");
-	
-#if USE_REAL_PCB	|| 1
-	// refresh buttons --> thats the handler NOT the btn pressed state!
-	if(OF_CNT_100MS < of_cnt_100ms)
-	{
-		
-		// handlers_generic_set_handler_FLG(e_button_handler);	
-		of_cnt_100ms = 0;
-		
-	}	
-	
-  
-#if 0  
-	// every 1000 ms led and seg7_d refresh
-	if(C_OF_CNT_SEG_7D < of_cnt_seg_7d)
-	{
-		// handlers_generic_set_handler_FLG(e_seg_7d_refresh_handler);
-		handlers_generic_set_handler_FLG(e_leds_refresh_handler);
-		of_cnt_seg_7d = 0;
-    rndcnt++;
-    UWT("16bit: ");
-    UART_int(rndcnt);
-    UART_CRLF;
-    
-    UWT("32bit: ");
-    UART_32_int(rndcnt);
-    UART_CRLF;
-    
-	}
-#endif
-	// every 200ms updating the swoff cnt...
-	if(OF_CNT_200MS < of_cnt_200ms)
-	{
-		
-		// handlers_generic_set_handler_FLG(e_swoff_tmr_handler);
-		of_cnt_200ms = 0;
-	}
-
-
-#endif
-	
-  
-
-
-
-}
-
-
-
-#endif
 
 
 
