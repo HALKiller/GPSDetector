@@ -22,6 +22,8 @@
 
 #include "io_port_sfr_names.h"
 
+#include "handlers.h"
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 typedef struct udt_my_time {
@@ -68,6 +70,8 @@ void eRTC_clock_incrementer(void){
   {
     rtc_decimo_cnt = 0u;
     
+    handlers_generic_set_handler_FLG(e_1000ms_h);
+    
     eRTC_second_cnt++;
     
     if(eRTC_second_cnt >= SECONDS_PER_DAY)
@@ -78,12 +82,7 @@ void eRTC_clock_incrementer(void){
     }
   }
   
-  gd.seconds_until_next_tx--;
-  
-  if(gd.seconds_until_next_tx == 0)
-  {
-    // well transmission i reckon...
-  }
+
 
 
 }

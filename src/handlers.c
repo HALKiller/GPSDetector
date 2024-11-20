@@ -61,7 +61,8 @@ static void process_next_char_from_input(void);
 static void f_gd_on(void);
 static void f_prepare_msg(void);
 static void f_rx_luz_com_handler(void);
-static void set_tmr_200ms_handler_dependencies_flgs(void);
+static void rtc_200ms_handler(void);
+static void rtc_1000ms_handler(void);
 static void f_gps_on(void);
 static void f_gps_has_position(void);
 static void err_handler_output(void);
@@ -70,6 +71,7 @@ static void empty_function(void);
 
 
 #if DEBUGGING_IS_ON
+static void local_up_f1(void);
 static void test_handler_array(void);
 #endif
 
@@ -90,9 +92,13 @@ static const HandlersHandlerType Handler_arr[] =
 	{ e_always_transmit_handler,          f_always_transmit },	  
   { e_gd_off_h,                         f_gd_off },	  
 	{ e_switch_clock_handler,             fn_clock_switching },	
+  { e_1000ms_h,                         rtc_1000ms_handler },	
+  
+  { e_200ms_h,                          rtc_200ms_handler },  
 	{ e_ring_buffer_handler,              process_next_char_from_input },
+#if !USE_DIRECT_CALL  
 	{ e_tilt_sensor_h,	                  f_tilt_sensor_to_check },	
-	{ e_200ms_h,                          set_tmr_200ms_handler_dependencies_flgs },
+#endif	
   { e_gps_on_h,                         f_gps_on },
   { e_prepare_msg_h,                    f_prepare_msg },
   
@@ -308,7 +314,7 @@ void get_the_next_handler(void){
           f_tilt_sensor_to_check();
         break;
         case e_200ms_h:                          
-          set_tmr_200ms_handler_dependencies_flgs();
+          rtc_200ms_handler();
         break;
         case e_gps_on_h:                         
           f_gps_on();
@@ -351,7 +357,7 @@ void get_the_next_handler(void){
 
 #endif
 
-// DB_PRINT("A\r\n");
+
 
 
 void reset_ring_buffer_handler_FLG(void){
@@ -443,22 +449,100 @@ static void reset_handler_FLG(uint8_t handler_flg_spot){
 
 
 
+#if DEBUGGING_IS_ON
+// this type of funciton is always only for debugging purposes...
+static void local_up_f1(void){
+  
+  DB_PRINT("\r\nE: ");
+        
+#if USE_FULL_SECONDS_FOR_RTC      
+  ertc_convert_to_real_time(eRTC_get_second_cnt());
+#else        
+  ertc_convert_to_real_time(eRTC_get_second_cnt() / 10u);
+        
+#endif      
+
+  ertc_convert_to_str();
+  
+  DB_PRINT("G: ");
+  ertc_convert_to_real_time(gps_rtc_get_second_cnt());
+  ertc_convert_to_str();
+  
+}
+
+#endif
+
+
+
+static void rtc_1000ms_handler(void){
+  
+  
+  // TODO: a flag which indicates if we are at the moment with some kind of doncnt timer
+  
+  gd.seconds_until_next_tx--;
+  
+  if(gd.seconds_until_next_tx == 0)
+  {
+    // well transmission i reckon...
+  }
+  
+#if DEBUGGING_IS_ON      
+  if(DEBUG_FLG_PRINT_TIME == TRUE)
+  {
+
+    local_up_f1();
+  }
+#endif    
+  
+  
+  
+}
+
 
 
 #if 0
 
 
-static void set_tmr_200ms_handler_dependencies_flgs(void){
+static void rtc_200ms_handler(void){
 
 
   handlers_generic_set_handler_FLG(e_tilt_sensor_h);
  
 }
 
+#elif USE_FULL_SECONDS_FOR_RTC
+
+
+
+
+static void rtc_200ms_handler(void){
+
+
+#if COMPILE_WITH_PWM_LUZ
+  if(LUZ_ENABLED == TRUE)
+  {
+    pwm_luz_time_update();
+  }
+#endif
+
+
+#if USE_DIRECT_CALL  
+  f_tilt_sensor_to_check();
+#else  
+// measure the setting time...
+  handlers_generic_set_handler_FLG(e_tilt_sensor_h);
+#endif 
+ 
+}
+
+
+
+
+
 #elif 1
 
 
-static void set_tmr_200ms_handler_dependencies_flgs(void){
+static void rtc_200ms_handler(void){
 
 #if TEST_ERTC_SLOW_CLOCK
 	
@@ -489,8 +573,7 @@ static void set_tmr_200ms_handler_dependencies_flgs(void){
         ertc_convert_to_real_time(gps_rtc_get_second_cnt());
         ertc_convert_to_str();
         
-        
-        // AD9954Configura();
+
         
       }
       
@@ -523,7 +606,7 @@ static void set_tmr_200ms_handler_dependencies_flgs(void){
 #else
   
 
-static void set_tmr_200ms_handler_dependencies_flgs(void){
+static void rtc_200ms_handler(void){
 
 #if TEST_ERTC_SLOW_CLOCK
 	

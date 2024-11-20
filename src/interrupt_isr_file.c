@@ -104,12 +104,43 @@ void __interrupt() isr(void){
     }
 #endif    
 		TMR0_IF = false;
-    // DB_LED2_SWAP;
 
 	}
 
 
+#if 1
 
+  // this is basically the e_rtc clocking here...
+	if((TMR4_IE == true) && (TMR4_IF == true))
+	{
+
+    tmr4_of_cnt--;
+    
+    if((FAST_CLOCK == false) || (tmr4_of_cnt == (uint8_t)0u))
+    {
+    
+      eRTC_clock_incrementer();
+      
+      handlers_generic_set_handler_FLG(e_200ms_h);
+      
+      if(SWITCH_CLOCK == true)
+      {
+        handlers_generic_set_handler_FLG(e_switch_clock_handler);
+        TMR4ON = false; // stop the Timer
+        SWITCH_CLOCK = false;
+      }
+
+     
+      tmr4_of_cnt = eRTC_TMR_CNT; // tmr4_200ms_of;
+      
+		}
+
+		TMR4_IF = false;
+
+	}
+
+#else
+  
   // this is basically the e_rtc clocking here...
 	if((TMR4_IE == true) && (TMR4_IF == true))
 	{
@@ -120,13 +151,14 @@ void __interrupt() isr(void){
     {
     
       eRTC_clock_incrementer();
-      
+
       if(SWITCH_CLOCK == true)
       {
         handlers_generic_set_handler_FLG(e_switch_clock_handler);
         TMR4ON = false; // stop the Timer
         SWITCH_CLOCK = false;
       }
+    
       else
       {
         
@@ -135,7 +167,7 @@ void __interrupt() isr(void){
         tmr4_of_cnt = tmr4_200ms_of;
         
       }
-      
+     
       tmr4_of_cnt = tmr4_200ms_of;
       
 		}
@@ -143,6 +175,8 @@ void __interrupt() isr(void){
 		TMR4_IF = false;
 
 	}
+  
+#endif
 	
 // TMR1 is a timeout tiemr and for full second timeout timing prepared...
   if((TMR1_IE == TRUE) && (TMR1_IF == TRUE))
