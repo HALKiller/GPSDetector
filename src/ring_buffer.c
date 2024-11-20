@@ -7,18 +7,23 @@
 
 
 #include "ring_buffer.h"
-#include "handlers.h"
+
 #include "Global.h"
-#include "io_port_sfr_names.h"
+
+#include "handlers.h"
+
 #include "UART.h"
 
+// #include <stdint.h>
 
-#include <stdint.h>
+#include "io_port_sfr_names.h"
 
-
-
-
+#if DEBUGGING_IS_ON
 #define RING_BUFFER_SIZE (uint8_t)10u
+#else
+#define RING_BUFFER_SIZE (uint8_t)40u  
+#endif
+
 #define NOT_SEARCH_THE_BUG 1
 
 #if 1
@@ -42,6 +47,7 @@ struct r_buffer{
 }ring_buff;
 
 #endif
+
 const uint8_t const_buffer_size = RING_BUFFER_SIZE;
 
 
@@ -150,7 +156,7 @@ uint8_t get_data_value_from_buffer(void){
 	
 	GLOBAL_IE = temp_GIE;	
   
-#if 1
+#if 0
 
   db_var = ret_value;
   

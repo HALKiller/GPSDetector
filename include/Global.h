@@ -22,9 +22,19 @@
 #define False (uint8_t)(0u)
 
 
+//  * * * * * * * * * * * * *  D E B U G G I N G   r e l a t e d     * * * * * * * * * * * * *  //
+//  * * * * * * * * * * * * *  D E B U G G I N G   r e l a t e d     * * * * * * * * * * * * *  //
+
 
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
+
+#define COMPILE_WITH_RX_LUZ 0
+#define COMPILE_WITH_PWM_LUZ 0
+
+// when set we use a calculation to get thevalues for the registers
+// otherwise we just plug in precalculated values --> ROM friendly
+#define CALCULATE_BAUDRATE 0
 
 
 
@@ -119,7 +129,7 @@ extern const uint16_t shifts[16];
 
 //  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
 
 #define LANGUAGE_SPANISH 0
 
@@ -128,6 +138,7 @@ extern const uint16_t shifts[16];
 #define DB_LED3_SWAP DB_LED_3=!DB_LED_3
 #define DB_LED2_SWAP DB_LED_2=!DB_LED_2
 #define DB_LED1_SWAP DB_LED_1=!DB_LED_1
+
 #define DB_LED_1_ON (DB_LED_1 = true)
 #define DB_LED_1_OFF (DB_LED_1 = false)
 
@@ -254,7 +265,7 @@ error again --> that MIPS is not standard so far --> write it extra out
 // these are the time s in seconds that the sensor has to have 
 // a stable reading to change the state initial state is off!! but still without having set to sleep
 #define TIME_THRESHOLD_FOR_DETECTOR_IS_ON ((uint16_t)2u)
-#define TIME_THRESHOLD_FOR_DETECTOR_IS_OFF ((uint16_t)2u)
+#define TIME_THRESHOLD_FOR_DETECTOR_IS_OFF ((uint16_t)4u)
 #define SENSOR_IS_TOP_MOUNTED ((uint8_t)1u) // because the signal is invertred depending on the sid of mounting
 
 

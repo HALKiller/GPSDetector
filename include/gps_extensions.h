@@ -30,8 +30,8 @@ enum eEstadoAntena
  */
 enum eLatitude
 {
-  N = 0, /**< Norte */
-  S      /**< Sur */
+  eNORTH = 0, /**< Norte */
+  eSOUTH      /**< Sur */
 };
 
 /**
@@ -40,8 +40,8 @@ enum eLatitude
  */
 enum eLongitude
 {
-  E = 0, /**< Este */
-  W      /**< Oeste */
+  eEAST = 0, /**< Este */
+  eWEST      /**< Oeste */
 };
 
 /**
@@ -261,35 +261,22 @@ typedef struct rmc_sentence_type {
 
 
 
-/**
- * @brief Estructura que almacena la trama recibida
- *
- * @param gps_buffer es el búfer donde se almacena físicamente la trama
- * recibida, y es el búfer que se modificará cuando se reciba una trama
- * 
- */
+// we buffer here the gps_sentnece we receive and also use the same
+// buffer for the transmission of the message and also for the rx_luz
+
 typedef struct gps_sentence_type{
   
-  uint8_t gps_buffer[MAX_SENTENCE_LENGTH];  /**< La trama que se va recibiendo se* aloja aquí dentro */
-  uint8_t position             ;  /**< Es el valor que tiene la última* posición de la entrada del búfer. * Sustituto de strlen */
-  bool ProcesaLaTrama                  ;  /**< Le dice al bucle principal que* ya ha recibido una trama completa y * que la procese*/
+  uint8_t gps_buffer[MAX_SENTENCE_LENGTH];
+  uint8_t position;
+  bool ProcesaLaTrama;
 
 } gps_sentence_t;
 
 
+extern gps_sentence_t sentence_buffer;
 
+extern RMC_sentence_t rmc_sentence;
 #define ELMS_TRAMA 79
-
-
-
-
-
-
-
-
-
-
-
 
 
 

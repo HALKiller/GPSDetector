@@ -9,8 +9,11 @@
 
 
 #include "ADC.h"
+
 #include "Global.h"
+
 #include "io_port_sfr_names.h"
+
 // #include "xc.h"
 // #include <stdint.h>
 
@@ -60,7 +63,7 @@ void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
   // Se enciende el módulo ADC
   ADCON0bits.ADON = 1;
 	
-	__delay_us( 250 ); // Tiempo de adquisición sobreestimado
+	__delay_us( 250 );
 
 	#if 1
 	if(canal == BATERIA_ADC_CHANNEL)

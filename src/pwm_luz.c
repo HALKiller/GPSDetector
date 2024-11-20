@@ -25,24 +25,25 @@
 
 #include "ADC.h"
 
+#include "handlers.h"
+
 #include <string.h>
 
-#include <stdint.h>
 
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
-
+#if 0
 struct udt_detector{
   
   uint8_t number;
   uint8_t max_detectores;
-  uint8_t transmit_time;
+  uint8_t transmission_duration;
   uint8_t syncro_time;
-  
+  uint16_t seconds_until_next_tx;
   
 };
-
+#endif
 
 
 struct udt_m{
@@ -57,6 +58,7 @@ struct udt_m{
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
+ #if 0
  
 static const uint16_t shifter[16] = {
 	
@@ -67,7 +69,7 @@ static const uint16_t shifter[16] = {
 	
 }; 
  
-
+#endif
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
@@ -86,13 +88,13 @@ static const uint16_t shifter[16] = {
 #endif
 
 
-#define PWM_LUZ_DEBUG 0
+// #define PWM_LUZ_DEBUG 0
 
-#if PWM_LUZ_DEBUG
-#define LED_SIMUL DB_LED_2
-#else
-#define LED_SIMUL  
-#endif
+// #if PWM_LUZ_DEBUG
+// #define LED_SIMUL DB_LED_2
+// #else
+// #define LED_SIMUL  
+// #endif
 
 
 
@@ -109,10 +111,17 @@ static const uint16_t shifter[16] = {
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
 static union8_t pwm_flgs;
-static struct udt_m pwm_luz;
-static uint8_t measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
-static struct udt_detector gd;
 
+static struct udt_m pwm_luz;
+
+static uint8_t measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
+
+struct udt_detector gd;
+
+
+uint8_t baterie_mV;
+
+static uint8_t gVoltajeBateriaTrasTransmision = 0;
 
 uint8_t FTW0[4];
 uint8_t FTW1[4];
@@ -144,7 +153,9 @@ static void db_printing_bits(uint8_t onoff_bit){
 }
 
 #if 0
+
 void init_detector_config(void){
+  
   uint8_t t_var = 0x15;
   UART_int(t_var);
 
@@ -168,10 +179,11 @@ void init_detector_config(void){
   
   
   gd.number = gd_number;  
-  gd.transmit_time  = LeerEeprom ( 0x42u );
+  gd.transmission_duration  = LeerEeprom ( 0x42u );
   gd.syncro_time    = LeerEeprom ( 0x43u ); 
   gd.max_detectores = LeerEeprom ( 0x47u );
   
+  gd.time_between_tx = gd.transmission_duration * gd.max_detectores;
   
   for ( i = 0; i < 4; i++ )
   {
@@ -194,7 +206,7 @@ void init_detector_config(void){
   
   ee_retval = LeerEeprom ( 0x46u );
  
-#if DEBUGGING_IS_ON&&0 
+#if DEBUGGING_IS_ON 
 
   DB_PRINT("CFG: ");
   
@@ -214,7 +226,12 @@ void init_detector_config(void){
   
   ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
 
+  if(ALWAYS_TRANSMIT == true)
+  {
+    handlers_generic_set_handler_FLG(e_always_transmit_handler);
+  }
   
+
 #elif 1
 
 
@@ -247,8 +264,108 @@ void init_detector_config(void){
 
 #endif
 
+uint8_t get_detector_number(void){
+  
+  return gd.number;
+  
+}
+
+uint8_t get_sync_time(void){
+  
+  
+  return gd.syncro_time;
+  
+}
 
 
+uint8_t get_transmission_duration(void){
+  
+  return gd.transmission_duration;
+  
+}
+
+uint8_t get_max_detectores(void){
+  
+  return gd.max_detectores;
+  
+}
+
+
+
+void LeerValorBateria(bool AntesDeTransmitir){
+
+  uint16_t adcvalue;
+  uint16_t adcconv;
+
+
+	// swoff_global_interrupt();
+  
+  ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
+
+  adcconv = ( (ADRESH * 256) + ADRESL );
+  
+  // adcconv = ADRESH;
+  // adcconv = adcconv<<8 & ADRESL;
+  
+  // adcconv = ( (ADRESH << 8) & ADRESL );
+  
+	// restore_global_interrupt();
+
+#if 1
+
+  // this is the original good one!
+  adcvalue = ( ( ( adcconv * 10 + 36 ) / 18 ) + ( ( adcconv * 17 + 49 ) / 48 ) ) / 7;
+  
+#else  
+  
+  DB_PRINT("\r\nOld: ");
+  
+  UART_int(adcvalue);
+  
+
+  
+  adcvalue = (adcconv * 131 + 759) / 1008;// that does not fit into a uint16_t 
+  DB_PRINT("\r\nNEW: ");
+  UART_int(adcvalue);
+  DB_PRINT("\r\n");
+#endif
+
+
+  if ( AntesDeTransmitir == true )
+  {
+    baterie_mV = ( adcvalue & 0x00ff );
+    // TODO:
+    // implement this line
+    // gTransmiteADoblePeriodo = ( ( adcconv / 4 ) <= LeerEeprom( 0x48 ) );
+  }
+  else
+  {
+    // 
+    gVoltajeBateriaTrasTransmision = ( adcvalue & 0x00ff );
+  }
+  
+  adcvalue = 0;
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if COMPILE_WITH_PWM_LUZ
 // if the pwm_luz is on from the config we enter here every time_base time(200ms)
 // and have to update than depending on the different counters the states..
 // to make the whole thing second based i use a cnt to five first and therefroe i can stay with most things inside a normal uint8_t cnt...
@@ -267,7 +384,7 @@ void pwm_luz_time_update(void){
         PWM_IS_ON = FALSE;
         LED = FALSE;
 #if PWM_LUZ_DEBUG
-        LED_SIMUL = FALSE;
+        LED_SIMUL_OFF;
 #endif        
       }
       else
@@ -326,9 +443,9 @@ uint8_t read_ilum_sensor(void){
 
 	uint8_t ret_value;
 
-#if 0
+
   ConversionAdc(LEFT_JUSTIFIED, LDR_ADC_CHANNEL);
-#endif	
+	
   ret_value = ADRESH;
 	
 	return ret_value;
@@ -354,7 +471,7 @@ static void measure_ilumination(void){
   TMR0_IE = FALSE;
   LED = false;  // so that we are not measuring the LED
 #if PWM_LUZ_DEBUG
-  LED_SIMUL = FALSE;
+  LED_SIMUL_OFF;
 #endif        
   
   t_val = read_ilum_sensor(); 
@@ -383,13 +500,15 @@ static void measure_ilumination(void){
       TMR0_IE = false;
       LED = false;
 #if PWM_LUZ_DEBUG
-      LED_SIMUL = FALSE;
+      LED_SIMUL_OFF;
 #endif        
   
     }
   }
 }
 
+
+#endif // COMPILE_WITH_PWM_LUZ
 
 
 

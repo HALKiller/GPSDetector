@@ -36,6 +36,7 @@ void gd_states_initialize(void);
 
 void gd_states_switch_to_next_state(e_gpsd_states_t next_state);
 
+e_gpsd_states_t gd_states_get_state(void);
 
 #else
 

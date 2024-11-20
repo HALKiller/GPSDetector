@@ -47,6 +47,8 @@
 
 #include "handlers.h"
 
+#include "gd_states.h"
+
 // #include "io_port_sfr_names.h"
 
 #include "my_assert.h"
@@ -100,6 +102,10 @@ void main(void)
 void main(void)
 {
   
+  // TODO: the init_routine needs to get overworked becasue the rx_luz is going 
+  // to be happening before anything else
+  // and therefore there should not be any 
+// Isr be active allready except perhaps the UART during debugging!!!
   
 #if DEBUGGING_IS_ON
 
@@ -114,8 +120,13 @@ void main(void)
 
 	init_all();
 
-  UWT(&SW_version[0]);
-
+#if DEBUGGING_IS_ON
+  DB_PRINT(&SW_version[0]);
+#endif
+  // the reset is over --> lets swap to the next gd_state...
+  
+  gd_states_switch_to_next_state(E_LUZ_COM_STATE);
+  
 	get_the_next_handler();
 
   // becasue we should never ever get back here 

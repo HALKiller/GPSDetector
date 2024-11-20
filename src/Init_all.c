@@ -57,7 +57,7 @@ static void init_IO_PORTS(void);
 
 
 
-
+// this is the keeper of the reset output...
 static uint8_t t_status __at(0x16F); // (0xA0);
 
 #if 1
@@ -65,7 +65,7 @@ static uint8_t t_status __at(0x16F); // (0xA0);
 void init_all(void){
 
 
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
   uint8_t t_var = MIPS;
 #endif
 
@@ -75,7 +75,6 @@ void init_all(void){
   init_clock();
 
 
-
 // datasheet --> switching to the PLL can take +- 2ms --> 
 	__delay_ms(5);
 
@@ -83,19 +82,19 @@ void init_all(void){
 	
 	// init_tmr0();
 	
-	// init_tmr1();
+	init_tmr1();
 	
 	// configure_tmr2();
 	
   // TODO:
   // gFLGS reset ons startup
-  init_UART();
+#if DEBUGGING_IS_ON
 
-  init_detector_config();
-	
-	init_IO_PORTS();
+  uart_init_cfg(B57600);
   
-#if DEBUGGING_IS_ON&&0
+  // init_UART();
+
+
 	UWT("BUILD: ");
 	UWT(__DATE__);
 	UWT("  ");
@@ -104,21 +103,32 @@ void init_all(void){
 	UWT("MIPS: ");
 	UART_int(t_var);
 	UART_CRLF;
-#endif
   
+#endif
 
+  gd_states_initialize();
+  
+  init_handler_flg();
+  
+  init_detector_config();
+	
+	init_IO_PORTS();
+ 
+   // hunting reset states...
+  DB_LED1_SWAP;
  
   configure_tmr4();
   
-
-
-  gd_states_initialize();
-
   tilt_sensor_init();
   
- 
-	init_handler_flg();
+	
 
+#if 1
+
+  startup();
+  
+#else  
+  
 	RX_IF = FALSE;
 	RX_IE = TRUE;
   
@@ -129,14 +139,14 @@ void init_all(void){
 	PERIPHERIC_IE = TRUE;
 	GLOBAL_IE = TRUE;
 
-
   TMR4_IF = FALSE;
   TMR4_IE = TRUE;
   
   TMR4_ON = TRUE;
   
+#endif
   
-
+  
 // for reference...
   // TMR4ON = true;   // bad
   // TMR4_ON = TRUE;  // good
@@ -156,7 +166,7 @@ void init_all(void){
 void init_all(void){
 
 
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
   uint8_t t_var = MIPS;
 #endif
 
@@ -187,7 +197,7 @@ void init_all(void){
 	
 	init_IO_PORTS();
   
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
 	UWT("BUILD: ");
 	UWT(__DATE__);
 	UWT("  ");
@@ -207,7 +217,7 @@ void init_all(void){
   
   
   
-  tilt_sensor_init();
+  // tilt_sensor_init();
 
   init_detector_config();
 
@@ -228,11 +238,12 @@ void init_all(void){
 
 
   TMR4_IF = FALSE;
+  
   TMR4_IE = TRUE;
   
   TMR4_ON = TRUE;
   
-  
+  TIMEOUT_FLG = false;
 
 // for reference...
   // TMR4ON = true;   // bad
@@ -248,6 +259,25 @@ void init_all(void){
 
 #endif
 
+// we set here all the timers and handlers and stuff
+void startup(void){
+  
+  tilt_sensor_init();
+  
+  // RX_IF = FALSE;
+	// RX_IE = TRUE;
+  
+	TMR0_IF = FALSE;
+	TMR0_IE = FALSE;
+
+	PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = TRUE;
+  TMR4_IF = FALSE;
+  TMR4_IE = TRUE;
+  TMR4_ON = TRUE;
+  
+  
+}
 
 static void init_wdt(void){
 	
@@ -267,6 +297,8 @@ static void init_wdt(void){
 	
 	
 }
+
+
 
 
 
@@ -346,14 +378,21 @@ static void init_IO_PORTS(void){
 	ANSELB = 0x00;	
 	// ANSELC = 0x00;
 
+	LATA = 0x00;
+	LATB = 0x00;
+	LATC = 0x04;
+
+
+
 	TRISA = 40u;  // 0x1F;
 	TRISB = 1u; // 0x00;
 	TRISC = 128u; // 0x80;
 
-	LATA = 0x00;
-	LATB = 0x00;
-	LATC = 0x04;
+
 	
+  
+  
+  
 	WPUB = 0b00000000;
 
 

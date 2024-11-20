@@ -9,6 +9,8 @@
 
 #if 1
 
+void Transmite(bool TransmiteRadiogonio);
+
 void AD9954Configura(void);
 
 void AD9954TransmiteMensaje(void);
@@ -275,25 +277,7 @@ void AD9954TransmiteStringAscii(uint16_t NumDatos, uint8_t *DatosAEnviar);
  */
 void inline AD9954TransmiteString( uint8_t NumDatos, uint8_t *CadenaAscii );
 
-/**
- * @brief Función que configura el sintetizador para su funcionamiento
- */
 
-
-/**
- * @brief Función que realiza una transmisión de un mensaje
- */
-
-
-/**
- * @brief Función que limpia el buffer de transmisión del mensaje
- */
-
-
-/**
- * @brief Función que concatena al final del búffer de transmisión una cadena
- */
-void AD9954InsertarEnBuffer( uint8_t *Cadena );
 
 /**
  * @brief Función que enciende el sintetizador para comenzar la transmisión

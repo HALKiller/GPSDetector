@@ -54,7 +54,7 @@
 
 #if HW_GPS_DETECTOR
 
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
 #define USE_DBLED_PINS 1
 #else
 #define USE_DBLED_PINS 0  
@@ -65,11 +65,11 @@
 
 
 // --------   PORT A  ---------------
-#define SYNC_AD9954 	DB_LED_1  // LATAbits.LATA0		
-#define SDIO_AD9954 	DB_LED_2  // LATAbits.LATA1		
+#define SYNC_AD9954 	LATAbits.LATA0	// DB_LED_1  // 	
+#define SDIO_AD9954 	LATAbits.LATA1	// DB_LED_2  // 	
 #define SCLK_AD9954 	DB_LED_3  // LATAbits.LATA2	 
 #define BATERIA 	    PORTAbits.PORTA3   
-#define VDD_AD9954 	  LATAbits.LATA4 
+#define VDD_AD9954 	  LATAbits.LATA4 // that gives Valim to the DDS and the Amplifier stage we do not really wanna tansmit anything...
 #define LDR 				  PORTAbits.PORTA5   
 #define FREE_RA6      LATAbits.LATA6  // becaseu that is always together with the DDS
 #define LED           LATAbits.LATA7
@@ -79,8 +79,8 @@
 // --------   PORT B  ---------------
 #define TILT_SENSOR 	PORTBbits.RB0
 #define FREE_RB1 	    LATBbits.LATB1
-#define PS0_AD9954 	  LATBbits.LATB2
-#define PS1_AD9954 	  LATBbits.LATB3
+#define PS0_AD9954 	  DB_LED_1  // LATBbits.LATB2
+#define PS1_AD9954 	  DB_LED_2  // LATBbits.LATB3
 #define UPDATE_AD9954 LATBbits.LATB4
 #define FREE_RB5 	    LATBbits.LATB5
 #define ICSPCLCK 			LATBbits.LATB6
@@ -101,6 +101,10 @@
 
 // --------   PORT E  ---------------
 #define MCLR 			PORTEbits.RE3
+
+
+#define VALIM_TRANSMISSION_ON()
+#define VALIM_TRANSMISSION_OFF()
 
 
 
@@ -144,11 +148,17 @@
 // --------   PORT E  ---------------
 #define MCLR 			PORTEbits.RE3
 
+
+#define VALIM_TRANSMISSION_ON() VDD_AD9954 = true;
+#define VALIM_TRANSMISSION_OFF() VDD_AD9954 = false;
+
+
+
 #endif
 
 // --------   AN_Channels names  ---------------
-#define BATERIA_ADC_CHANNEL 3
-#define LDR_ANALOG_CHANNEL 4
+#define BATERIA_ADC_CHANNEL 4
+// #define LDR_ANALOG_CHANNEL 4
 #define LDR_ADC_CHANNEL 3
 
 #define VREF_ADC_CHANNEL 0x1F

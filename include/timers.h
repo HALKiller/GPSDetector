@@ -29,6 +29,7 @@
 #define TMR1_4_PRESCALER	2u
 #define TMR1_8_PRESCALER	3u
 
+#define USE_TMR0_FLG 1
 
 #if MIPS == 8
 
@@ -83,6 +84,145 @@ wat
 #define TMR2_14_POSTSCALER	13u
 #define TMR2_15_POSTSCALER	14u
 #define TMR2_16_POSTSCALER	15u
+
+
+
+#if MIPS == 8
+
+#define TMR2_300BAUD_PRE   TMR2_16_PRESCALER;
+#define TMR2_300BAUD_POST  TMR2_07_POSTSCALER;
+#define TMR2_300BAUD_PR    (uint8_t)238;	
+
+
+#define TMR2_150BAUD_PRE   TMR2_16_PRESCALER;
+#define TMR2_150BAUD_POST  TMR2_14_POSTSCALER;
+#define TMR2_150BAUD_PR    (uint8_t)238;	
+
+#define TMR2_DDS_CFG_PR    (uint8_t)80;	
+
+// the rx_luz tmr2 cfg
+#define TMR2_15MS_PRE     TMR2_64_PRESCALER
+#define TMR2_15MS_POST    TMR2_15_POSTSCALER
+#define TMR2_15MS_PR      125u
+
+#define TMR2_1MS_PRE      TMR2_64_PRESCALER
+#define TMR2_1MS_POST     TMR2_01_POSTSCALER
+#define TMR2_1MS_PR       125u
+
+#define TMR2_500US_PRE    TMR2_16_PRESCALER
+#define TMR2_500US_POST   TMR2_01_POSTSCALER
+#define TMR2_500US_PR     250u
+
+#define TMR2_3072US_PRE   TMR2_64_PRESCALER
+#define TMR2_3072US_POST  TMR2_04_POSTSCALER
+#define TMR2_3072US_PR    96u
+
+
+#elif MIPS == 4
+
+#define TMR2_300BAUD_PRE   TMR2_04_PRESCALER;
+#define TMR2_300BAUD_POST  TMR2_14_POSTSCALER;
+#define TMR2_300BAUD_PR    (uint8_t)238;	
+
+
+#define TMR2_150BAUD_PRE   TMR2_16_PRESCALER;
+#define TMR2_150BAUD_POST  TMR2_07_POSTSCALER;
+#define TMR2_150BAUD_PR    (uint8_t)238;	
+
+#define TMR2_DDS_CFG_PR    (uint8_t)40;	
+
+// the rx_luz tmr2 cfg
+#define TMR2_15MS_PRE     TMR2_16_PRESCALER
+#define TMR2_15MS_POST    TMR2_15_POSTSCALER
+#define TMR2_15MS_PR      250u
+
+#define TMR2_1MS_PRE      TMR2_16_PRESCALER
+#define TMR2_1MS_POST     TMR2_01_POSTSCALER
+#define TMR2_1MS_PR       250u
+
+#define TMR2_500US_PRE    TMR2_16_PRESCALER
+#define TMR2_500US_POST   TMR2_01_POSTSCALER
+#define TMR2_500US_PR     125u
+
+#define TMR2_3072US_PRE   TMR2_16_PRESCALER
+#define TMR2_3072US_POST  TMR2_08_POSTSCALER
+#define TMR2_3072US_PR    96u
+
+
+
+
+#elif MIPS == 2
+
+#define TMR2_300BAUD_PRE   TMR2_04_PRESCALER;
+#define TMR2_300BAUD_POST  TMR2_07_POSTSCALER;
+#define TMR2_300BAUD_PR    (uint8_t)238;	
+
+
+#define TMR2_150BAUD_PRE   TMR2_04_PRESCALER;
+#define TMR2_150BAUD_POST  TMR2_14_POSTSCALER;
+#define TMR2_150BAUD_PR    (uint8_t)238;		
+
+#define TMR2_DDS_CFG_PR    (uint8_t)20;	
+
+// the rx_luz tmr2 cfg
+#define TMR2_15MS_PRE     TMR2_16_PRESCALER
+#define TMR2_15MS_POST    TMR2_15_POSTSCALER
+#define TMR2_15MS_PR      125u
+
+#define TMR2_1MS_PRE      TMR2_16_PRESCALER
+#define TMR2_1MS_POST     TMR2_01_POSTSCALER
+#define TMR2_1MS_PR       125u
+
+#define TMR2_500US_PRE    TMR2_04_PRESCALER
+#define TMR2_500US_POST   TMR2_01_POSTSCALER
+#define TMR2_500US_PR     250u
+
+#define TMR2_3072US_PRE   TMR2_16_PRESCALER
+#define TMR2_3072US_POST  TMR2_04_POSTSCALER
+#define TMR2_3072US_PR    96u
+
+
+
+#elif MIPS == 1
+
+#define TMR2_300BAUD_PRE   TMR2_01_PRESCALER;
+#define TMR2_300BAUD_POST  TMR2_14_POSTSCALER;
+#define TMR2_300BAUD_PR    (uint8_t)238;	
+
+
+#define TMR2_150BAUD_PRE   TMR2_04_PRESCALER;
+#define TMR2_150BAUD_POST  TMR2_07_POSTSCALER;
+#define TMR2_150BAUD_PR    (uint8_t)238;			
+
+#define TMR2_DDS_CFG_PR    (uint8_t)10;	
+
+
+// the rx_luz tmr2 cfg
+#define TMR2_15MS_PRE     TMR2_04_PRESCALER
+#define TMR2_15MS_POST    TMR2_15_POSTSCALER
+#define TMR2_15MS_PR      250u
+
+#define TMR2_1MS_PRE      TMR2_04_PRESCALER
+#define TMR2_1MS_POST     TMR2_01_POSTSCALER
+#define TMR2_1MS_PR       250u
+
+#define TMR2_500US_PRE    TMR2_04_PRESCALER
+#define TMR2_500US_POST   TMR2_01_POSTSCALER
+#define TMR2_500US_PR     125u
+
+#define TMR2_3072US_PRE   TMR2_04_PRESCALER
+#define TMR2_3072US_POST  TMR2_08_POSTSCALER
+#define TMR2_3072US_PR    96u
+
+
+#else
+  
+wat
+
+#endif
+
+
+
 
 // --------   T M R  4  ---------------
 #define TMR4_ON T4CONbits.TMR4ON
@@ -288,11 +428,22 @@ err here --> undefined so far
 
 #endif
 
+typedef enum tmr1_id_e{
+  
+  RX_LUZ_TIME_OUT,
+  GPS_UART_TIMEOUT,
+  NUM_TMR1_ID,
+  
+}tmr1_id_t;
 
 
+void timers_tmr1_decreaser(void);
 
+void timers_set_tmr1_id(tmr1_id_t t_id);
 
+uint8_t timeout_checker(void);
 
+void reset_timeout_timer(void);
 
 
 void configure_tmr4(void);
@@ -310,10 +461,9 @@ void init_tmr1(void);
 
 
 
-extern uint8_t tmr4_200ms_of;
+extern volatile uint8_t tmr4_200ms_of;
 
 // extern volatile uint8_t tmr4_of_cnt;
-
 
 
 

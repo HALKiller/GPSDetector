@@ -5,11 +5,6 @@
 
 
 
-#define LDR_ADC_CHANNEL 3
-// LDR_ANALOG_CHANNEL
-// #define BATERIA_ADC_CHANNEL 4
-
-
 #define LEFT_JUSTIFIED 0
 #define RIGHT_JUSTIFIED 1
 

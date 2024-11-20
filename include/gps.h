@@ -1,6 +1,8 @@
 #ifndef GPS_H
 #define GPS_H
 
+#include "Global.h"
+
 #include <stdint.h>
 
 #include "gps_extensions.h"
@@ -25,6 +27,7 @@ typedef enum gps_state_type {
   
   STATE_OFF,
   GPS_ALL_GOOD,
+  GPS_SENTENCE_RECEIVING,
   RECEIVING_NOT_CORRECTLY,
   NO_BAUDSETTING_WORKS, // Unahnaled error so far!!
   NOT_RECEIVING,
@@ -101,7 +104,7 @@ uint8_t gps_rmc_time_is_good_test(void);
 
 void gps_set_debbugging_sync_time_flg(void);
 
-
+uint8_t gps_buffer_get_len(void);
 
 
 

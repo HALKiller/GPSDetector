@@ -18,32 +18,144 @@
 
 #include "generic_union_flgs.h"
 
+#include "handlers.h"
+
+#include "my_assert.h"
+
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
-
-
-
-uint8_t tmr4_200ms_of = 10;
-
-
-//   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
- 
 
 
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
+#define TMR1_2_SECOND_OF_CNT (uint8_t)MIPS*4u	
+#define TMR1_4_SECOND_OF_CNT (uint8_t)MIPS*8u	
+
+
+//   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
+
+static const uint8_t timeout_setter[2] = {
+  TMR1_2_SECOND_OF_CNT,
+  TMR1_4_SECOND_OF_CNT,
+ };
+
+
+
 
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
+volatile uint8_t tmr4_200ms_of = 10;
 
+volatile static uint8_t timeout_cnt = TMR1_2_SECOND_OF_CNT;
 
+static tmr1_id_t tmr1_id = NUM_TMR1_ID;
+static uint8_t timeout_cnt_setter = TMR1_2_SECOND_OF_CNT;
+// static uint8_t tmr0_id = NUM_TMR0_ID;
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
+
+static void tmr1_timeout_handler(void);
 
 
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
+
+
+#if 1
+
+void timers_set_tmr1_id(tmr1_id_t t_id){
+  
+  tmr1_id = t_id;
+  timeout_cnt_setter = timeout_setter[tmr1_id];
+  
+}
+
+
+
+void timers_tmr1_decreaser(void){
+  
+  
+  timeout_cnt--;
+  
+  if(timeout_cnt == 0u)
+  {
+    
+    tmr1_timeout_handler();
+
+  }
+  
+
+}
+
+
+
+
+
+#if !USE_TMR0_FLG
+
+uint8_t timeout_checker(void){
+	
+	uint8_t ret_value = 0;
+	
+  assert(tmr1_id != NUM_TMR1_ID);
+  
+	if(TMR1IF == true)
+	{		
+		TMR1IF = false;
+    
+		timeout_cnt--;
+    
+		if(timeout_cnt == 0)
+		{	
+			ret_value = true;
+		}
+	}
+
+	return ret_value;
+}
+
+#endif
+
+
+
+void reset_timeout_timer(void){
+	  
+  uint8_t t_tmr1on = (TMR1_ON != 0u); // for misra
+  uint8_t t_tmr1_ie = (TMR1_IE != 0u);    
+    
+  // uint8_t t_tmr1_ie = TMR1_IE;
+  // uint8_t t_tmr1on = TMR1_ON;
+    
+  // bool t_tmr1_ie = TMR1_IE;
+  // bool t_tmr1on = TMR1_ON;
+    
+  // bool t_tmr1_ie = (bool)TMR1_IE;
+  // bool t_tmr1on = (bool)TMR1_ON;
+  // bool t_tmr1on = (TMR1_ON != 0u);
+  // bool t_tmr1_ie = (TMR1_IE != 0u);
+
+  
+  TMR1_ON = FALSE;
+  
+  TIMEOUT_FLG = FALSE;
+  
+	timeout_cnt = timeout_cnt_setter; // TMR1_2_SECOND_OF_CNT;
+  
+	TMR1IF = FALSE;
+  
+	TMR1H = 0u;
+  
+	TMR1L = 0u;
+  
+	TMR1_ON = t_tmr1on;
+  
+  TMR1_IE = t_tmr1_ie;
+  
+}
+
+#endif
 
 
 // TMR is for the 200ms base time around which the eRTC runs and the 
@@ -164,7 +276,34 @@ error again --> that MIPS is not standard so far --> write it extra out
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
 
 
-
+static void tmr1_timeout_handler(void){
+  
+  
+  switch (tmr1_id)
+  {
+    case RX_LUZ_TIME_OUT:
+    
+      TIMEOUT_FLG = TRUE;
+      
+      
+    break;
+    
+    case GPS_UART_TIMEOUT:
+      handlers_generic_set_handler_FLG(e_gps_test_reception);
+    break;
+    
+    default:
+    
+      // assert(false);
+      
+    break;
+    
+    
+  }
+  
+  TMR1_ON = FALSE;
+  
+}
 
 
 // EOF

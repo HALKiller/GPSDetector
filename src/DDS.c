@@ -17,6 +17,12 @@
 
 #include "generic_union_flgs.h"
 
+#include "gps_extensions.h"
+
+#include "gps.h"
+
+#include "pwm_luz.h"
+
 #include <string.h>
 
 
@@ -52,9 +58,11 @@ extern bool gTrueSi150FalseSi300;
 
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
+
 static void AD9954Enciende(void);
+static void AD9954Apaga(void);
 static void SpiTransmite(uint8_t Dato);
-static void AD9954TransmiteString( uint8_t NumDatos, uint8_t *CadenaAscii );
+static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos);
 static void AD9954EscribeRegistro( uint8_t *DireccionRegistro, uint16_t NumDatos, uint8_t *DatosAEnviar);
 static void AD9954TransmiteByte(uint8_t ByteBaudot);
 static void AD9954PulsoUpdate(void);
@@ -62,6 +70,123 @@ static void AD9954PulsoIoSync(void);
 static void select_bank(uint8_t bankbits);
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
+
+
+#if DEBUGGING_IS_ON
+void Transmite(bool TransmiteRadiogonio){
+
+	
+  uint8_t sync_time = get_sync_time();
+  
+  DB_PRINT(sentence_buffer.gps_buffer); 
+  UART_CRLF;
+
+
+  RCIE   = false;
+  TMR1IE = false;
+  T0IE   = false;
+	
+#if DEBUG_16F1936_PITADA
+	DB_LED = true;
+  
+#endif
+
+// becasue we are NOT transmitting at the moment, i am not interested in that
+
+  AD9954Enciende();
+
+  AD9954Configura();
+  
+  
+  // Transmisión de sincronismo
+  PS1_AD9954 = TransmiteRadiogonio;
+  PS0_AD9954 = 1;
+  
+  for ( uint8_t i = 0; i < sync_time; i++ )
+  {
+    UART_CRLF;
+    // DB_PRINT("Delay\r\n");
+    __delay_ms(1000);
+    // Delay ( 33250 ); // Equivalente en función a un delay de medio segundo
+    // Delay ( 33250 );
+  }
+  
+  // Transmisión de pitada de datos
+  AD9954TransmiteMensaje();
+  PS0_AD9954 = 1;
+  AD9954Apaga();
+  // APAGA_TRANSMISOR();
+#if DEBUG_16F1936_PITADA
+	DB_LED = false;
+#endif	
+
+
+  RCIE   = true;
+  TMR1IE = true;
+  T0IE   = true;
+  TMR2IE = false;
+
+
+}
+
+#else
+  
+void Transmite(bool TransmiteRadiogonio){
+
+  uint8_t sync_time = get_sync_time();
+
+  RCIE   = false; // correct
+  TMR1IE = false;
+  T0IE   = false;
+
+  // ENCIENDE_TRANSMISOR();  // That does not exist anymore...
+  AD9954Enciende();
+  AD9954Configura();
+  // Transmisión de sincronismo
+  PS1_AD9954 = TransmiteRadiogonio;
+  PS0_AD9954 = 1;
+  
+  // we can set up here the tmr1 overflower...
+  for ( uint8_t i = 0; i < sync_time; i++ )
+  {
+        __delay_ms(1000);
+    // Delay ( 33250 ); // Equivalente en función a un delay de medio segundo
+    // Delay ( 33250 );
+  }
+  
+  // Transmisión de pitada de datos
+  AD9954TransmiteMensaje();
+  PS0_AD9954 = 1;
+  AD9954Apaga();
+  // APAGA_TRANSMISOR();
+
+  RCIE   = true;
+  TMR1IE = true;
+  T0IE   = true;
+  TMR2IE = false;
+
+}
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #if 1
 
@@ -103,10 +228,8 @@ void AD9954SelectorBanco3(void)
 // 
 void AD9954Configura(void){
   
+ 
   
-  
-  
-  AD9954Enciende();
   
   // DB_PRINT("A:\r\n");
   
@@ -123,6 +246,8 @@ void AD9954Configura(void){
   // DB_PRINT("B:\r\n");
   
   AD9954PulsoUpdate();
+  
+  
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)CFR2Info, 3, (uint8_t *)CFR2);
   
@@ -188,7 +313,7 @@ void AD9954Configura(void){
 void AD9954Configura(void){
   
   
-  AD9954Enciende();
+  
   
   // Cuidado con las variables const.
   // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
@@ -242,12 +367,18 @@ void AD9954Configura(void){
 
 void AD9954TransmiteMensaje(void){
   
-  // Actualiza el tamaño del búfer para saber cuántos bits ha de transmitir
+  // TODO: get the Null_Terminator len_cnt 
+#if 0  
   gEntradaDeTrama.PosicionDelBufer = strlen((const char *) gEntradaDeTrama.BuferDeEntrada);
+#else
+  sentence_buffer.position = gps_buffer_get_len();
+#endif
+
   
 #if 1
 
-  AD9954TransmiteString(4, &msg_header[0]);
+  AD9954TransmiteString(&msg_header[0], 4);
+  // AD9954TransmiteString(4, &msg_header[0]);
   
 #else  
   
@@ -258,10 +389,14 @@ void AD9954TransmiteMensaje(void){
   
 #endif
   
-  AD9954TransmiteString(gEntradaDeTrama.PosicionDelBufer, gEntradaDeTrama.BuferDeEntrada);
+  AD9954TransmiteString(sentence_buffer.gps_buffer, sentence_buffer.position);
+  // AD9954TransmiteString(gEntradaDeTrama.BuferDeEntrada, gEntradaDeTrama.PosicionDelBufer);
+  
+  // AD9954TransmiteString(gEntradaDeTrama.PosicionDelBufer, gEntradaDeTrama.BuferDeEntrada);
 
 #if 1
-  AD9954TransmiteString(3, &msg_tail[0]);
+  AD9954TransmiteString(&msg_tail[0], 3);
+  // AD9954TransmiteString(3, &msg_tail[0]);
 #else  
   AD9954_TRANSMITE_CARACTER_ASCII('X');  // Carácter de fin de trama
   AD9954_TRANSMITE_CARACTER_ASCII('\n'); // Otra nueva línea, para que se pueda detectar en el programa receptor
@@ -283,7 +418,8 @@ void AD9954TransmiteMensaje(void){
   AD9954_TRANSMITE_CARACTER_ASCII('<');   // Con 2 también se puede transmitir el mensaje sin problemas
   AD9954_TRANSMITE_CARACTER_ASCII('\n');  // Nueva línea
   AD9954_TRANSMITE_CARACTER_ASCII('\r');
-  AD9954TransmiteString(gEntradaDeTrama.PosicionDelBufer, gEntradaDeTrama.BuferDeEntrada);
+  AD9954TransmiteString( gEntradaDeTrama.BuferDeEntrada, gEntradaDeTrama.PosicionDelBufer);
+  // AD9954TransmiteString(gEntradaDeTrama.PosicionDelBufer, gEntradaDeTrama.BuferDeEntrada);
   AD9954_TRANSMITE_CARACTER_ASCII('X');  // Carácter de fin de trama
   AD9954_TRANSMITE_CARACTER_ASCII('\n'); // Otra nueva línea, para que se pueda detectar en el programa receptor
   AD9954_TRANSMITE_CARACTER_ASCII('\r');
@@ -476,19 +612,52 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
   //carácter por el AD9954
   // Los 7 primeros bits tienen igual ancho temporal
   // if ( !gTrueSi150FalseSi300 )
-    if ( !TX_150BPS )
+#if 1
+  if ( !TX_150BPS )    
+  {
     
+    // 300 bps
+    // that creates 3332us --> 1000/300 = 3.333ms
+    T2_PRESCALER = TMR2_300BAUD_PRE;
+    
+    T2_POSTSCALER = TMR2_300BAUD_POST;
+   
+    PR2 = TMR2_300BAUD_PR;  // 216;
+    
+    
+    
+  }
+  else
+  {
+    // 6,56ms --> wtf...
+    // 150 bps
+    // Ajuste del PostScaler
+    T2_POSTSCALER = TMR2_150BAUD_POST;
+    // Ajuste del PreScaler
+    T2_PRESCALER = TMR2_150BAUD_PRE; 
+    
+    PR2 = TMR2_150BAUD_PR;
+  }
+
+#else
+  
+  if ( !TX_150BPS )    
   {
     // 300 bps
+    // that creates only 3,24ms --> that could get better...
     // Ajuste del PostScaler
     // T2CONbits.T2OUTPS = 0b1110; // PostScaler 15     T2CONbits.TOUTPS = 0b1110; // PostScaler 15
     T2_POSTSCALER = 0b1110;	// 0x0E
     // Ajuste del PreScaler
     T2CONbits.T2CKPS = 0b00; // Preescaler 1
     PR2 = 216;
+    
+    
+    
   }
   else
   {
+    // 6,56ms --> wtf...
     // 150 bps
     // Ajuste del PostScaler
     T2_POSTSCALER = 0b0111;	// T2CONbits.T2OUTPS = 0b0111; // PostScaler 7  T2CONbits.TOUTPS = 0b0111; // PostScaler 7
@@ -496,7 +665,8 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
     T2CONbits.T2CKPS = 0b01; // Preescaler 4
     PR2 = 205;
   }
-	
+
+#endif	
   TMR2 = 0;
   // Se ajustan los flags de interrupción y activación
   TMR2IF = 0;
@@ -509,13 +679,16 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
 
 	
 #if 1	
+
 	for(hlooper = 8; hlooper > 0; hlooper--)
 	{
 		PS0_AD9954 = (datoconvertido.reg >> (hlooper - 1)) & 0x01;	// datoconvertido.b7;
 		TMR2ON = 1; 
 		while ( TMR2ON );	
 	}
+  
 #else	
+  
 	PS0_AD9954 = datoconvertido.b7;
 	TMR2ON = 1; 
 	while ( TMR2ON );		
@@ -531,10 +704,36 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
   TMR2ON = 1; while ( TMR2ON );
   PS0_AD9954 = datoconvertido.b1;
   TMR2ON = 1; while ( TMR2ON );
-	
+// the actual change in software for the PIC16F1936 --> this has been tested also with the 16F886 
+// and there were no problems do be identified at all with this change. this change affects the time of 
+// the last bit for transmission: Un til now the last bit (b0) had a shorter time but that never got clarified why
+// that would have been like that. After extending its time to the same length than all the other bits the 
+// coomunication started to work basically instantly and without any problems.
+#if 0	
+  if ( !gTrueSi150FalseSi300 )
+  {
+    // 1,232ms
+    
+    // Ajuste del PostScaler
+    T2_POSTSCALER = 0b1101; // PostScaler 14 T2CONbits.TOUTPS = 0b1101; // PostScaler 14
+    // Ajuste del PreScaler
+    T2CONbits.T2CKPS = 0b01; // Preescaler 4
+    PR2 = 22;
+  }
+  else
+  {
+    // 2,576ms
+    // Ajuste del PostScaler
+    T2_POSTSCALER= 0b1101; // PostScaler 14    T2CONbits.TOUTPS = 0b1101; // PostScaler 14
+    // Ajuste del PreScaler
+    T2CONbits.T2CKPS = 0b01; // Preescaler 4
+    PR2 = 46;
+  }
+#endif	
 
   PS0_AD9954 = datoconvertido.b0;
   TMR2ON = 1; while ( TMR2ON );
+  
 #endif	
 	
 	
@@ -547,7 +746,7 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
 // trying a few tweaks to make it work...
 #if DEBUG_16F1936_PITADA && 0
 
-static void AD9954TransmiteString(uint8_t NumDatos, uint8_t *CadenaAscii){
+static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos){
 	unsigned char readback[75];
 	unsigned char *rb_pnt;
 	rb_pnt = &readback;
@@ -589,17 +788,37 @@ static void AD9954TransmiteString(uint8_t NumDatos, uint8_t *CadenaAscii){
 	UART_CRLF;
 }
 
+#elif 1
 
+static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos){
+  
+  
+  uint8_t hlooper = 0;
+  
+  for(hlooper = 0; hlooper < NumDatos; hlooper++)
+  {
+    
+    AD9954TransmiteByte((uint8_t)(gTablaAsciiABaudot[ (int)CadenaAscii[hlooper] ]));
+    
+  }
+  
+}
 
 
 #else
 	
-static void AD9954TransmiteString(uint8_t NumDatos, uint8_t *CadenaAscii)
-{
-  for (volatile uint8_t i = 0; i < NumDatos; i++)
+static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos){
+  
+  
+  uint8_t hlooper = 0;
+  
+  for(hlooper = 0; hlooper < NumDatos; hlooper++)
   {
-    AD9954TransmiteByte((uint8_t)(gTablaAsciiABaudot[ (int)CadenaAscii[i] ]));
+    
+    AD9954TransmiteByte((uint8_t)(gTablaAsciiABaudot[ (int)CadenaAscii[hlooper] ]));
+    
   }
+  
 }
 
 #endif
@@ -611,7 +830,7 @@ static void AD9954TransmiteString(uint8_t NumDatos, uint8_t *CadenaAscii)
 
 void AD9954LimpiaBufferTransmision(void)
 {
-  // Hay que reciclar funciones, por lo que será necesario minimizar tanto el tamaño de la RAM como el de la ROM
+
 #ifdef GPSPARSER_H
 
   IniciaBuferDeTramas();
@@ -621,31 +840,29 @@ void AD9954LimpiaBufferTransmision(void)
   volatile int8_t i;
   for ( i = 0; i < ELMS_TRAMA; i++ )
   {
-    gEntradaDeTrama.BuferDeEntrada[i] = '\0';
+    sentence_buffer.gps_buffer[i] = '\0';
   }
-  gEntradaDeTrama.PosicionDelBufer = 0;
-  gEntradaDeTrama.ProcesaLaTrama = false;
+  sentence_buffer.position = 0;
+
   
 #endif
 
 }
 
-// It seems that this function is never called --> 
-void AD9954InsertarEnBuffer(uint8_t *Cadena)
-{
-  strcpy(gEntradaDeTrama.BuferDeEntrada, Cadena);
-}
+
 
 
 static void AD9954Enciende(void){
   
-	unsigned char hlooper = 0;
+	
 
+  TMR2_ON = FALSE;
+  
   T2_POSTSCALER = 0u; // 0b0000; // PostScaler 1  T2CONbits.TOUTPS = 0b0000; // PostScaler 1
 
   T2_PRESCALER = 0u;  // 0b00; // Preescaler 1
   
-  PR2 = 80u;  // with the 32MHz clock
+  PR2 = TMR2_DDS_CFG_PR;
 
   TMR2 = 0u;
 
@@ -653,19 +870,22 @@ static void AD9954Enciende(void){
   
   TMR2_IE = true;
 
-  VDD_AD9954 = true;	
+  VALIM_TRANSMISSION_ON();
   
-  __delay_ms(110);  // that should get handled by a timer of i think....
+  // VDD_AD9954 = true;	// this switches on the modulator and also the power stage...
+  
+  __delay_ms(110);  // that should get handled by a timer but that creates overhead...
   
   RESET_AD9954 = false;
   
 }
 
-void AD9954Apaga(void)
+static void AD9954Apaga(void)
 {
   
   RESET_AD9954 = false;
-  VDD_AD9954 = false;
+  VALIM_TRANSMISSION_OFF();
+  // VDD_AD9954 = false;
   
 }
 

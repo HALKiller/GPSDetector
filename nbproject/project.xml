@@ -29,6 +29,10 @@
                     <name>PIC16F1936_xc8_prepro</name>
                     <type>2</type>
                 </confElem>
+                <confElem>
+                    <name>xc8_2_46_optim</name>
+                    <type>2</type>
+                </confElem>
             </confList>
             <formatting>
                 <project-formatting-style>false</project-formatting-style>

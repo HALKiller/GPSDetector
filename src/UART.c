@@ -15,13 +15,15 @@
 #include "checksumming.h"
 #include "int2string.h"
 
+#include "io_port_sfr_names.h"
+
 #include <stddef.h>
 
 #include "string.h"
 #include <stdint.h>
 #include "xc.h"
 
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
 #include "generic_union_flgs.h"
 #endif
 
@@ -59,7 +61,11 @@ struct udt_uart{
 
 const uint8_t rx_header[] = "$EESL";
 
-
+static const uint16_t brg_value[] = {
+  
+  
+  
+};
 
 //  **********************  MACRO DEFINITIONS  ************************  //
 
@@ -104,6 +110,8 @@ static uint8_t chcksum_checker(void);
 
 static void int_to_str_converter_32bits(uint32_t the_value, unsigned char *str_pnt);
 
+static void uint32_to_str(uint32_t num, char *str);
+  
 static void int_to_str_converter(uint16_t the_value, char *str_pnt);
 
 static void prepare_tx_handler(void);
@@ -188,8 +196,123 @@ err here...
 
 #endif
 
+#if CALCULATE_BAUDRATE
 
 
+// 283 words
+void uart_init_cfg(baudrate_t baudrate){
+  
+  uint32_t brg_value = MIPS * 10000;
+  
+  brg_value = brg_value / baudrate;
+  
+  brg_value--;
+  
+  SYNC = FALSE;
+  
+  BRG16 = 1u;
+  BRGH  = 1u;
+
+  if(baudrate == B9600_low_clk)
+  {
+    SPBRGH = SPBRGH_9600_LCKL_VAL;
+    SPBRG = SPBRGL_9600_LCKL_VAL; 
+  }
+  else
+  {
+    SPBRGH = (uint8_t)((brg_value >> 8) & 0x00FF);
+    SPBRG = (uint8_t)(brg_value & 0x00FF);    
+  }
+
+ 
+#if DEBUGGING_IS_ON
+
+	RCSTAbits.SPEN = TRUE;
+	
+	RCSTAbits.CREN = TRUE;
+	TXSTAbits.TXEN = TRUE;
+
+#endif
+  
+  
+  __delay_ms(100);
+  
+#if DEBUGGING_IS_ON&&0
+  DB_PRINT("\r\nBRGH: ");
+  UART_int(SPBRGH);
+  DB_PRINT("\r\nBRG: ");
+  UART_int(SPBRG);
+  UART_CRLF;
+#endif
+  
+  
+}
+
+#else
+  
+void uart_init_cfg(baudrate_t baudrate){
+  
+
+  
+  SYNC = FALSE;
+  
+  BRG16 = 1u;
+  BRGH  = 1u;
+  
+  
+  switch(baudrate)
+  {
+    
+    
+    case B9600:
+      SPBRGH = SPBRGH_9600_VAL;
+      SPBRG = SPBRGL_9600_VAL;
+    break;
+    case B57600:
+      SPBRGH = SPBRGH_57600_VAL;
+      SPBRG = SPBRGL_57600_VAL;
+    break;
+    case B115200:
+      SPBRGH = SPBRGH_115200_VAL;
+      SPBRG = SPBRGL_115200_VAL;    
+    break;    
+    case B9600_low_clk:
+      SPBRGH = SPBRGH_9600_LCKL_VAL;
+      SPBRG = SPBRGL_9600_LCKL_VAL;    
+    break;
+    
+  }
+  
+ 
+ 
+#if DEBUGGING_IS_ON
+
+	RCSTAbits.SPEN = TRUE;
+	
+	RCSTAbits.CREN = TRUE;
+	TXSTAbits.TXEN = TRUE;
+
+#endif
+
+  __delay_ms(100);
+  
+#if DEBUGGING_IS_ON&&0
+  DB_PRINT("\r\nBRGH: ");
+  UART_int(SPBRGH);
+  DB_PRINT("\r\nBRG: ");
+  UART_int(SPBRG);
+  UART_CRLF;
+#endif
+
+
+
+}
+
+
+#endif
+
+
+#if 0
 
 #if MIPS==1
 
@@ -222,9 +345,9 @@ void init_UART(void){
 	SPBRGH = 0u;
 	SPBRG = 138u;	// 51;
 
-	
-	TXSTAbits.SYNC = FALSE;
 	// BAUD1CONbits.SCKP = true;
+	TXSTAbits.SYNC = FALSE;
+	
 	RCSTAbits.SPEN = TRUE;
 	
 	RCSTAbits.CREN = TRUE;
@@ -321,6 +444,9 @@ void init_UART(void){
 	
 #endif
 
+#endif// IF 0 becaue no more uart_iniot stuff here---
+
+
 
 #if USE_THE_GENERIC
 
@@ -380,22 +506,72 @@ void UART_int(uint16_t hvar){
 	
 }
 
-#else
+#elif 0
+
 
 void UART_int(uint16_t hvar){
 
-  char str[8];
-
-  // uint_to_str(hvar, str);
-
-  int_to_str_converter(hvar, str);
-	
-  UWT(&str[0]);
+DB_PRINT("Uart_int\r\n");
 	
 }
 
 
 
+#else
+
+void UART_int(uint16_t hvar){
+
+  char str[11];
+
+  // uint_to_str(hvar, str);
+#if 1
+  uint32_to_str(hvar, str);
+#else
+  int_to_str_converter(hvar, str);
+#endif
+	
+  
+  
+  // UWT("INT_val: ");
+  
+  UWT(&str[0]);
+	
+}
+
+static void uint32_to_str(uint32_t num, char *str) {
+  
+  // Create a buffer to hold the digits in reverse order
+  char temp[11];  // uint32_t max is 4294967295, so 10 digits + null terminator
+  int i = 0;
+
+  // Special case for zero
+  if (num == 0) 
+  {
+    str[i++] = '0';
+    str[i] = '\0';
+    return;
+  }
+
+  // Extract digits from the number and put them into the buffer in reverse order
+  while (num != 0) 
+  {
+    temp[i++] = (num % 10) + '0';
+    num /= 10;
+  }
+
+  // Reverse the digits and put them into the output string
+  int j = 0;
+  while (i > 0) 
+  {
+    str[j++] = temp[--i];
+  }
+
+  // Null terminate the result string
+  str[j] = '\0';
+  
+}
+
+#if 0
 static void int_to_str_converter(uint16_t the_value, char *str_pnt){
 	
 union {
@@ -556,7 +732,7 @@ char *temp_strpnt = &temp_string[10];
 	#endif
 }
 
-
+#endif
 
 #endif
 

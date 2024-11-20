@@ -36,7 +36,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
   0x01, /* gSegundosSincronismo:                                              */
         /* Número de segundos que dura la transmisión de sincronismo          */
   0x05, /* gPorcentajePwm: Porcentaje de PWM de la ráfaga de luz / 10         */
-  0x13, /* Nibble superior: gSegundosLuzEnOn.                                 */
+  0x2F, /* Nibble superior: gSegundosLuzEnOn.                                 */
         /* número de segundos con luz nocturna encendida.                     */
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */

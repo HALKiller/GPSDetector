@@ -6,7 +6,7 @@
 
 void init_all(void);
 
-
+void startup(void);
 
 
 

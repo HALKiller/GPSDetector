@@ -5,17 +5,9 @@
 
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 
-//  The high level and inremediate state levels
-//  // the on_exit functions are setting the next state --> therefore they are handling to where the program flows to -->
-// therefore all the decisions are taken here in refereence to the high level states
-//
-//
-//
-//
-//
-//
-//
-//
+
+
+
 
 
 //   * * * * * *      I N C L U D E S   B L O C K     * * * * * * * * * * * * * * * * * * * * *  //
@@ -30,13 +22,7 @@
 
 #include "stddef.h"
 
-// #include "common_utils.h"
-
-// #include "sleep_handler.h"
-
 #include "Global.h"
-
-// #include "rtc.h"
 
 #include <stdint.h>
 
@@ -62,6 +48,7 @@ static gpsd_state_t detector_state;
  
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
+#define USE_LOCAL_F_PNT 1
 
 #define STANDARD_SLEEP_TIME_DEBUGGING 1 // 4 seconds --> nice!!
 
@@ -88,7 +75,7 @@ static gpsd_state_t detector_state;
     
   };
 
-#elif 0
+#elif 1
 // const char *app_txt[] = {
   const char * const app_txt[] = {
     
@@ -157,17 +144,24 @@ void gd_states_initialize(void){
 }
 
 
+e_gpsd_states_t gd_states_get_state(void){
+  
+  return detector_state.actual_state;
+  
+}
+
+#if USE_LOCAL_F_PNT
 
 
 // this function just sets the next state...
 // threfore it worries only about the actual state and which is going to be the next one...
 void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
-  // assert(next_state < E_NUM_STATES);
+  assert(next_state < E_NUM_STATES);
   
   detector_state.last_state = detector_state.actual_state;
   
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
   DB_PRINT("last state: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
 #endif
@@ -177,13 +171,77 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.actual_state = next_state;
   
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON
   DB_PRINT("New state: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
 #endif  
 
   
 }
+
+#else
+
+void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
+  
+  assert(next_state < E_NUM_STATES);
+  
+  detector_state.last_state = detector_state.actual_state;
+  
+#if DEBUGGING_IS_ON
+  DB_PRINT("l_switch state: ");
+  DB_PRINT(app_txt[detector_state.actual_state]);
+#endif
+
+  switch(next_state)
+  {
+
+    case E_RESET_STATE:
+     f_E_RESET_STATE_handler();
+    break;
+    case E_LUZ_COM_STATE:
+    f_E_LUZ_COM_STATE_handler();
+    break;
+    case E_STARTUP_STATE:
+    f_E_STARTUP_STATE_handler();
+    break;
+    case E_GPS_CHECK_ON_ACTIVATION:
+    f_E_GPS_CHECK_ON_ACTIVATION_handler();
+    break;
+    case E_TRANSMISSION_STATE:
+    f_E_TRANSMISSION_STATE_handler();
+    break;
+    case E_SEARCH_POSITION_STATE:
+    f_E_SEARCH_POSITION_STATE_handler();
+    break;
+    case E_SLEEP_BEFORE_TRANSMISSION_STATE:
+    f_E_SLEEP_BEFORE_TRANSMISSION_STATE_handler();
+    break;
+    case E_SLEEP_BEFORE_SEARCH_STATE:
+    f_E_SLEEP_BEFORE_SEARCH_STATE_handler();
+    break;
+    case E_OFF_STATE:
+      f_E_OFF_STATE_handler();
+    break;
+    
+    
+  }
+  
+  
+  // stateHandlers[next_state]();
+  
+  detector_state.actual_state = next_state;
+  
+#if DEBUGGING_IS_ON
+  DB_PRINT("New state: ");
+  DB_PRINT(app_txt[detector_state.actual_state]);
+#endif  
+
+  
+}
+
+
+
+#endif
 
 
 // ---------------------  the on_entrance functions ----------------------------------

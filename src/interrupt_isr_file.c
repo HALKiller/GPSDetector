@@ -28,18 +28,20 @@
 // eRTC related -------------------------
 // #define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
 
-static uint8_t pwm_of_cnt = 0;
+static volatile uint8_t pwm_of_cnt = 0;
 
 
+// because the xc 1.38 needs a different decalration for the ISR becaue it is only C89 conform!!!
+#if XC8_V_138
+void interrupt isr(void){	
+#elif XC8_V_246
 void __interrupt() isr(void){
-
-// void interrupt isr(void){	
-
+#endif
   unsigned char rx_data;
   
   // becaseu on the first run there is going to be F_CLOCK
-  
-  
+
+#if 1 
 
 	if(RCSTAbits.OERR == true)
 	{
@@ -47,15 +49,17 @@ void __interrupt() isr(void){
 		asm ("nop");
 		RCSTAbits.CREN = true;
 	}
-
+#endif
 
 
 	while((RX_IE == true) && (RX_IF == true))
 	{			
-		
+#if 0
+    RX_IF = false;
+#else    
 		rx_data = RCREG;
 		set_data_value_into_buffer(rx_data);
-		
+#endif		
 	}
 
 
@@ -77,19 +81,19 @@ void __interrupt() isr(void){
   // then reset the luz
 	if((TMR0_IE == true) && (TMR0_IF == true))
 	{
-    
+#if COMPILE_WITH_PWM_LUZ    
     pwm_of_cnt++;
     
     if(pwm_of_cnt == get_pwm_luz_pwm_value()) // pwm_luz.pwm_value)
     {
       LED = 0u;
-      DB_LED_2_OFF;
+      LED_SIMUL_OFF;
     }
     
     if(pwm_of_cnt >= 10u)
     {
       LED = 1u;
-      DB_LED_2_ON;
+      LED_SIMUL_ON;
       pwm_of_cnt = 0u;
     }
     
@@ -98,7 +102,7 @@ void __interrupt() isr(void){
     {
       TMR0 = TMR0 + TMR0_ADJUSTMENT;
     }
-    
+#endif    
 		TMR0_IF = false;
     // DB_LED2_SWAP;
 
@@ -109,7 +113,7 @@ void __interrupt() isr(void){
   // this is basically the e_rtc clocking here...
 	if((TMR4_IE == true) && (TMR4_IF == true))
 	{
-		
+#if 1		
     tmr4_of_cnt--;
     
     if((FAST_CLOCK == false) || (tmr4_of_cnt == (uint8_t)0u))
@@ -126,23 +130,26 @@ void __interrupt() isr(void){
       else
       {
         
-        // DB_LED2_SWAP;
-        
         handlers_generic_set_handler_FLG(e_200ms_h);
+        
         tmr4_of_cnt = tmr4_200ms_of;
         
       }
       
       tmr4_of_cnt = tmr4_200ms_of;
+      
 		}
-    
+#endif    
 		TMR4_IF = false;
 
 	}
 	
-
-
-
+// TMR1 is a timeout tiemr and for full second timeout timing prepared...
+  if((TMR1_IE == TRUE) && (TMR1_IF == TRUE))
+  {
+    timers_tmr1_decreaser();
+    TMR1_IF = false;
+  }
 
 }
 
