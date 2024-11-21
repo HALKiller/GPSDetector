@@ -457,6 +457,8 @@ void init_tmr0(void);
 
 void init_tmr1(void);
 
+
+void init_wdt(void);
 // void eRTC_clock_reset(void);
 
 

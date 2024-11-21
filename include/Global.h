@@ -28,7 +28,7 @@
 
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
-
+#define G_ENABLE_ASSERT 0 // to reduce ROM
 #define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 0
 

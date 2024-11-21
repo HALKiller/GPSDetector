@@ -33,6 +33,7 @@ typedef enum {
   e_switch_clock_handler, // and clock swithcing has to be prioritized over other things...         
   e_1000ms_h,
   e_200ms_h, // and then the timing for the rtc to keep a good timing allright
+  e_gps_has_full_position_h,
   e_ring_buffer_handler,           
 #if !USE_DIRECT_CALL    
   e_tilt_sensor_h,	               
@@ -40,7 +41,7 @@ typedef enum {
   e_gps_on_h,  
   e_prepare_msg_h,
   e_startup_h, 
-  e_gps_has_full_position_h,  
+  e_sleep_before_search,
   e_ertc_handler_start, 
   e_errhandler,   
   e_gps_test_reception,

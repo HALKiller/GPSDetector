@@ -23,6 +23,8 @@
 
 #include "pwm_luz.h"  // for the baterie adc measurement
 
+#include "DDS.h"
+
 #include <string.h>
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
@@ -84,7 +86,7 @@ const uint8_t gMensajeVersion      [] = "V>xx67< ";
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
-
+static msg_t msg_id;
 
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
@@ -103,8 +105,17 @@ static void insert_time(uint8_t pos);
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
+void set_message_for_tx(msg_t next_msg){
+  
+  msg_id = next_msg;
+  
+}
+
 // it is much easier to enter a single call to here and have an identifier which gives us the message to produce...
-void messages_before_transmission(msg_t msg_id){
+void messages_before_transmission(void){
+// void messages_before_transmission(msg_t msg_id){
+  
+  DDS_flush_buffer();
   
   switch(msg_id)
   {
@@ -294,7 +305,7 @@ void inline PreparaMensajeRevisarAntena(void)
 // 11052023 --> this seems unused...
 void PreparaMensajeRadiogonio(uint8_t val)
 {
-//  AD9954LimpiaBufferTransmision();
+//  DDS_flush_buffer();
   insert_msg_header();
 //  strcpy ( sentence_buffer.gps_buffer + 22, " RADIOGONIO N>0<" );
   strcpy ((char*)sentence_buffer.gps_buffer + 23, gMensajeRadiogonio );

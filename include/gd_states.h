@@ -38,6 +38,13 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state);
 
 e_gpsd_states_t gd_states_get_state(void);
 
+e_gpsd_states_t gd_states_get_last_state(void);
+
+void gd_states_set_next_state(e_gpsd_states_t next);
+
+e_gpsd_states_t gd_states_get_next_state(void);
+
+
 #else
 
 typedef enum gpsdet_type{

@@ -8,7 +8,7 @@
 #include "Global.h"
 
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&G_ENABLE_ASSERT
 #define ENABLE_ASSERTIONS 1
 #else
 #define ENABLE_ASSERTIONS 0

@@ -271,6 +271,15 @@ error again --> that MIPS is not standard so far --> write it extra out
 }
 
 
+void init_wdt(void){
+	
+	// TODO --> check WDT overflow time
+	WDTCONbits.WDTPS = WDT_TIMEOUT_004s_timeout;  // 0x0Bu;  // 0x0c = 4seconds
+  
+	WDTCONbits.SWDTEN = TRUE;
+  
+
+}
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //

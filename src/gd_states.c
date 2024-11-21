@@ -30,6 +30,23 @@
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
+#if 1
+
+typedef struct udt_state_m_type{
+  
+  // uint8_t detector_is_on; // it is turned over or not ;
+  e_gpsd_states_t actual_state;
+  e_gpsd_states_t last_state;
+  e_gpsd_states_t next_state;
+  
+  
+}gpsd_state_t;
+
+
+#else
+  
+
+
 typedef struct udt_state_m_type{
   
   uint8_t detector_is_on; // it is turned over or not ;
@@ -40,6 +57,7 @@ typedef struct udt_state_m_type{
   
 }gpsd_state_t;
 
+#endif
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
@@ -79,16 +97,16 @@ static gpsd_state_t detector_state;
 // const char *app_txt[] = {
   const char * const app_txt[] = {
     
-    "E_0\r\n",
-    "E_1\r\n",
-    "E_2\r\n",
-    "E_3\r\n",
-    "E_4\r\n",
-    "E_5\r\n",
-    "E_6\r\n",
-    "E_7\r\n",
-    "E_8\r\n",
-    "E_9\r\n",
+    "E0",
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9",
     
   };
 
@@ -150,6 +168,26 @@ e_gpsd_states_t gd_states_get_state(void){
   
 }
 
+e_gpsd_states_t gd_states_get_last_state(void){
+  
+  return detector_state.last_state;
+  
+}
+
+void gd_states_set_next_state(e_gpsd_states_t next){
+  
+  assert(next >= E_NUM_STATES);
+  detector_state.next_state = next;
+  
+}
+
+e_gpsd_states_t gd_states_get_next_state(void){
+  
+  return detector_state.next_state;
+  
+}
+
+
 #if USE_LOCAL_F_PNT
 
 
@@ -162,8 +200,9 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   detector_state.last_state = detector_state.actual_state;
   
 #if DEBUGGING_IS_ON
-  DB_PRINT("last state: ");
+  DB_PRINT("LS: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
+  UART_CRLF;
 #endif
 
 
@@ -172,8 +211,9 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   detector_state.actual_state = next_state;
   
 #if DEBUGGING_IS_ON
-  DB_PRINT("New state: ");
+  DB_PRINT("NS: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
+  UART_CRLF;
 #endif  
 
   
@@ -249,9 +289,9 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
 //  E_RESET_STATE,
 static void f_E_RESET_STATE_handler(void){
 
-  detector_state.last_state = E_RESET_STATE,
-  detector_state.actual_state = E_RESET_STATE,
-  detector_state.detector_is_on = FALSE;
+  detector_state.last_state = E_RESET_STATE;
+  detector_state.actual_state = E_RESET_STATE;
+  // detector_state.detector_is_on = FALSE;
   // gd_states_set_gpsd_substate(E_CHECK_ON_TILT_SENSOR);
   
   
@@ -302,7 +342,7 @@ static void f_E_SLEEP_BEFORE_TRANSMISSION_STATE_handler(void){
 static void f_E_SLEEP_BEFORE_SEARCH_STATE_handler(void){
   // TODO:
   // get into LP Mode and set flag indicating where to go from there
-  handlers_generic_set_handler_FLG(e_ertc_handler_start);
+  handlers_generic_set_handler_FLG(e_sleep_before_search);
 }
 
 

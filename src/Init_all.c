@@ -91,9 +91,6 @@ void init_all(void){
 #if DEBUGGING_IS_ON
 
   uart_init_cfg(B57600);
-  
-  // init_UART();
-
 
 	UWT("BUILD: ");
 	UWT(__DATE__);
@@ -121,7 +118,7 @@ void init_all(void){
   
   tilt_sensor_init();
   
-	
+	init_wdt();
 
 #if 1
 
@@ -279,24 +276,7 @@ void startup(void){
   
 }
 
-static void init_wdt(void){
-	
-	// TODO --> check WDT overflow time
-	WDTCONbits.WDTPS = 0x0Bu;  // 0x0c = 4seconds
-  
-#if IS_RELEASE	
 
-	WDTCONbits.SWDTEN = TRUE;
-  
-#else
-  
-	WDTCONbits.SWDTEN = TRUE;
-  
-#endif	
-	
-	
-	
-}
 
 
 

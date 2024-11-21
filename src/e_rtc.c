@@ -179,7 +179,7 @@ void eRTC_calculate_time_until_tx(void)
 
   uint32_t time_now = 0;
   uint16_t resto_division;
-  uint8_t who_is_transmitting_now;
+  int8_t who_is_transmitting_now;
   int8_t cuantas_balizas;
   uint8_t cualquier_baliza_transmite;
 
@@ -196,12 +196,21 @@ void eRTC_calculate_time_until_tx(void)
 
   gd.seconds_until_next_tx = cuantas_balizas * gd.transmission_duration + cualquier_baliza_transmite;
   
+
+  
   if ( cuantas_balizas < 0 )
   {
     
     gd.seconds_until_next_tx = gd.seconds_until_next_tx + gd.time_between_tx;
     
   }
+
+  
+#if DEBUGGING_IS_ON
+  DB_PRINT("Wait: ");
+  UART_int(gd.seconds_until_next_tx);
+  UART_CRLF;
+#endif
 
 }
 

@@ -18,8 +18,9 @@ typedef enum message_type{
   
 }msg_t;
 
+void set_message_for_tx(msg_t next_msg);
 
-void messages_before_transmission(msg_t msg_id);
+void messages_before_transmission(void);
 
 
 
