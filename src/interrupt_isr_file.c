@@ -16,17 +16,10 @@
 #include "e_rtc.h"
 #include "pwm_luz.h"
 
-// #include "UART.h"
-
-
 #include "ring_buffer.h"
 
 
 #define TMR0_ADJUSTMENT (uint8_t)0x05u
-// #define TMR0_ADJUSTMENT (uint8_t)0x65u
-
-// eRTC related -------------------------
-// #define SECONDS_PER_DAY (uint32_t)864000u // becasue of decimo seconds we have a digit more
 
 static volatile uint8_t pwm_of_cnt = 0;
 
@@ -37,12 +30,19 @@ void interrupt isr(void){
 #elif XC8_V_246
 void __interrupt() isr(void){
 #endif
+
   unsigned char rx_data;
   
   // becaseu on the first run there is going to be F_CLOCK
 
 #if 1 
-
+	if(RCSTAbits.OERR == TRUE)
+	{
+		RCSTAbits.CREN = FALSE;
+		asm ("nop");
+		RCSTAbits.CREN = TRUE;
+	}
+#else
 	if(RCSTAbits.OERR == true)
 	{
 		RCSTAbits.CREN = false;
@@ -52,10 +52,10 @@ void __interrupt() isr(void){
 #endif
 
 
-	while((RX_IE == true) && (RX_IF == true))
+	while((RX_IE == TRUE) && (RX_IF == TRUE))
 	{			
 #if 0
-    RX_IF = false;
+    RX_IF = FALSE;
 #else    
 		rx_data = RCREG;
 		set_data_value_into_buffer(rx_data);
@@ -66,20 +66,20 @@ void __interrupt() isr(void){
 
 // this finds usage only for the transmission of SPI and messages from the DDS and also
 // in the rx_luz part
-  if((TMR2_IE == true) && (TMR2_IF == true))
+  if((TMR2_IE == TRUE) && (TMR2_IF == TRUE))
   {
-    TMR2_ON = false;
-    TMR2_IF = false;
+    TMR2_ON = FALSE;
+    TMR2_IF = FALSE;
   }
 
 
 	
 	// OF time = 2.04ms
 	// this is only going to be for the PWM --> 
-  // therfore we need that still to be handled  
+  // therefore we need that still to be handled  
   // when to switch on and off this is a percentage value and therefroe i can always cnt till 10 and
   // then reset the luz
-	if((TMR0_IE == true) && (TMR0_IF == true))
+	if((TMR0_IE == TRUE) && (TMR0_IF == TRUE))
 	{
 #if COMPILE_WITH_PWM_LUZ    
     pwm_of_cnt++;
@@ -98,12 +98,12 @@ void __interrupt() isr(void){
     }
     
 		
-    if(FAST_CLOCK == false)
+    if(FAST_CLOCK == FALSE)
     {
       TMR0 = TMR0 + TMR0_ADJUSTMENT;
     }
 #endif    
-		TMR0_IF = false;
+		TMR0_IF = FALSE;
 
 	}
 
@@ -111,23 +111,23 @@ void __interrupt() isr(void){
 #if 1
 
   // this is basically the e_rtc clocking here...
-	if((TMR4_IE == true) && (TMR4_IF == true))
+	if((TMR4_IE == TRUE) && (TMR4_IF == TRUE))
 	{
 
     tmr4_of_cnt--;
     
-    if((FAST_CLOCK == false) || (tmr4_of_cnt == (uint8_t)0u))
+    if((FAST_CLOCK == FALSE) || (tmr4_of_cnt == (uint8_t)0u))
     {
     
       eRTC_clock_incrementer();
       
       handlers_generic_set_handler_FLG(e_200ms_h);
       
-      if(SWITCH_CLOCK == true)
+      if(SWITCH_CLOCK == TRUE)
       {
         handlers_generic_set_handler_FLG(e_switch_clock_handler);
-        TMR4ON = false; // stop the Timer
-        SWITCH_CLOCK = false;
+        TMR4ON = FALSE; // stop the Timer
+        SWITCH_CLOCK = FALSE;
       }
 
      
@@ -135,28 +135,28 @@ void __interrupt() isr(void){
       
 		}
 
-		TMR4_IF = false;
+		TMR4_IF = FALSE;
 
 	}
 
 #else
   
   // this is basically the e_rtc clocking here...
-	if((TMR4_IE == true) && (TMR4_IF == true))
+	if((TMR4_IE == TRUE) && (TMR4_IF == TRUE))
 	{
 #if 1		
     tmr4_of_cnt--;
     
-    if((FAST_CLOCK == false) || (tmr4_of_cnt == (uint8_t)0u))
+    if((FAST_CLOCK == FALSE) || (tmr4_of_cnt == (uint8_t)0u))
     {
     
       eRTC_clock_incrementer();
 
-      if(SWITCH_CLOCK == true)
+      if(SWITCH_CLOCK == TRUE)
       {
         handlers_generic_set_handler_FLG(e_switch_clock_handler);
-        TMR4ON = false; // stop the Timer
-        SWITCH_CLOCK = false;
+        TMR4ON = FALSE; // stop the Timer
+        SWITCH_CLOCK = FALSE;
       }
     
       else
@@ -172,7 +172,7 @@ void __interrupt() isr(void){
       
 		}
 #endif    
-		TMR4_IF = false;
+		TMR4_IF = FALSE;
 
 	}
   
@@ -182,7 +182,7 @@ void __interrupt() isr(void){
   if((TMR1_IE == TRUE) && (TMR1_IF == TRUE))
   {
     timers_tmr1_decreaser();
-    TMR1_IF = false;
+    TMR1_IF = FALSE;
   }
 
 }

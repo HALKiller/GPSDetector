@@ -76,7 +76,7 @@ static gpsd_state_t detector_state;
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
 
-#if DEBUGGING_IS_ON&&0
+#if DEBUGGING_IS_ON&&1
 
   static const char *app_txt[] = {
     
@@ -176,7 +176,7 @@ e_gpsd_states_t gd_states_get_last_state(void){
 
 void gd_states_set_next_state(e_gpsd_states_t next){
   
-  assert(next >= E_NUM_STATES);
+  assert(next <= E_NUM_STATES);
   detector_state.next_state = next;
   
 }
@@ -309,7 +309,7 @@ static void f_E_STARTUP_STATE_handler(void){
 
 
   handlers_generic_set_handler_FLG(e_startup_h);
-  DB_PRINT("FLG_SET\r\n");
+
 
 }
 

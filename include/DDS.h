@@ -15,7 +15,7 @@ void AD9954Configura(void);
 
 void AD9954TransmiteMensaje(void);
 
-void AD9954LimpiaBufferTransmision(void);
+void DDS_flush_buffer(void);
 
 extern uint8_t FTW0[4];
 extern uint8_t FTW1[4];

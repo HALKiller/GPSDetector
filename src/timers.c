@@ -22,6 +22,9 @@
 
 #include "my_assert.h"
 
+#if DEBUGGING_IS_ON
+#include "UART.h"
+#endif
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -53,7 +56,8 @@ volatile static uint8_t timeout_cnt = TMR1_2_SECOND_OF_CNT;
 
 static tmr1_id_t tmr1_id = NUM_TMR1_ID;
 static uint8_t timeout_cnt_setter = TMR1_2_SECOND_OF_CNT;
-// static uint8_t tmr0_id = NUM_TMR0_ID;
+
+
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
 static void tmr1_timeout_handler(void);
@@ -285,6 +289,7 @@ void init_wdt(void){
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
 
 
+// when the timeout timer expires handles here the case for it
 static void tmr1_timeout_handler(void){
   
   
@@ -294,17 +299,22 @@ static void tmr1_timeout_handler(void){
     
       TIMEOUT_FLG = TRUE;
       
-      
     break;
     
     case GPS_UART_TIMEOUT:
+    
       handlers_generic_set_handler_FLG(e_gps_test_reception);
+      
     break;
     
     default:
-    
-      // assert(false);
-      
+#if DEBUGGING_IS_ON&&G_ENABLE_ASSERT
+      while(1)
+      {
+        DB_PRINT("\r\nassert\r\n");
+      }
+        // assert(false);
+#endif      
     break;
     
     

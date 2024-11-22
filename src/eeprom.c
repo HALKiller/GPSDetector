@@ -11,7 +11,7 @@
 
 #include <xc.h>            /* XC8 General Include File */
 
-
+#if 1
 __eeprom unsigned char gContenidoEeprom[] = {
   /* Palabras de configuración del sintetizador que ya no se utilizan */
   0x00, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x08, 0x24, 0x07, 0x00, 0x00, 0x00,
@@ -32,7 +32,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
   '0', '0', '1',      /* Número de baliza,  gNumeroDeBaliza                   */
   
   0x00, /* T_ERROR_GPS. No se usa                                             */
-  0x0A, /* gTiempoDuracionTransmision: tiempo de transmisión  0A=10sg         */
+  EEPROM_TX_DURATION, /* gTiempoDuracionTransmision: tiempo de transmisión  0A=10sg         */
   0x01, /* gSegundosSincronismo:                                              */
         /* Número de segundos que dura la transmisión de sincronismo          */
   0x05, /* gPorcentajePwm: Porcentaje de PWM de la ráfaga de luz / 10         */
@@ -40,8 +40,8 @@ __eeprom unsigned char gContenidoEeprom[] = {
         /* número de segundos con luz nocturna encendida.                     */
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */
-  0x90, /* Tipo de configuración de la baliza   90=150bps   80=300bps         */
-  0x06, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
+  EEPROM_BPS_CONFIG, /* Tipo de configuración de la baliza   90=150bps   80=300bps         */
+  EEPROM_MAX_DETECORES, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
   0xCF, /* Valor de batería para transmisión cada 2 ciclos  CF=10.8  D7=11.2  */
   0xFC, /* Segunda palabra de configuración de la baliza                      */
   0x02, /* Número de satélites a la vista antes de apagar el GPS (no usado)   */
@@ -71,7 +71,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
   
 };
 
-#if 0
+#else
 
 __EEPROM_DATA(0x00, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x08);
 __EEPROM_DATA(0x00, 0x00, 0x01, 0x04, 0x00, 0x09, 0x00, 0x00);

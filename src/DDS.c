@@ -106,7 +106,7 @@ void Transmite(bool TransmiteRadiogonio){
   {
     UART_CRLF;
     // DB_PRINT("Delay\r\n");
-    __delay_ms(1000);
+    __delay_ms(1000u);
     // Delay ( 33250 ); // Equivalente en función a un delay de medio segundo
     // Delay ( 33250 );
   }
@@ -404,7 +404,7 @@ void AD9954TransmiteMensaje(void){
 #endif  
 
 
-  AD9954LimpiaBufferTransmision();
+  DDS_flush_buffer();
   
 }
 
@@ -423,7 +423,7 @@ void AD9954TransmiteMensaje(void){
   AD9954_TRANSMITE_CARACTER_ASCII('X');  // Carácter de fin de trama
   AD9954_TRANSMITE_CARACTER_ASCII('\n'); // Otra nueva línea, para que se pueda detectar en el programa receptor
   AD9954_TRANSMITE_CARACTER_ASCII('\r');
-  AD9954LimpiaBufferTransmision();
+  DDS_flush_buffer();
 }
 
 
@@ -828,7 +828,7 @@ static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos){
 
 
 
-void AD9954LimpiaBufferTransmision(void)
+void DDS_flush_buffer(void)
 {
 
 #ifdef GPSPARSER_H
@@ -874,7 +874,7 @@ static void AD9954Enciende(void){
   
   // VDD_AD9954 = true;	// this switches on the modulator and also the power stage...
   
-  __delay_ms(110);  // that should get handled by a timer but that creates overhead...
+  __delay_ms(110u);  // that should get handled by a timer but that creates overhead...
   
   RESET_AD9954 = false;
   

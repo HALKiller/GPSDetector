@@ -20,7 +20,7 @@ void tilt_sensor_init(void);
 // we can just read it 
 // void tilt_sensor_get_state(void);
 
-void update_detector_position_state_handler(void);
+void update_tilt_sensor_state(void);
 
 // tilt_sensor_states_t tilt_sensor_get_detector_state(void);
 

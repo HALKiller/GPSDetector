@@ -67,7 +67,7 @@ static struct udt_tilt_sensor_type tilt_sensor;
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
-// static void update_detector_position_state_handler(uint8_t read_state);
+// static void update_tilt_sensor_state(uint8_t read_state);
 
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
@@ -114,7 +114,7 @@ void tilt_sensor_get_state(void){
 
 #endif
 
-  update_detector_position_state_handler(tilt_state);
+  update_tilt_sensor_state(tilt_state);
 
 
   
@@ -130,7 +130,7 @@ void tilt_sensor_get_state(void){
 
 // a count algorithm in function of the last read state --> therefroe we are changoing the state only on 
 // count > than threshold. and there can be two different thresholds for up and downcount.
-void update_detector_position_state_handler(void){
+void update_tilt_sensor_state(void){
 
 
   uint8_t read_state = TILT_SENSOR;
@@ -184,7 +184,7 @@ void update_detector_position_state_handler(void){
   
 // a count algorithm in function of the last read state --> therefroe we are changoing the state only on 
 // count > than threshold. and there can be two different thresholds for up and downcount.
-static void update_detector_position_state_handler(uint8_t read_state){
+static void update_tilt_sensor_state(uint8_t read_state){
 
 
 	if(read_state == SENSOR_IS_TOP_MOUNTED)

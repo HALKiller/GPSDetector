@@ -82,9 +82,9 @@ static const uint16_t shifter[16] = {
 
 
 #if DEBUGGING_IS_ON
-#define MEASURE_ILUMINATION_TIME_CNT_BASE 15u*TIME_BASE_200_CNT    // the time between measurements of the ilum.sensor
+#define MEASURE_ILUMINATION_TIME_CNT_BASE (15u*TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
 #else
-#define MEASURE_ILUMINATION_TIME_CNT_BASE 45u*TIME_BASE_200_CNT    // the time between measurements of the ilum.sensor
+#define MEASURE_ILUMINATION_TIME_CNT_BASE (45u*TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
 #endif
 
 

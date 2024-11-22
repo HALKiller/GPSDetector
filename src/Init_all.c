@@ -29,10 +29,11 @@
 
 // #include "ADC.h"
 
-// #include "generic_union_flgs.h"
+#include "generic_union_flgs.h"
 
 #include "tilt_sensor.h"
 
+#include "messages.h"
 
 
 
@@ -66,7 +67,7 @@ void init_all(void){
 
 
 #if DEBUGGING_IS_ON
-  uint8_t t_var = MIPS;
+  uint8_t t_var = (uint8_t)MIPS;
 #endif
 
   CLRWDT();
@@ -76,7 +77,7 @@ void init_all(void){
 
 
 // datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5);
+	__delay_ms(5u);
 
   
 	
@@ -99,7 +100,12 @@ void init_all(void){
 	UWT("\r\n");
 	UWT("MIPS: ");
 	UART_int(t_var);
-	UART_CRLF;
+
+  UWT("Week: ");
+  t_var = (uint8_t)WEEK_OF_YEAR;
+  UART_int(t_var);
+  	UART_CRLF;
+  
   
 #endif
 
@@ -260,6 +266,12 @@ void init_all(void){
 void startup(void){
   
   tilt_sensor_init();
+  
+  // on startup we reset the time...
+  RTC_TIME_IS_GOOD = false;
+  RTC_ALARM_ON = false;
+  // TODO:  we should reset the time also ...
+  
   
   // RX_IF = FALSE;
 	// RX_IE = TRUE;

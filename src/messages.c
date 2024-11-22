@@ -319,14 +319,19 @@ static void insert_msg_header(void)
   
   insert_baterie();
   
+
   for( uint8_t i = 0; i < 4; i++ )
   {
     sentence_buffer.gps_buffer[i] =  LeerEeprom ( 0x36 + i );
   }
+  
   for( uint8_t i = 0; i < 7; i++ )
   {
     sentence_buffer.gps_buffer[i + 5] =  LeerEeprom ( 0x3A + i );
   }
+
+
+  
   sentence_buffer.gps_buffer[4] =  '>';
   sentence_buffer.gps_buffer[18] =  '>';
   sentence_buffer.gps_buffer[12] =  ',';

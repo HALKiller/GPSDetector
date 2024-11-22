@@ -28,7 +28,7 @@
 
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
-#define G_ENABLE_ASSERT 0 // to reduce ROM
+#define G_ENABLE_ASSERT 1 // to reduce ROM
 #define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 0
 
@@ -255,8 +255,17 @@ error again --> that MIPS is not standard so far --> write it extra out
 
 
 
+// * * * * * * * * * * * * *   D E T E C T O R C O N F I G   r e l a t e d     * * * * * * * * * * * * *  //
+// * * * * * * * * * * * * *   D E T E C T O R C O N F I G   r e l a t e d     * * * * * * * * * * * * *  //
 
+#define EE_UNUSED 0xFF
 
+#define BPS_150 0x90
+#define BPS_300 0x80
+
+#define EEPROM_TX_DURATION 0x05
+#define EEPROM_BPS_CONFIG BPS_150
+#define EEPROM_MAX_DETECORES 0x06
 
 
 // * * * * * * * * * * * * *   I n c l i n a t i o n   S e n s o r   r e l a t e d     * * * * * * * * * * * * *  //

@@ -198,7 +198,7 @@ err here...
 
 #if CALCULATE_BAUDRATE
 
-
+// TODO: before a change of baudrate happens assure that the last msg got allready transmitted!
 // 283 words
 void uart_init_cfg(baudrate_t baudrate){
   

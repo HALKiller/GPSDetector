@@ -24,6 +24,8 @@
 
 #include "handlers.h"
 
+#include "generic_union_flgs.h"
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 typedef struct udt_my_time {
@@ -124,6 +126,8 @@ void eRTC_clock_sync_to_gps(uint32_t gps_time){
 	GIE = false;
 
   eRTC_second_cnt = gps_time;    
+  
+  RTC_TIME_IS_GOOD = true;
   
   rtc_decimo_cnt = 0u;
   

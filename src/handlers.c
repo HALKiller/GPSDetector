@@ -71,6 +71,8 @@ static void f_gps_test_rx(void);
 static void empty_function(void);
 static void f_setup_sleep_before_search(void);
 
+static void rtc_alarm_handler(void);
+
 #if DEBUGGING_IS_ON
 static void local_up_f1(void);
 static void test_handler_array(void);
@@ -479,24 +481,20 @@ static void rtc_1000ms_handler(void){
   
   // TODO: a flag which indicates if we are at the moment with some kind of doncnt timer
   
-  gd.rtc_alarm--; // seconds_until_next_tx--;
-  
-  if(gd.rtc_alarm == 0u)  // seconds_until_next_tx == 0)
+  if(RTC_ALARM_ON == true)
   {
-    // well transmission i reckon...
-    if(gd_states_get_state() == E_SLEEP_BEFORE_SEARCH_STATE)
+    gd.rtc_alarm--; // seconds_until_next_tx--;
+  
+    if(gd.rtc_alarm == 0u)  // seconds_until_next_tx == 0)
     {
-      handlers_generic_set_handler_FLG(e_switch_clock_handler);
-      gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
+
+      rtc_alarm_handler();
+      RTC_ALARM_ON = false;
+      
     }
-    else
-    {
-      gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
-    }
-    
-    // gd_states_switch_to_next_state(gd_states_get_next_state());
-    
   }
+  
+
   
   
   
@@ -511,6 +509,40 @@ static void rtc_1000ms_handler(void){
 #endif    
   
   DB_LED2_SWAP;
+  
+  
+}
+
+
+static void rtc_alarm_handler(void){
+  
+  
+  switch(gd_states_get_state())
+  {
+    case E_SLEEP_BEFORE_SEARCH_STATE:
+      handlers_generic_set_handler_FLG(e_switch_clock_handler);
+      gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
+    break;
+    case E_SEARCH_POSITION_STATE:
+      // well, we did not fiund a position in time it seems --> we are transmitting now what??
+      // retransmit last position and all the other thigns from here...
+      // messages_before_transmission();
+      // TODO: we still would need to switch off all the stuff we dont need...
+      gps_stop();
+      set_message_for_tx(e_No_gps);
+      gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
+      DB_PRINT("No position found\r\n");
+    break;
+    case E_SLEEP_BEFORE_TRANSMISSION_STATE:
+      gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
+    break;
+    default:
+      assert(false);
+    break;
+    
+    
+  }
+
   
   
 }
@@ -545,7 +577,7 @@ static void rtc_200ms_handler(void){
 
 #if USE_DIRECT_CALL  
   
-  update_detector_position_state_handler();
+  update_tilt_sensor_state();
   
 #else  
   
@@ -581,7 +613,8 @@ static void rtc_200ms_handler(void){
     }
     else
     {
-      uart_init_slow_clock();
+      uart_init_cfg(B9600_low_clk);
+      // uart_init_slow_clock();
     }
     // DB_PRINT("O.k.\r\n");
     s_cnt = 0;
@@ -617,17 +650,30 @@ static void process_next_char_from_input(void){
 #if !USE_DIRECT_CALL 
 static void f_tilt_sensor_to_check(void){
   
-  update_detector_position_state_handler();
+  update_tilt_sensor_state();
 
 }
 #endif
 
 
+// E_SEARCH_POSITION_STATE handler here
 static void f_gps_on(void){
   
   DB_PRINT("GPS_ON\r\n");
   
+  if(RTC_TIME_IS_GOOD == true)
+  {
+    eRTC_calculate_time_until_tx();
+    gd.rtc_alarm = gd.seconds_until_next_tx;
+    RTC_ALARM_ON = true;
+  }
+  else
+  {
+    // TODO: setup a starting rtc time...
+  }
+  
   gps_startup_initializer();
+  
   
   // set up the GPS for reception --> bla bla, timeout timer, etc...
   // TODO:
@@ -661,13 +707,7 @@ static void f_gps_test_rx(void){
     
     // gd_states_set_next_state(E_SEARCH_POSITION_STATE);
     gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
-    
-#if DEBUGGING_IS_ON
-  UART_CRLF;
-  DB_PRINT(&sentence_buffer.gps_buffer[0]);
-  UART_CRLF;
-#endif    
-    
+
   }
   
   
@@ -685,8 +725,22 @@ static void f_gps_has_position(void){
   
   DB_LED1_SWAP;
   
-  set_message_for_tx(e_send_position);
-  // messages_before_transmission(e_send_position);
+  // and what to do next? well, depends on what we were doinfgin first place....
+  
+  
+  eRTC_calculate_time_until_tx();
+  DB_PRINT("G_off\r\n");
+  if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
+  {
+    DB_PRINT("G_off\r\n");
+    gd.rtc_alarm = gd.seconds_until_next_tx;
+    RTC_ALARM_ON = true;
+    set_message_for_tx(e_send_position);
+    gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+  }
+  
+  
+
   
   // we have a lock! great now ...
   
@@ -718,13 +772,14 @@ static void f_prepare_msg(void){
   else
   {
     gd_states_switch_to_next_state(E_SLEEP_BEFORE_SEARCH_STATE);
+    // TODO: that might be different if we did not get a valid lock on the position the last time!
     // calculate the sleep before search time depending on alöl the possible things and then set it up
   }
   ertc_convert_to_real_time(eRTC_get_second_cnt());
   ertc_convert_to_str();
   // and on return we should look if we can go to sleep or if we are going to search position
-  DB_PRINT("\r\nTx_DONE Search\r\n");
-  // gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
+  DB_PRINT("\r\nTx_done\r\n");
+
   
 }
 
@@ -747,8 +802,6 @@ static void f_gd_on(void){
   
   // reset all handlers because there should not be any allready active
   Handler_FLGS = (uint8_t)0u;
-  
-  // tilt_sensor_init();
   
   if(FAST_CLOCK == FALSE)
   {
@@ -876,15 +929,19 @@ static void fn_clock_switching(void){
   // therefore the eRTC TMR stopped allready
   if(FAST_CLOCK == true)
   {
-    // DB_PRINT("C0\r\n");
-    uart_init_slow_clock();
+    
+#if DEBUGGING_IS_ON    
+    // uart_init_slow_clock();
+
+    uart_init_cfg(B9600_low_clk);
+#endif       
     set_slow_clock();
     configure_tmr4();
     
   }
   else
   {
-    // DB_PRINT("C1\r\n");
+    
     init_clock ();
     configure_tmr4();
     // init_UART();
@@ -908,6 +965,7 @@ static void f_setup_sleep_before_search(void){
   // well --> lets calculate the time for sleep, 
   // set it up and clock down the baby...
   eRTC_calculate_time_until_tx();
+  RTC_ALARM_ON = true;
   // TODO: this is just some value at the moment for debugging
   if(gd.seconds_until_next_tx > 20)
   {
