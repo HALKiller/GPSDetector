@@ -84,9 +84,6 @@ void eRTC_clock_incrementer(void){
     }
   }
   
-
-
-
 }
 
 #else
@@ -111,7 +108,7 @@ void eRTC_clock_incrementer(void){
 // TODO: reset value here
 void eRTC_clock_reset(void){
 
-  eRTC_second_cnt = 59100u;
+  eRTC_second_cnt = 0u; // 59100u;
   
   tmr4_of_cnt = (uint8_t)10u;
 

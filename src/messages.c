@@ -6,7 +6,6 @@
 
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 
-// this is a template file
 
 
 
@@ -25,7 +24,16 @@
 
 #include "DDS.h"
 
+#if DEBUGGING_IS_ON
+#include "UART.h"
+#endif
+
 #include <string.h>
+
+//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
+
+// #define USE_NEW_VERSION_ID 0
+
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -34,6 +42,32 @@
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
+ 
+const char* month_names[] = {
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+}; 
+ 
+ 
+struct MonthDay {
+    const char* month;
+    int days;
+};
+
+struct MonthDay months[] = {
+  {"Jan", 31},
+  {"Feb", 29}, // Assuming non-leap year
+  {"Mar", 31},
+  {"Apr", 30},
+  {"May", 31},
+  {"Jun", 30},
+  {"Jul", 31},
+  {"Aug", 31},
+  {"Sep", 30},
+  {"Oct", 31},
+  {"Nov", 30},
+  {"Dec", 31}
+}; 
  
 #if 1
 
@@ -50,10 +84,16 @@ const char gMensajePos          [] = "POS ";
 const char gMensajeGps          [] = "GPS ";
 const char gMensajeGuion        [] = ">-< ";
 const char gMensajeHora         [] = "HORA ";
+
+#if USE_NEW_VERSION_ID
+const char gMensajeVersion_H      [] = "V>";
+const char gMensajeVersion_T      [] = "< ";
+#else
 #if PIC_16F1936
 const char gMensajeVersion      [] = "V>0267< ";
 #else
 const char gMensajeVersion      [] = "V>xx67< ";
+#endif
 #endif
 
 #else
@@ -80,7 +120,7 @@ const uint8_t gMensajeVersion      [] = "V>xx67< ";
 #endif
 
 
-//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
+
  
  
 
@@ -88,6 +128,7 @@ const uint8_t gMensajeVersion      [] = "V>xx67< ";
 
 static msg_t msg_id;
 
+static uint16_t version_nr = 0;
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
@@ -102,6 +143,10 @@ static void msg_low_baterie(void);
 static void insert_msg_header(void);
 static void insert_baterie(void);
 static void insert_time(uint8_t pos);
+#if USE_NEW_VERSION_ID
+static void insert_version(uint8_t * buf);
+#endif
+
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
@@ -154,16 +199,192 @@ void messages_before_transmission(void){
 // e_Activation
 static void msg_activation(void)
 {
-  
+
   insert_msg_header();
+  
   strcpy ( (char*)(sentence_buffer.gps_buffer + 23), gMensajeActivandose );
+  
+#if USE_NEW_VERSION_ID||OV_VERSION_ID
+
+  // strncpy(date_str, __DATE__, 11);
+
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion_H );
+  insert_version((char*)(sentence_buffer.gps_buffer + 37));
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 41), gMensajeVersion_T );
+  
+#else  
   strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion );
+#endif
   
 }
 
 
 
+// clean up now...
+#if 0
 
+
+int get_month_index(void) {
+  
+  const char* date_str = __DATE__;
+  
+  char month_str[4];
+  
+  uint16_t day_of_year = 0u;
+  
+  uint8_t day_of_month = 0u;
+  
+  uint8_t compiled_week = 0u;
+  // uint8_t compiled_year = 0u;
+  int compiled_year = (date_str[9] - '0') * 10 + (date_str[10] - '0');
+  
+  strncpy(month_str, &date_str[0], 3);
+  
+  month_str[3] = '\0';
+  
+  DB_PRINT(&month_str);
+  
+  for (int i = 0; i < 12; i++)
+  {
+    if (strcmp(month_str, months[i].month) == 0) 
+    {
+      
+      day_of_year = day_of_year + get_day_of_month();
+      
+      UART_int(day_of_year);
+      
+      UART_CRLF;
+      
+      compiled_week = day_of_year / 7u;
+      
+      UART_int(compiled_week);
+      
+      UART_CRLF;
+      
+      version_nr = (((uint16_t)(compiled_week)) *100)  + compiled_year;
+      
+      UART_int(version_nr);
+      
+      UART_CRLF;
+      
+      return i;
+      
+    }
+    
+    day_of_year = day_of_year + months[i].days;
+    UART_int(day_of_year);
+    UART_CRLF;
+  }
+  
+
+  // assert(false); // Month not found
+  return -1;
+  
+}
+
+
+int get_day_of_month(void){
+  
+  const char* date_str = __DATE__;
+  int day = 0;
+  int i = 4;  // becasue for example Nov 15 2024
+
+
+  // Handle both single-digit and double-digit days
+  if (date_str[i] != ' ')
+  {
+    day = (date_str[i] - '0') * 10 + (date_str[i+1] - '0');
+  }
+  else
+  {
+    day = (date_str[i+1] - '0');
+  }
+
+  return day;
+  
+}
+
+#else
+
+
+void calculate_version_number(void) {
+  
+  const char* date_str = __DATE__;
+  
+  char month_str[4];
+  
+  uint16_t day_of_year = 0u;
+  
+  uint8_t day_of_month = 0u;
+  
+  uint8_t compiled_week = 0u;
+  
+  int compiled_year = (date_str[9] - '0') * 10 + (date_str[10] - '0');
+  
+  strncpy(month_str, &date_str[0], 3);
+  
+  month_str[3] = '\0';
+  
+  
+  
+  for (int i = 0; i < 12; i++)
+  {
+    if (strcmp(month_str, months[i].month) == 0u) 
+    {
+      
+        // Handle both single-digit and double-digit days
+      if (date_str[4] != ' ')
+      {
+        day_of_month = (date_str[4] - '0') * 10 + (date_str[5] - '0');
+      }
+      else
+      {
+        day_of_month = (date_str[5] - '0');
+      }
+      
+      day_of_year = day_of_year + day_of_month;
+      // day_of_year = day_of_year + get_day_of_month();
+      
+      compiled_week = day_of_year / 7u;
+      
+
+      
+      version_nr = (((uint16_t)(compiled_week)) * 100)  + compiled_year;
+
+      
+    }
+    
+    day_of_year = day_of_year + months[i].days;
+   
+  }
+  
+  // assert(version_nr != 0u);
+  
+}
+
+#if 0
+int get_day_of_month(void){
+  
+  const char* date_str = __DATE__;
+  int day = 0;
+  int i = 4;  // becasue for example Nov 15 2024
+
+
+  // Handle both single-digit and double-digit days
+  if (date_str[i] != ' ')
+  {
+    day = (date_str[i] - '0') * 10 + (date_str[i+1] - '0');
+  }
+  else
+  {
+    day = (date_str[i+1] - '0');
+  }
+
+  return day;
+  
+}
+#endif
+#endif
 
 // e_send_position
 static void msg_position(void)
@@ -234,7 +455,17 @@ static void msg_no_gps(void){
   
   strcpy((char*)sentence_buffer.gps_buffer + 23, gMensajeNoHay);
   strcpy((char*)sentence_buffer.gps_buffer + 30, gMensajeGps);
+  
+#if USE_NEW_VERSION_ID
+
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion_H );
+  insert_version((char*)(sentence_buffer.gps_buffer + 37));
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 41), gMensajeVersion_T );
+  
+#else  
   strcpy((char*)sentence_buffer.gps_buffer + 34, gMensajeVersion);
+#endif
+  
   strcpy((char*)sentence_buffer.gps_buffer + 42, gMensajeRadiogonio);
 }
 
@@ -383,5 +614,36 @@ static void insert_time(uint8_t pos)
   sentence_buffer.gps_buffer[pos + 7] =  'H';
 }
 
+
+#if USE_NEW_VERSION_ID||OV_VERSION_ID
+static void insert_version(uint8_t * buf){
+  
+  DecimalUint16ToA(buf, (uint16_t)version_nr, 4, false);
+  // DecimalUint16ToA(buf, (uint16_t)COMBINED_CODE, 4, false);
+  
+  
+}
+#endif
+
+
+#if 0
+
+
+void int_to_4digit_string(int number, char *buffer) {
+    buffer[0] = (number / 1000) % 10 + '0'; // Thousands place
+    buffer[1] = (number / 100) % 10 + '0';  // Hundreds place
+    buffer[2] = (number / 10) % 10 + '0';   // Tens place
+    buffer[3] = number % 10 + '0';          // Units place
+    buffer[4] = '\0';                       // Null terminator
+}
+
+int main() {
+    char formatted_code[5]; // 4 digits + null terminator
+    int_to_4digit_string(COMBINED_CODE, formatted_code);
+    printf("Combined value as string: %s\n", formatted_code);
+    return 0;
+}
+
+#endif
 
 // EOF

@@ -27,8 +27,9 @@
 
 #include "tilt_sensor.h"
 #include "gd_states.h"
-// TODO: --> becaseu of tmr4 config move it
+// TODO: --> because of tmr4 config move it
 #include "Init_all.h"
+
 #include "gps.h"
 
 #include "e_rtc.h"
@@ -112,7 +113,7 @@ static const HandlersHandlerType Handler_arr[] =
 	{ e_sleep_before_search,              f_setup_sleep_before_search },	
   { e_ertc_handler_start,               empty_function },	
 	{ e_errhandler,                       empty_function },		
-  { e_gps_test_reception,               f_gps_test_rx },
+  { e_gps_test_reception,               f_gps_test_rx  },
 	
 };
 
@@ -135,7 +136,7 @@ const uint16_t shifts[16] = {
 };
 
 //  **********************  MACRO DEFINITIONS  ************************  //
-#define TIME_BASE 2
+// #define TIME_BASE 2
 #define MS_PER_SECOND 1000
 #define DB_HANDLER_CF 0
 #define c_ADC_OVERSAMPLING 8
@@ -143,7 +144,7 @@ const uint16_t shifts[16] = {
 #define BATERIE_MINIMUM_mv_LEVEL	6000
 
 
-#define SEG_7D_REFRESH 2000
+// #define SEG_7D_REFRESH 2000
 
 #define OF_CNT_100MS 50
 #define OF_CNT_200MS 100
@@ -151,7 +152,7 @@ const uint16_t shifts[16] = {
 #define OF_CNT_500MS 250
 #define OF_CNT_2000MS 1000
 
-#define C_OF_CNT_SEG_7D SEG_7D_REFRESH/TIME_BASE
+// #define C_OF_CNT_SEG_7D SEG_7D_REFRESH/TIME_BASE
 
 // #define MAX_SWOFF_TMR_CNT 50	// 50 x 200 = 10000ms
 
@@ -494,12 +495,6 @@ static void rtc_1000ms_handler(void){
     }
   }
   
-
-  
-  
-  
-  
-  
 #if DEBUGGING_IS_ON      
   if(DEBUG_FLG_PRINT_TIME == TRUE)
   {
@@ -529,9 +524,25 @@ static void rtc_alarm_handler(void){
       // messages_before_transmission();
       // TODO: we still would need to switch off all the stuff we dont need...
       gps_stop();
-      set_message_for_tx(e_No_gps);
+      
+      if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) && (COPY_POS_IS_VALID == true))
+      {
+        // todo: check if there exists a copy of position to use...
+        // copy old position and create set it up for transmission...
+        copy_position_from_to(RECOVERPOSITION);
+        set_message_for_tx(e_send_position);
+      }
+      else
+      {
+        set_message_for_tx(e_No_gps);
+        COPY_POS_IS_VALID = false;
+      }
+      
+      gd.no_position_cnt++;
+      
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
       DB_PRINT("No position found\r\n");
+      
     break;
     case E_SLEEP_BEFORE_TRANSMISSION_STATE:
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
@@ -719,44 +730,38 @@ static void f_gps_has_position(void){
   
   // well, then we need to do all the things blablabla..
   
-  DB_LED1_SWAP;
+  
   
   gps_stop();
   
-  DB_LED1_SWAP;
+
   
   // and what to do next? well, depends on what we were doinfgin first place....
   
   
   eRTC_calculate_time_until_tx();
+  
   DB_PRINT("G_off\r\n");
+  gd.no_position_cnt = 0;
+  
   if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
   {
+    copy_position_from_to(SAVEPOSITION);
     DB_PRINT("G_off\r\n");
     gd.rtc_alarm = gd.seconds_until_next_tx;
     RTC_ALARM_ON = true;
     set_message_for_tx(e_send_position);
     gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+    
   }
   
-  
 
-  
-  // we have a lock! great now ...
-  
-  // * and then extract all the importan tinformation towards the necessary structures
-  // * calculate the sleep time
-  // * prepare the message allready as far as possible
-  // * 
-// ("GPS has position!\r\n");
-// #endif    
   // TODO swap state to --> Pre tx wait or sleep
-  // gd_states_switch_to_next_state();
 
   
 }
 
-
+// transmit state
 static void f_prepare_msg(void){
   
   // well, what are the possibilitys here actually --> 
@@ -818,12 +823,12 @@ static void f_gd_on(void){
   uart_init_cfg(B57600);
   RX_IF = FALSE;
 	RX_IE = TRUE;
-#endif
   
-
-  eRTC_clock_reset();
   
   DB_PRINT("GD_on");
+#endif
+  
+  
   
 }
 
@@ -921,6 +926,7 @@ static void f_always_transmit(void){
   }
   
 }
+
 
 static void fn_clock_switching(void){
   

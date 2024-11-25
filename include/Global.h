@@ -263,10 +263,12 @@ error again --> that MIPS is not standard so far --> write it extra out
 #define BPS_150 0x90
 #define BPS_300 0x80
 
-#define EEPROM_TX_DURATION 0x05
+#define EEPROM_TX_DURATION 0x0A
 #define EEPROM_BPS_CONFIG BPS_150
 #define EEPROM_MAX_DETECORES 0x06
 
+
+#define MAXIMUM_RESENT_SAME_POSITION 1
 
 // * * * * * * * * * * * * *   I n c l i n a t i o n   S e n s o r   r e l a t e d     * * * * * * * * * * * * *  //
 // * * * * * * * * * * * * *   I n c l i n a t i o n   S e n s o r   r e l a t e d     * * * * * * * * * * * * *  //

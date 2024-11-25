@@ -78,6 +78,14 @@ typedef struct gps_gsa_sentence_type{
 
 #endif
 
+typedef enum fromto_cpy_type{
+  
+  SAVEPOSITION,
+  RECOVERPOSITION,
+  
+}fromto_t;
+
+
 void gps_init(void);
 
 uint32_t gps_rtc_get_second_cnt(void);
@@ -106,7 +114,7 @@ void gps_set_debbugging_sync_time_flg(void);
 
 uint8_t gps_buffer_get_len(void);
 
-
+void copy_position_from_to(fromto_t fromto);
 
 
 

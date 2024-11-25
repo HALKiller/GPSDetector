@@ -22,6 +22,7 @@ typedef union udt_generic_8bit_union{
 }union8_t;
 
 extern union8_t gFLAGS;
+extern union8_t gd_flags;
 
 // TODO: --> reset on startup the correct ones
 #define SWITCH_CLOCK          gFLAGS.b0
@@ -34,7 +35,13 @@ extern union8_t gFLAGS;
 #define DEBUG_FLG_PRINT_TIME  gFLAGS.b7
 
 
-
+// FLAGS   
+// #define LUZ_ENABLED     gd_flags.b0 // from the eeprom cfg
+#define LUZ_HANDLER_ON      gd_flags.b1 // that is getting set when the sensor measures it is dark
+#define DOUBLE_PERIOD       gd_flags.b2
+#define COPY_POS_IS_VALID   gd_flags.b3
+#define ALWAYS_TRANSMIT     gd_flags.b4
+#define PWM_IS_ON           gd_flags.b5 // when the TMR0_IE gers set 
 
 
 typedef union udt_generic_16bit_union{	

@@ -35,6 +35,7 @@
 
 #include "messages.h"
 
+#include "string.h"
 
 
 
@@ -80,7 +81,7 @@ void init_all(void){
 	__delay_ms(5u);
 
   
-	
+	calculate_version_number();
 	// init_tmr0();
 	
 	init_tmr1();
@@ -100,11 +101,47 @@ void init_all(void){
 	UWT("\r\n");
 	UWT("MIPS: ");
 	UART_int(t_var);
-
+  UWT("\r\n");
+  
+ #if 0 
+  
+  char date_str[11];
+  int mes = 0u;
+  strncpy(date_str, __DATE__, 11);
+  DB_PRINT("new: ");
+  DB_PRINT(&date_str);
+  mes = get_month_index();
+  if(mes != (-1))
+  {
+    UART_int((uint8_t)mes);
+  }
+  else
+  {
+      DB_PRINT("Not found!\r\n");
+  }
+  UART_CRLF;
+  
+#endif  
+  
+  
+  
+  
+  
+  
+  
+#if USE_NEW_VERSION_ID&&0
+  
   UWT("Week: ");
   t_var = (uint8_t)WEEK_OF_YEAR;
   UART_int(t_var);
-  	UART_CRLF;
+  
+  UWT("Version: ");
+  t_var = (uint8_t)COMBINED_CODE;
+  UART_int(t_var);
+  
+#endif
+  
+  UART_CRLF;
   
   
 #endif
@@ -270,8 +307,9 @@ void startup(void){
   // on startup we reset the time...
   RTC_TIME_IS_GOOD = false;
   RTC_ALARM_ON = false;
+  eRTC_clock_reset();
   // TODO:  we should reset the time also ...
-  
+  gd.no_position_cnt = 0u;
   
   // RX_IF = FALSE;
 	// RX_IE = TRUE;

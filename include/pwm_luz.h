@@ -38,14 +38,15 @@
 
 struct udt_detector{
   
+  uint16_t time_between_tx;
+  uint16_t seconds_until_next_tx;
+  uint16_t rtc_alarm;
   uint8_t number;
   uint8_t max_detectores;
   uint8_t transmission_duration;
   uint8_t syncro_time;
-  uint16_t time_between_tx;
-  uint16_t seconds_until_next_tx;
-  uint16_t rtc_alarm;
-  
+  uint8_t no_position_cnt;
+
 };
 
 extern struct udt_detector gd;

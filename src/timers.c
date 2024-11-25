@@ -167,10 +167,8 @@ void reset_timeout_timer(void){
 void configure_tmr4(void){
   
 	
-	
   TMR4_ON = FALSE;
-	
-  
+	 
   if(FAST_CLOCK == TRUE)
   {
     
@@ -193,18 +191,14 @@ void configure_tmr4(void){
     // directly to 200ms
     
     OPTION_REG = TMR0_CFG_SLOW_CLCK;
-    
- 
-  }
 
+  }
 
 }
 
 
 
 void init_tmr0(void){
-
-
 
 	OPTION_REG = TMR0_CFG;  // (uint8_t)0x81u;
 

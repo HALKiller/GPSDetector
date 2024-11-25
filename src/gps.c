@@ -35,10 +35,10 @@
 
 #include "my_assert.h"
 
-
+#include "generic_union_flgs.h"
 
 #if DEBUGGING_IS_ON
-#include "generic_union_flgs.h"
+
 #include "pwm_luz.h"
 #endif
 
@@ -107,7 +107,6 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
   115200,
   
 };
-
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
@@ -238,7 +237,7 @@ static void Debugging_read_out_rmc(void);
 
 static void convert_utc_to_gps_rtc_time(void);
 
-
+static void copy_rmc_to_from(RMC_sentence_t *const des_pnt,  RMC_sentence_t const *const src_pnt);
 
 
 
@@ -487,6 +486,21 @@ uint8_t gps_buffer_get_len(void){
   
 }
 
+
+void copy_position_from_to(fromto_t fromto){
+  
+  if(fromto == SAVEPOSITION)
+  {
+    copy_rmc_to_from(&copy_of_rmc, &rmc_sentence );
+    COPY_POS_IS_VALID = true;
+  }
+  else
+  {
+    copy_rmc_to_from(&rmc_sentence,  &copy_of_rmc);
+  }
+  
+  
+}
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
 

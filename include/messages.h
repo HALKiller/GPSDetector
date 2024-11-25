@@ -3,6 +3,11 @@
 
 #include "Global.h"
 
+#define USE_NEW_VERSION_ID 1
+#define OV_VERSION_ID 1
+
+#if USE_NEW_VERSION_ID&&0
+
 #define PARSE_MONTH(m) ( \
     (m[0] == 'J' && m[1] == 'a') ? 0 : \
     (m[0] == 'F') ? 31 : \
@@ -20,6 +25,24 @@
 #define DAY_OF_YEAR ((__DATE__[4] - '0') * 10 + (__DATE__[5] - '0') + PARSE_MONTH(__DATE__))
 
 #define WEEK_OF_YEAR ((DAY_OF_YEAR - 1) / 7 + 1)
+
+#define YEAR_LAST_TWO_DIGITS ((__DATE__[9] - '0') * 10 + (__DATE__[10] - '0'))
+
+#define COMBINED_CODE (WEEK_OF_YEAR * 100 + YEAR_LAST_TWO_DIGITS)
+
+#endif
+
+
+
+
+
+
+
+
+void calculate_version_number(void);
+
+int get_month_index(void);
+
 
 
 

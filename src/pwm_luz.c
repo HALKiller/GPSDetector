@@ -98,19 +98,13 @@ static const uint16_t shifter[16] = {
 
 
 
-// FLAGS   
-// #define LUZ_ENABLED     pwm_flgs.b0 // from the eeprom cfg
-#define LUZ_HANDLER_ON  pwm_flgs.b1 // that is getting set when the sensor measures it is dark
-#define DOUBLE_PERIOD   pwm_flgs.b2
-// #define TX_150BPS       pwm_flgs.b3
-#define ALWAYS_TRANSMIT pwm_flgs.b4
-#define PWM_IS_ON       pwm_flgs.b5 // when the TMR0_IE gers set 
+
 
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
-static union8_t pwm_flgs;
+union8_t gd_flags;
 
 static struct udt_m pwm_luz;
 
