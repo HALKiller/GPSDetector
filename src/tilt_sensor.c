@@ -40,7 +40,6 @@
 struct udt_tilt_sensor_type{
   
   tilt_sensor_states_t detector_is_on;
-  // tilt_sensor_states_t last_state;
   uint8_t on_cnt;
   uint8_t off_cnt;
   
@@ -75,9 +74,6 @@ static struct udt_tilt_sensor_type tilt_sensor;
 
 
 void tilt_sensor_init(void){
-  
-  
-  // tilt_sensor.last_state = TS_STARTUP_STATE;
   
   tilt_sensor.detector_is_on = TS_STARTUP_STATE;
   
@@ -151,8 +147,6 @@ void update_tilt_sensor_state(void){
       }
       
     }
-   
-
 
 	}
 	else

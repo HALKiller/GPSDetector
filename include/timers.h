@@ -29,7 +29,7 @@
 #define TMR1_4_PRESCALER	2u
 #define TMR1_8_PRESCALER	3u
 
-#define USE_TMR0_FLG 1
+#define USE_TMR1_FLG 1
 
 #if MIPS == 8
 

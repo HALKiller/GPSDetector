@@ -244,8 +244,10 @@ void check_on_rx_luz(void){
   __delay_ms(200);
   tx_config_data(SEND_RX_SPEED);
 
-	reset_timeout_timer();
+	
   timers_set_tmr1_id(RX_LUZ_TIME_OUT);
+  reset_timeout_timer();
+  
   TMR1_IE = true;
 	TMR1_ON = true;
 
@@ -602,7 +604,7 @@ static uint8_t wait_for_startbit(void){
 				}
 				else
 				{
-#if USE_TMR0_FLG
+#if USE_TMR1_FLG
 					if(TIMEOUT_FLG == true)
 					{
 						return false;
@@ -619,7 +621,7 @@ static uint8_t wait_for_startbit(void){
 		}
 		else
 		{
-#if USE_TMR0_FLG
+#if USE_TMR1_FLG
 
       if(TIMEOUT_FLG == true)
       {
@@ -670,7 +672,7 @@ static uint8_t wait_for_startbit(void){
 				}
 				else
 				{
-#if USE_TMR0_FLG
+#if USE_TMR1_FLG
 
           if(TIMEOUT_FLG == true)
           {
@@ -690,7 +692,7 @@ static uint8_t wait_for_startbit(void){
 		}
 		else
 		{
-#if USE_TMR0_FLG
+#if USE_TMR1_FLG
 
       if(TIMEOUT_FLG == true)
       {

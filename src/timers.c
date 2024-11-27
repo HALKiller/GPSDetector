@@ -39,9 +39,11 @@
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
 
 static const uint8_t timeout_setter[2] = {
+  
   TMR1_2_SECOND_OF_CNT,
   TMR1_4_SECOND_OF_CNT,
- };
+  
+};
 
 
 
@@ -55,7 +57,8 @@ volatile uint8_t tmr4_200ms_of = 10;
 volatile static uint8_t timeout_cnt = TMR1_2_SECOND_OF_CNT;
 
 static tmr1_id_t tmr1_id = NUM_TMR1_ID;
-static uint8_t timeout_cnt_setter = TMR1_2_SECOND_OF_CNT;
+
+static uint8_t timeout_cnt_setter = TMR1_2_SECOND_OF_CNT;  // TMR1_4_SECOND_OF_CNT; // 
 
 
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
@@ -71,8 +74,20 @@ static void tmr1_timeout_handler(void);
 
 void timers_set_tmr1_id(tmr1_id_t t_id){
   
+  DB_PRINT("TMR1: ");
+  UART_int(t_id);
+  UART_CRLF;
+  
+  if(TMR1_ON == TRUE)
+  {
+    DB_PRINT("ERR_tmr1");
+  }
+  
   tmr1_id = t_id;
   timeout_cnt_setter = timeout_setter[tmr1_id];
+  DB_PRINT("cnt: ");
+  UART_int(timeout_cnt_setter);
+  UART_CRLF;
   
 }
 
@@ -97,7 +112,7 @@ void timers_tmr1_decreaser(void){
 
 
 
-#if !USE_TMR0_FLG
+#if !USE_TMR1_FLG
 
 uint8_t timeout_checker(void){
 	
@@ -145,7 +160,7 @@ void reset_timeout_timer(void){
   
   TIMEOUT_FLG = FALSE;
   
-	timeout_cnt = timeout_cnt_setter; // TMR1_2_SECOND_OF_CNT;
+	timeout_cnt = timeout_cnt_setter; 
   
 	TMR1IF = FALSE;
   

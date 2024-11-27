@@ -340,6 +340,7 @@ void gps_reinit(void){
   GPS_VALIM = TRUE;
 
   FAKE_GPS_VALIM = true;
+  
 #endif  
   
   
@@ -354,9 +355,10 @@ void gps_reinit(void){
   // tmr_handlers_initialize(GPS_TIME_OUT_TIMER);
   
   // tmr_handlers_start(GPS_TIME_OUT_TIMER);
+  timers_set_tmr1_id(GPS_UART_TIMEOUT);
   reset_timeout_timer();
   
-  timers_set_tmr1_id(GPS_UART_TIMEOUT);
+  
   
   TMR1_IE = TRUE;
   TMR1_ON = TRUE;
@@ -425,6 +427,14 @@ void gps_calculate_lock_time(void){
   
   gps_module.lock_times[gps_module.lock_indexer] = gps_module.lock_time_end - gps_module.lock_time_start;
   
+  
+#if DEBUGGING_IS_ON
+
+  DB_PRINT("Lock_time: ");
+  UART_int(gps_module.lock_times[gps_module.lock_indexer]);
+  UART_CRLF;
+
+#endif  
   
   
   

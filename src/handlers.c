@@ -528,9 +528,7 @@ static void rtc_alarm_handler(void){
       // retransmit last position and all the other thigns from here...
       // messages_before_transmission();
       // TODO: we still would need to switch off all the stuff we dont need...
-      
-      
-      
+
       gps_stop();
       
       set_max_lock_time();
@@ -540,7 +538,7 @@ static void rtc_alarm_handler(void){
       
       if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) && (COPY_POS_IS_VALID == true))
       {
-        // todo: check if there exists a copy of position to use...
+        
         // copy old position and create set it up for transmission...
         copy_position_from_to(RECOVERPOSITION);
         set_message_for_tx(e_send_position);
@@ -554,6 +552,7 @@ static void rtc_alarm_handler(void){
       gd.no_position_cnt++;
       
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
+      
       DB_PRINT("No position found\r\n");
       
     break;
