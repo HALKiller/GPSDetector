@@ -28,6 +28,7 @@
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
+#if 0
 typedef struct udt_my_time {
   
   uint8_t hours;
@@ -37,6 +38,7 @@ typedef struct udt_my_time {
   
 }my_time_t;
 
+#endif
 my_time_t ertc;
 
 
@@ -207,7 +209,7 @@ void eRTC_calculate_time_until_tx(void)
   }
 
   
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON&&0
   DB_PRINT("Wait: ");
   UART_int(gd.seconds_until_next_tx);
   UART_CRLF;

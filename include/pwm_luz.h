@@ -46,6 +46,8 @@ struct udt_detector{
   uint8_t transmission_duration;
   uint8_t syncro_time;
   uint8_t no_position_cnt;
+  uint8_t vbat_low;
+  uint8_t vbat_high;
 
 };
 
@@ -67,7 +69,7 @@ uint8_t get_pwm_luz_pwm_value(void);
 
 uint8_t read_ilum_sensor(void);
 
-void LeerValorBateria(bool AntesDeTransmitir);
+void LeerValorBateria(void);
 
 extern uint8_t baterie_mV;
 

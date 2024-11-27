@@ -126,6 +126,8 @@ void uint32_to_str(uint32_t num, char *str);
 #endif
 
 
+
+#define DEBUG_BAUDRATE B9600
 typedef enum {
   
   B9600 = 96,

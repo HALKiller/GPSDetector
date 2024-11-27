@@ -24,6 +24,10 @@
 
 #include "DDS.h"
 
+#include "my_assert.h"
+
+#include "e_rtc.h"
+
 #if DEBUGGING_IS_ON
 #include "UART.h"
 #endif
@@ -43,20 +47,16 @@
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
-const char* month_names[] = {
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-}; 
- 
+
  
 struct MonthDay {
-    const char* month;
-    int days;
+  const char* month;
+  int days;
 };
 
 struct MonthDay months[] = {
   {"Jan", 31},
-  {"Feb", 29}, // Assuming non-leap year
+  {"Feb", 29},
   {"Mar", 31},
   {"Apr", 30},
   {"May", 31},
@@ -72,16 +72,18 @@ struct MonthDay months[] = {
 #if 1
 
 const char gMensajeActivandose  [] = "ACTIVANDOSE ";
-const char gMensajeRadiogonio   [] = "RADIOGONIO ";
-const char gMensajeNoHay        [] = "NO HAY ";
-const char gMensajeBuscando     [] = "BUSCANDO ";
-const char gMensajeNoCobertura  [] = "FUERA DE COBERTURA ";
-const char gMensajeRevisar      [] = "REVISE ANTENA ";
-const char gMensajeApagado      [] = "APAGADO DURANTE XX MINUTOS";
-const char gMensajeBateriaBaja  [] = "BATERIA BAJA ";
-const char gMensajeLucesActivas [] = "LUCES ACTIVADAS ";
-const char gMensajePos          [] = "POS ";
-const char gMensajeGps          [] = "GPS ";
+// const char gMensajeRadiogonio   [] = "RADIOGONIO ";
+// const char gMensajeNoHay        [] = "NO HAY ";
+// const char gMensajeBuscando     [] = "BUSCANDO ";
+const char msg_gps_error        [] = "FALLO MODULO GPS >-< ERROR ";
+
+// const char gMensajeNoCobertura  [] = "FUERA DE COBERTURA ";
+// const char gMensajeRevisar      [] = "REVISE ANTENA ";
+// const char gMensajeApagado      [] = "APAGADO DURANTE XX MINUTOS";
+// const char gMensajeBateriaBaja  [] = "BATERIA BAJA ";
+// const char gMensajeLucesActivas [] = "LUCES ACTIVADAS ";
+// const char gMensajePos          [] = "POS ";
+// const char gMensajeGps          [] = "GPS ";
 const char gMensajeGuion        [] = ">-< ";
 const char gMensajeHora         [] = "HORA ";
 
@@ -135,10 +137,7 @@ static uint16_t version_nr = 0;
 static void msg_activation(void);
 static void msg_position(void);
 static void msg_no_gps(void);
-static void msg_no_position_no_time(void);
-static void msg_no_gps_reception(void);
-static void msg_gps_searches_position(void);
-static void msg_low_baterie(void);
+
 
 static void insert_msg_header(void);
 static void insert_baterie(void);
@@ -146,8 +145,12 @@ static void insert_time(uint8_t pos);
 #if USE_NEW_VERSION_ID
 static void insert_version(uint8_t * buf);
 #endif
-
-
+#if 0
+static void msg_no_position_no_time(void);
+static void msg_no_gps_reception(void);
+static void msg_gps_searches_position(void);
+static void msg_low_baterie(void);
+#endif
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
 void set_message_for_tx(msg_t next_msg){
@@ -174,6 +177,7 @@ void messages_before_transmission(void){
     case e_No_gps:
       msg_no_gps();
     break;
+#if 0    
     case e_No_position_no_time:
       msg_no_position_no_time();
     break;
@@ -186,8 +190,12 @@ void messages_before_transmission(void){
     case e_Low_baterie:
       msg_low_baterie();
     break;
+#endif    
+    default:
     
-    
+      assert(false);
+      
+    break;
   }
 
 }
@@ -205,8 +213,6 @@ static void msg_activation(void)
   strcpy ( (char*)(sentence_buffer.gps_buffer + 23), gMensajeActivandose );
   
 #if USE_NEW_VERSION_ID||OV_VERSION_ID
-
-  // strncpy(date_str, __DATE__, 11);
 
   strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion_H );
   insert_version((char*)(sentence_buffer.gps_buffer + 37));
@@ -331,8 +337,7 @@ void calculate_version_number(void) {
   {
     if (strcmp(month_str, months[i].month) == 0u) 
     {
-      
-        // Handle both single-digit and double-digit days
+
       if (date_str[4] != ' ')
       {
         day_of_month = (date_str[4] - '0') * 10 + (date_str[5] - '0');
@@ -343,12 +348,11 @@ void calculate_version_number(void) {
       }
       
       day_of_year = day_of_year + day_of_month;
-      // day_of_year = day_of_year + get_day_of_month();
+
       
       compiled_week = day_of_year / 7u;
       
 
-      
       version_nr = (((uint16_t)(compiled_week)) * 100)  + compiled_year;
 
       
@@ -358,32 +362,9 @@ void calculate_version_number(void) {
    
   }
   
-  // assert(version_nr != 0u);
-  
 }
 
-#if 0
-int get_day_of_month(void){
-  
-  const char* date_str = __DATE__;
-  int day = 0;
-  int i = 4;  // becasue for example Nov 15 2024
 
-
-  // Handle both single-digit and double-digit days
-  if (date_str[i] != ' ')
-  {
-    day = (date_str[i] - '0') * 10 + (date_str[i+1] - '0');
-  }
-  else
-  {
-    day = (date_str[i+1] - '0');
-  }
-
-  return day;
-  
-}
-#endif
 #endif
 
 // e_send_position
@@ -430,23 +411,62 @@ static void msg_position(void)
   {
     sentence_buffer.gps_buffer[51] = 'W';
   }
-    
-
-    
+ 
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 23, rmc_sentence.Latitude.Grados        , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 26, rmc_sentence.Latitude.Minutos       , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 38, rmc_sentence.Longitude.Grados       , 3, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 42, rmc_sentence.Longitude.Minutos      , 2, false );
+
+#if 1  
+  
+  ertc_convert_to_real_time(eRTC_get_second_cnt());
+
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + 54, ertc.hours    , 2, false );
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + 56, ertc.minutes  , 2, false );
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + 58, ertc.seconds  , 2, false );
+ 
+ #else
+  
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 54, rmc_sentence.UtcOfPosition.Horas    , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 56, rmc_sentence.UtcOfPosition.Minutos  , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 58, rmc_sentence.UtcOfPosition.Segundos , 2, false );
+
+#endif
+  
   DecimalUint16ToA( sentence_buffer.gps_buffer + 29, rmc_sentence.Latitude.Decimas       , 4, false );
   DecimalUint16ToA( sentence_buffer.gps_buffer + 45, rmc_sentence.Longitude.Decimas      , 4, false );
   
 }
 
 
+#if 1
 
+static void msg_no_gps(void){
+// PreparaMensajeNoHayGps(void)
+
+  insert_msg_header();
+  
+  strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_error);
+  // strcpy((char*)sentence_buffer.gps_buffer + 30, gMensajeGps);
+  
+#if USE_NEW_VERSION_ID
+
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 51), gMensajeVersion_H );
+  insert_version((char*)(sentence_buffer.gps_buffer + 53));
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 57), gMensajeVersion_T );
+  
+  
+  
+#else  
+  strcpy((char*)sentence_buffer.gps_buffer + 34, gMensajeVersion);
+#endif
+  
+  // strcpy((char*)sentence_buffer.gps_buffer + 42, gMensajeRadiogonio);
+  
+}
+
+#else
+  
 // e_No_gps
 static void msg_no_gps(void){
 // PreparaMensajeNoHayGps(void)
@@ -458,16 +478,124 @@ static void msg_no_gps(void){
   
 #if USE_NEW_VERSION_ID
 
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion_H );
-  insert_version((char*)(sentence_buffer.gps_buffer + 37));
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 41), gMensajeVersion_T );
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 34), gMensajeVersion_H );
+  insert_version((char*)(sentence_buffer.gps_buffer + 36));
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 40), gMensajeVersion_T );
+  
+  
   
 #else  
   strcpy((char*)sentence_buffer.gps_buffer + 34, gMensajeVersion);
 #endif
   
   strcpy((char*)sentence_buffer.gps_buffer + 42, gMensajeRadiogonio);
+  
 }
+
+#endif
+
+
+
+static void insert_msg_header(void)
+{
+  
+  insert_baterie();
+  
+
+  for( uint8_t i = 0; i < 4; i++ )
+  {
+    sentence_buffer.gps_buffer[i] =  LeerEeprom ( 0x36 + i );
+  }
+  
+  for( uint8_t i = 0; i < 7; i++ )
+  {
+    sentence_buffer.gps_buffer[i + 5] =  LeerEeprom ( 0x3A + i );
+  }
+
+
+  
+  sentence_buffer.gps_buffer[4] =  '>';
+  sentence_buffer.gps_buffer[18] =  '>';
+  sentence_buffer.gps_buffer[12] =  ',';
+  sentence_buffer.gps_buffer[13] =  '<';
+  sentence_buffer.gps_buffer[21] =  '<';
+  sentence_buffer.gps_buffer[16] =  '.';
+  sentence_buffer.gps_buffer[19] =  'V';
+  sentence_buffer.gps_buffer[20] =  'B';
+  sentence_buffer.gps_buffer[22] =  ' ';
+}
+
+
+
+
+static void insert_baterie(void)
+{
+  
+#if DEBUGGING_IS_ON&&0
+
+  sentence_buffer.gps_buffer[14] = '5'; // vbat[0];
+  sentence_buffer.gps_buffer[15] = '4'; // vbat[1];
+  sentence_buffer.gps_buffer[17] = '2'; //vbat[2];
+
+  
+#else  
+  
+  char vbat[3];
+  
+  LeerValorBateria();
+  
+  
+  
+  DecimalUint8ToA( (uint8_t*)&vbat[0], baterie_mV, 3, false );
+
+  sentence_buffer.gps_buffer[14] = vbat[0];
+  sentence_buffer.gps_buffer[15] = vbat[1];
+  sentence_buffer.gps_buffer[17] = vbat[2];
+  
+#endif
+  
+}
+
+#if 1
+
+static void insert_time(uint8_t pos)
+{
+  
+  ertc_convert_to_real_time(eRTC_get_second_cnt());
+  
+  
+  
+  sentence_buffer.gps_buffer[pos] =  '>';
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 1, ertc.hours    , 2, false );
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 3, ertc.minutes  , 2, false );
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 5, ertc.seconds  , 2, false );
+  sentence_buffer.gps_buffer[pos + 7] =  'H';
+}
+
+#else
+  
+static void insert_time(uint8_t pos)
+{
+  sentence_buffer.gps_buffer[pos] =  '>';
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 1, rmc_sentence.UtcOfPosition.Horas    , 2, false );
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 3, rmc_sentence.UtcOfPosition.Minutos  , 2, false );
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 5, rmc_sentence.UtcOfPosition.Segundos , 2, false );
+  sentence_buffer.gps_buffer[pos + 7] =  'H';
+}
+
+#endif
+
+static void insert_version(uint8_t * buf){
+  
+  DecimalUint16ToA(buf, (uint16_t)version_nr, 4, false);
+  
+}
+
+
+
+
+
+#if 0
 
 // e_No_position_no_time
 static void msg_no_position_no_time(void){
@@ -543,106 +671,6 @@ void PreparaMensajeRadiogonio(uint8_t val)
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 36, val, 1, false );
 }
 
-
-
-static void insert_msg_header(void)
-{
-  
-  insert_baterie();
-  
-
-  for( uint8_t i = 0; i < 4; i++ )
-  {
-    sentence_buffer.gps_buffer[i] =  LeerEeprom ( 0x36 + i );
-  }
-  
-  for( uint8_t i = 0; i < 7; i++ )
-  {
-    sentence_buffer.gps_buffer[i + 5] =  LeerEeprom ( 0x3A + i );
-  }
-
-
-  
-  sentence_buffer.gps_buffer[4] =  '>';
-  sentence_buffer.gps_buffer[18] =  '>';
-  sentence_buffer.gps_buffer[12] =  ',';
-  sentence_buffer.gps_buffer[13] =  '<';
-  sentence_buffer.gps_buffer[21] =  '<';
-  sentence_buffer.gps_buffer[16] =  '.';
-  sentence_buffer.gps_buffer[19] =  'V';
-  sentence_buffer.gps_buffer[20] =  'B';
-  sentence_buffer.gps_buffer[22] =  ' ';
-}
-
-
-
-
-static void insert_baterie(void)
-{
-  
-#if DEBUGGING_IS_ON&&0
-
-  sentence_buffer.gps_buffer[14] = '5'; // vbat[0];
-  sentence_buffer.gps_buffer[15] = '4'; // vbat[1];
-  sentence_buffer.gps_buffer[17] = '2'; //vbat[2];
-
-  
-#else  
-  
-  char vbat[3];
-  
-  LeerValorBateria(true);
-  
-  
-  
-  DecimalUint8ToA( (uint8_t*)&vbat[0], baterie_mV, 3, false );
-
-  sentence_buffer.gps_buffer[14] = vbat[0];
-  sentence_buffer.gps_buffer[15] = vbat[1];
-  sentence_buffer.gps_buffer[17] = vbat[2];
-  
-#endif
-  
-}
-
-static void insert_time(uint8_t pos)
-{
-  sentence_buffer.gps_buffer[pos] =  '>';
-  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 1, rmc_sentence.UtcOfPosition.Horas    , 2, false );
-  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 3, rmc_sentence.UtcOfPosition.Minutos  , 2, false );
-  DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 5, rmc_sentence.UtcOfPosition.Segundos , 2, false );
-  sentence_buffer.gps_buffer[pos + 7] =  'H';
-}
-
-
-#if USE_NEW_VERSION_ID||OV_VERSION_ID
-static void insert_version(uint8_t * buf){
-  
-  DecimalUint16ToA(buf, (uint16_t)version_nr, 4, false);
-  // DecimalUint16ToA(buf, (uint16_t)COMBINED_CODE, 4, false);
-  
-  
-}
-#endif
-
-
-#if 0
-
-
-void int_to_4digit_string(int number, char *buffer) {
-    buffer[0] = (number / 1000) % 10 + '0'; // Thousands place
-    buffer[1] = (number / 100) % 10 + '0';  // Hundreds place
-    buffer[2] = (number / 10) % 10 + '0';   // Tens place
-    buffer[3] = number % 10 + '0';          // Units place
-    buffer[4] = '\0';                       // Null terminator
-}
-
-int main() {
-    char formatted_code[5]; // 4 digits + null terminator
-    int_to_4digit_string(COMBINED_CODE, formatted_code);
-    printf("Combined value as string: %s\n", formatted_code);
-    return 0;
-}
 
 #endif
 

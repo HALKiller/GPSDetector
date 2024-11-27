@@ -218,7 +218,7 @@ void get_the_next_handler(void){
     {
       
       CLRWDT();
-      DB_LED3_SWAP;
+      DB_LED1_SWAP;
       
     }
 
@@ -281,7 +281,7 @@ void get_the_next_handler(void){
     {
       
       CLRWDT();
-      DB_LED3_SWAP;
+      DB_LED1_SWAP;
       
     }
 
@@ -484,7 +484,11 @@ static void rtc_1000ms_handler(void){
   
   if(RTC_ALARM_ON == true)
   {
+    
     gd.rtc_alarm--; // seconds_until_next_tx--;
+  
+    UART_int(gd.rtc_alarm);
+    UART_CRLF;
   
     if(gd.rtc_alarm == 0u)  // seconds_until_next_tx == 0)
     {
@@ -519,11 +523,20 @@ static void rtc_alarm_handler(void){
       gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
     break;
     case E_SEARCH_POSITION_STATE:
-      // well, we did not fiund a position in time it seems --> we are transmitting now what??
+    
+      // well, we did not find a position in time it seems --> we are transmitting now what??
       // retransmit last position and all the other thigns from here...
       // messages_before_transmission();
       // TODO: we still would need to switch off all the stuff we dont need...
+      
+      
+      
       gps_stop();
+      
+      set_max_lock_time();
+      // stop_gps_lock_time_cnt();
+      
+      gps_calculate_lock_time();
       
       if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) && (COPY_POS_IS_VALID == true))
       {
@@ -696,6 +709,7 @@ static void f_gps_on(void){
   
 }
 
+
 static void f_gps_test_rx(void){
   
   gps_state_t gps_state;
@@ -730,11 +744,13 @@ static void f_gps_has_position(void){
   
   // well, then we need to do all the things blablabla..
   
-  
+  // TODO:
+  // Calculate the lock time and move that into the array, 
+  // based on that calculate the minimum gps_on time...
   
   gps_stop();
   
-
+  gps_calculate_lock_time();
   
   // and what to do next? well, depends on what we were doinfgin first place....
   
@@ -756,10 +772,62 @@ static void f_gps_has_position(void){
   }
   
 
-  // TODO swap state to --> Pre tx wait or sleep
+  
+}
+
+#if 1 
+
+// transmit state
+static void f_prepare_msg(void){
+
+#if SEND_ALL_MESSAGES_FOR_TESTING   
+  uint8_t hlooper = 0;
+  
+  for(hlooper = 0; hlooper < 3; hlooper++)
+  {
+    
+    set_message_for_tx(hlooper);
+    
+    CLRWDT();
+    
+      // well, what are the possibilitys here actually --> 
+  // we would need to know what message and that would depend on where we are coming from
+    messages_before_transmission();
+    
+    Transmite(false);
+    
+    
+  }
+  CLRWDT();
+  
+#endif  
+  
+  // well, what are the possibilitys here actually --> 
+  // we would need to know what message and that would depend on where we are coming from
+  messages_before_transmission();
+  
+  Transmite(false);
+  
+  if(gd_states_get_last_state() == E_GPS_CHECK_ON_ACTIVATION)
+  {
+    gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
+  }
+  else
+  {
+    gd_states_switch_to_next_state(E_SLEEP_BEFORE_SEARCH_STATE);
+    // TODO: that might be different if we did not get a valid lock on the position the last time!
+    // calculate the sleep before search time depending on alöl the possible things and then set it up
+  }
+  ertc_convert_to_real_time(eRTC_get_second_cnt());
+  ertc_convert_to_str();
+  // and on return we should look if we can go to sleep or if we are going to search position
+  DB_PRINT("\r\nTx_done\r\n");
 
   
 }
+
+
+#else
 
 // transmit state
 static void f_prepare_msg(void){
@@ -788,7 +856,7 @@ static void f_prepare_msg(void){
   
 }
 
-
+#endif
 
 static void f_rx_luz_com_handler(void){
   
@@ -820,7 +888,7 @@ static void f_gd_on(void){
   
 #if DEBUGGING_IS_ON  
 
-  uart_init_cfg(B57600);
+  uart_init_cfg(DEBUG_BAUDRATE);
   RX_IF = FALSE;
 	RX_IE = TRUE;
   
@@ -952,7 +1020,7 @@ static void fn_clock_switching(void){
     configure_tmr4();
     // init_UART();
 #if DEBUGGING_IS_ON
-    uart_init_cfg(B57600);
+    uart_init_cfg(DEBUG_BAUDRATE);
 #endif    
   }
   
@@ -964,26 +1032,85 @@ static void fn_clock_switching(void){
 #endif
 
 
+#if DEBUGGING_IS_ON
 
 // the sleep before search state
+static void f_setup_sleep_before_search(void){
+  
+
+  
+  uint16_t locker = gps_get_average_lock_time();
+
+  locker = locker * (10u + GPS_LOCK_TIME_DECIMO_PERCENTAGER) / 10u;
+  
+  // well --> lets calculate the time for sleep, 
+  // set it up and clock down the baby...
+  eRTC_calculate_time_until_tx();
+  
+  
+  // because on low bat we wait longer...
+  if(BAT_IS_LOW_FLG == true)
+  {
+    gd.seconds_until_next_tx = gd.seconds_until_next_tx + gd.time_between_tx;
+  }
+  
+  if(gd.seconds_until_next_tx > locker)
+  {
+    
+    gd.rtc_alarm = gd.seconds_until_next_tx - locker; 
+  
+    gd_states_set_next_state(E_SEARCH_POSITION_STATE);
+  
+    handlers_generic_set_handler_FLG(e_switch_clock_handler);
+
+  }
+  else
+  {
+    gd.rtc_alarm = gd.seconds_until_next_tx;
+    gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
+  }
+  
+  DB_PRINT("S_till_tx: ");
+  UART_int(gd.seconds_until_next_tx);
+  UART_CRLF;
+  UART_int(locker);
+  UART_CRLF;
+  UART_int(gd.rtc_alarm);
+  UART_CRLF;
+  
+  
+  
+  RTC_ALARM_ON = true;
+  
+
+
+}
+
+#else
+  
+  // the sleep before search state
 static void f_setup_sleep_before_search(void){
   
   // well --> lets calculate the time for sleep, 
   // set it up and clock down the baby...
   eRTC_calculate_time_until_tx();
-  RTC_ALARM_ON = true;
+
+  
   // TODO: this is just some value at the moment for debugging
   if(gd.seconds_until_next_tx > 20)
   {
     gd.rtc_alarm = gd.seconds_until_next_tx - 20;  
   }
   
+  RTC_ALARM_ON = true;
+  
   gd_states_set_next_state(E_SEARCH_POSITION_STATE);
   
   handlers_generic_set_handler_FLG(e_switch_clock_handler);
-  
-  
+
 }
+
+#endif
 
 
 

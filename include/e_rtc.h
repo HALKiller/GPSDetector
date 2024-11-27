@@ -17,6 +17,26 @@
 #define SECONDS_PER_DAY (uint32_t)864000u // because of decimo seconds we have a digit more
 #endif
 
+typedef struct udt_my_time {
+  
+  uint8_t hours;
+  uint8_t minutes;
+  uint8_t seconds;
+  
+  
+}my_time_t;
+
+extern my_time_t ertc;
+
+
+
+
+
+
+
+
+
+
 void eRTC_clock_incrementer(void);
 
 void eRTC_clock_reset(void);

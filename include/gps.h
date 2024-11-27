@@ -90,11 +90,19 @@ void gps_init(void);
 
 uint32_t gps_rtc_get_second_cnt(void);
 
+uint16_t gps_get_average_lock_time(void);
+
+void stop_gps_lock_time_cnt(void);
+
+void set_max_lock_time(void);
+
 void gps_startup_initializer(void);
 
 void gps_reinit(void);
 
 void gps_stop(void);
+
+void gps_calculate_lock_time(void);
 
 gps_state_t gps_check_gps_error_status(void);
 

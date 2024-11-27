@@ -37,16 +37,35 @@
 
 #include "generic_union_flgs.h"
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON||1
 
 #include "pwm_luz.h"
+
 #endif
 
 
 #include <string.h>
 
 
+//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
+ 
+#define GPS_PRINT 1 
+ 
+#define LOCK_TIME_COUNTER 6u
 
+#define MAX_DATA_LENGTH_GPS_SENTENCE 82
+
+
+#define MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION 4
+
+
+#define const_STARTWORDCOUNT_LEN 6
+
+#if DEBUGGING_IS_ON
+#define STARTUP_LOCK_TIME 30u
+#else
+#define STARTUP_LOCK_TIME 300u  
+#endif
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -69,7 +88,7 @@ union	udt_UART_GPS_FLGS {
     unsigned gsa_position_is_good     : 1;
 
     unsigned timeout_tmr_is_running   : 1;
-    unsigned rtc_test_first_run       : 1;
+    unsigned rtc_test_first_run       : 1;  // for resetting with the uart for debugging and developing
     unsigned gps_stop_debug_flg       : 1;
 		unsigned free										  : 3;		
 	};
@@ -81,14 +100,19 @@ static uint32_t gps_rtc_time = 0;
 
 typedef struct udt_gps_type{
   
+  uint32_t lock_time_start;
+  uint32_t lock_time_end;
+  uint16_t lock_times[LOCK_TIME_COUNTER];
+  uint16_t average_lock_time;
   union udt_UART_GPS_FLGS UART_GPS_FLG;
-  uint8_t gps_state;
+  gps_state_t state;
   uint8_t baudslot;
   uint8_t sentence_id;
+  int8_t lock_indexer;
   
 }gps_t;
 
-static gps_t gps_inst;
+static gps_t gps_module;
 
 gps_sentence_t sentence_buffer;
 
@@ -99,6 +123,8 @@ RMC_sentence_t copy_of_rmc;
 static GSA_sentence_t gsa_sentence;
 
 
+#if 0
+
 static const uint32_t gps_standard_baud_rate_settings[] = {
   
   4800,
@@ -107,6 +133,7 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
   115200,
   
 };
+#endif
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
@@ -146,30 +173,7 @@ const uint8_t *const sentences[] = {
 
 #endif
 
-//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
- 
-#define GPS_PRINT 1 
- 
- 
-// #define	RX_DATA_SIZE_GPS	64	// we expect 64 bytes...this is the buffer size basically....
 
-// #if USE_REDUCED_RAM
-
-// #define MAX_DATA_LENGTH_GPS_SENTENCE 15
-
-// #else
-
-// #define MAX_DATA_LENGTH_GPS_SENTENCE 82
-
-// #endif
-
-#define MAX_DATA_LENGTH_GPS_SENTENCE 82
-
-
-#define MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION 4
-
-
-#define const_STARTWORDCOUNT_LEN 6
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
@@ -198,6 +202,9 @@ static uint8_t temp_buff_pnt_cnt = MAX_DATA_LENGTH_GPS_SENTENCE;  // cMax_Senten
 
 static uint8_t endbyte_cnt = 2;
 
+static uint32_t gps_lock_timer_start = 0u;
+
+static uint32_t gps_lock_timer_end = 0u;
 
 
 
@@ -260,10 +267,20 @@ static void copy_rmc_to_from(RMC_sentence_t *const des_pnt,  RMC_sentence_t cons
 //  * * * * * * * * * * * * * * * * * * * * * * * * * * * *    G P S       * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 void gps_init(void){
   
+  int8_t hlooper = 0;
+  
   // NONE
   UART_GPS_FLG.rtc_test_first_run = FALSE;
- 
- 
+  gps_module.lock_indexer = 0;
+  gps_module.lock_time_start = 0;
+  gps_module.lock_time_end = 0;
+  
+  for(hlooper = 0; hlooper < LOCK_TIME_COUNTER; hlooper++)
+  {
+    gps_module.lock_times[hlooper] = STARTUP_LOCK_TIME; // INIT_TIME_GPS_LOCK;  TODO: replace magic number
+  }
+  gps_module.average_lock_time = STARTUP_LOCK_TIME;
+  
  
 }
 
@@ -282,11 +299,18 @@ uint32_t gps_rtc_get_second_cnt(void){
   
 }
 
+uint16_t gps_get_average_lock_time(void){
+  
+  return gps_module.average_lock_time;
+  
+}
+
+
 
 void gps_startup_initializer(void){
 
   
-  gps_inst.baudslot = 0u;
+  gps_module.baudslot = 0u;
   
   gps_reinit();
  
@@ -315,6 +339,7 @@ void gps_reinit(void){
   // switch on the gps valim pin
   GPS_VALIM = TRUE;
 
+  FAKE_GPS_VALIM = true;
 #endif  
   
   
@@ -338,7 +363,8 @@ void gps_reinit(void){
   
   UART_GPS_FLG.timeout_tmr_is_running = TRUE;
 
-
+// save the time for the moment...
+  gps_module.lock_time_start = eRTC_get_second_cnt();
 
 }
 
@@ -355,6 +381,8 @@ void gps_stop(void){
   // //DB_PRINT("G: \r\n");
     // switch on the gps valim pin
   GPS_VALIM = FALSE;
+
+  FAKE_GPS_VALIM = false;
 
   // and switch off the valim_pin for the UART_CRLF
   UART_GPS_FLG.gps_stop_debug_flg = true;
@@ -379,6 +407,43 @@ void gps_stop(void){
 }
 
 
+void gps_calculate_lock_time(void){
+  
+  
+  uint32_t temp_avg_calulator = 0u;
+  
+  int8_t hlooper = 0;
+  
+  // we have the indexer and we have a start and a stop time
+  
+  // stop timer < start timer case handlers
+  
+  if(gps_module.lock_time_end < gps_module.lock_time_start)
+  {
+    gps_module.lock_time_end = gps_module.lock_time_end + SECONDS_PER_DAY;
+  }
+  
+  gps_module.lock_times[gps_module.lock_indexer] = gps_module.lock_time_end - gps_module.lock_time_start;
+  
+  
+  
+  
+  for(hlooper = 0u; hlooper < LOCK_TIME_COUNTER; hlooper++)
+  {
+    temp_avg_calulator = temp_avg_calulator + gps_module.lock_times[hlooper];
+  }
+  
+  gps_module.average_lock_time = temp_avg_calulator / LOCK_TIME_COUNTER;
+  
+  gps_module.lock_indexer++;
+  
+  if(gps_module.lock_indexer >= LOCK_TIME_COUNTER)
+  {
+    gps_module.lock_indexer = 0u;
+  }
+  
+}
+
 
 #if DEBUGGING_IS_ON
 // because during the development its interesting to see where it fails, in the release it makes no difference, it works or it does not
@@ -394,7 +459,7 @@ gps_state_t gps_check_gps_error_status(void){
   
   if(UART_GPS_FLG.gps_sentence_is_good)
   {
-    gps_inst.gps_state = GPS_SENTENCE_RECEIVING;  // GPS_ALL_GOOD;
+    gps_module.state = GPS_SENTENCE_RECEIVING;  // GPS_ALL_GOOD
 #if GPS_PRINT   
     DB_PRINT("\r\nGPS Works\r\n");
 #endif    
@@ -402,7 +467,7 @@ gps_state_t gps_check_gps_error_status(void){
   else if(UART_GPS_FLG.receiving_chars_is_good == FALSE)
   {
     
-    gps_inst.gps_state = NOT_RECEIVING;
+    gps_module.state = NOT_RECEIVING;
 #if GPS_PRINT       
     DB_PRINT("\r\nGPS FATAL ERROR.\r\n");
  #endif       
@@ -412,7 +477,7 @@ gps_state_t gps_check_gps_error_status(void){
   else if(UART_GPS_FLG.valid_header_received == FALSE)
   {
     
-    gps_inst.gps_state = RECEIVING_NOT_CORRECTLY;
+    gps_module.state = RECEIVING_NOT_CORRECTLY;
 #if GPS_PRINT           
     DB_PRINT("\r\nGPS ERROR.\r\n");
  #endif          
@@ -421,12 +486,12 @@ gps_state_t gps_check_gps_error_status(void){
   }
   else
   {
-    gps_inst.gps_state = GPS_SENTENCE_RECEIVING;
+    gps_module.state = GPS_SENTENCE_RECEIVING;
 #if GPS_PRINT           
     DB_PRINT("\r\nGPS CFG O.K.\r\n");
  #endif          
   }
-  return gps_inst.gps_state;
+  return gps_module.state;
 
 }
 
@@ -443,17 +508,17 @@ gps_state_t gps_check_gps_error_status(void){
 
   TMR1_ON = FALSE;
   
-  gps_inst.gps_state = GPS_ALL_GOOD;
+  gps_module.state = GPS_ALL_GOOD;
   
   UART_GPS_FLG.timeout_tmr_is_running = FALSE;
   
   if(UART_GPS_FLG.gps_sentence_is_good == false)
   {
     try_reconfigure_gps();
-    gps_inst.gps_state = RECEIVING_NOT_CORRECTLY;
+    gps_module.state = RECEIVING_NOT_CORRECTLY;
   }
   
-  return gps_inst.gps_state;
+  return gps_module.state;
   
 }
 
@@ -506,6 +571,7 @@ void copy_position_from_to(fromto_t fromto){
 
 
 #if DEBUGGING_IS_ON
+
 static void try_reconfigure_gps(void){
   
   // this one increases whenever we are having looper 
@@ -563,7 +629,7 @@ static void try_reconfigure_gps(void){
   UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");
   
 #if DEBUGGING_IS_ON
-  uart_init_cfg(B57600);
+  uart_init_cfg(DEBUG_BAUDRATE);
 #else
   // and now reduce the UART to 9600 BAud
   uart_init_cfg(B9600);
@@ -578,98 +644,9 @@ static void try_reconfigure_gps(void){
   
 }
 
-#elif 1
-
-static void try_reconfigure_gps(void){
-  
-  // this one increases whenever we are having looper 
-  // over all gps settings in the array and there was no good sentece...
-  static uint8_t maximum_reconfigure_cnt = 0;
-  
-  maximum_reconfigure_cnt++;
-  
-  if(maximum_reconfigure_cnt == 1)
-  {
-    uart_init_cfg(B115200);
-  }
-  else
-  {
-    uart_init_cfg(B9600); 
-    maximum_reconfigure_cnt = 0;
-  }
-  
-  gps_reinit();
-  // __delay_ms(200);
-  send_recfg_gps_sentences();
-  
-  
-  
-}
-
 
 #else
   
-
-static void try_reconfigure_gps(void){
-  
-  // this one increases whenever we are having looper 
-  // over all gps settings in the array and there was no good sentece...
-  static uint8_t maximum_reconfigure_cnt = 0;
-  
-  // gps_uart_stop();
-  
-  if(gps_inst.baudslot < (sizeof(gps_standard_baud_rate_settings)/sizeof(gps_standard_baud_rate_settings[0])))     
-  {
-
-    DB_PRINT("B:\r\n")
-  
-    gps_uart_stop();
-
-    gps_reconfigure_uart(gps_inst.baudslot);
-    
-    gps_inst.baudslot++;
-    
-    gps_reinit();
-    
-  } 
-  else
-  {
-    if(maximum_reconfigure_cnt < MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION)
-    {
-      
-      DB_PRINT("C:\r\n")
-    
-      gps_uart_stop();
-      
-      maximum_reconfigure_cnt++;
-      
-      gps_inst.baudslot = 0;
-      
-      gps_reconfigure_uart(gps_inst.baudslot);
-      
-      gps_inst.baudslot++;
-      
-      gps_reinit();
-      
-    }
-    else
-    {
-      
-      DB_PRINT("\r\nGPS ERROR. All Baudrates tryed and no reception!\r\n");
-    
-      gps_inst.gps_state = NO_BAUDSETTING_WORKS;
-      
-      
-      // TODO: FATAL_ERROR_IN_SYSTEM!!!
-      // IO_GPS_VALIM_ON_OFF
-
-      
-    }
-
-  } 
-  
-  
-}
 
 #endif
 
@@ -743,8 +720,7 @@ static  uint8_t gps_out_sentence_chck[] = {
 static void gps_reconfigure_uart(uint8_t slotter){
   
  // TODO: 
-  // uart_modifiy_baudrate(GPS_UART, gps_standard_baud_rate_settings[slotter]);
-  
+
   
 }
 
@@ -836,7 +812,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
         // we have now the full string in memory--> therefore we should be able to extract the different sub strings into the GPS_struct...
 
-        sentence_handler(gps_inst.sentence_id);
+        sentence_handler(gps_module.sentence_id);
         
         
         
@@ -844,10 +820,10 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 #if DEBUGGING_IS_ON      
       else
       {
-        if(gps_inst.sentence_id > 3)
+        if(gps_module.sentence_id > 3)
         {
           
-          sentence_handler(gps_inst.sentence_id);
+          sentence_handler(gps_module.sentence_id);
           
         }
 
@@ -872,7 +848,6 @@ void values_to_gps_rx_buffer(uint8_t n_char){
       UART_GPS_FLG.endbyte_found = TRUE;	
       
     }
-
 
   }
   else if(UART_GPS_FLG.startbyte_found)
@@ -904,7 +879,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   }
   else if(n_char == '$')
   {	
-// DB_PRINT("gps_A:\r\n");
+    // DB_PRINT("gps_A:\r\n");
     // if we did not enter so far any of the above if statements we are looking fot the startbyte
     UART_GPS_FLG.startbyte_found = TRUE;	// we have a startbyte!
     startwordcnt = 1u;	// set the startwordcnt 
@@ -912,12 +887,11 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   else
   {
     reset_uart_handler_flags();
-
   }
   
   if(temp_buff_pnt_cnt == FALSE)
   {					
-// DB_PRINT("Z\r\n");
+  // DB_PRINT("Z\r\n");
     // something went seriously wrong because we are on the end of the buffer but have not found the stopbyte-->
     // therefore we need to reset the complete thing and start to keep searching for a "$" startbyte and thats all there is to it...
 //---> reset everything for a new search
@@ -940,6 +914,10 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     DB_PRINT("\r\nSync\r\n");
     
     UART_GPS_FLG.rtc_test_first_run = TRUE;
+    
+    stop_gps_lock_time_cnt();
+    // gps_module.lock_time_end = eRTC_get_second_cnt();
+    
     // convert_utc_to_gps_rtc_time();
     eRTC_clock_sync_to_gps(gps_rtc_time);
  
@@ -969,181 +947,18 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   
 }
 
-
-
-
-#elif 1
-
-//  this fucntion gets called when there has been another char been detected in the ring buffer
-// 1. looking for the startbyte of a sentence-->"$" when found set startbyte found  = true
-// 2. now looking for the next 5 chars and comparing them to "GPRMC" --> if they coincide we set
-// 3. startword found --> therefore, we have the beginning of the correct sentence.
-// otherwise reset to looking for the next startbyte.
-void values_to_gps_rx_buffer(uint8_t n_char){
-	
-
-  static uint8_t startwordcnt = 1;	
-
-#if DEBUGGING_IS_ON&&0
-  char db_char[2];
+void stop_gps_lock_time_cnt(void){
   
-  db_char[0] = n_char;
-  db_char[1] = NULL_TERMINATOR;
-
-  DB_PRINT(db_char);
-#endif  
-
-  
-  UART_GPS_FLG.receiving_chars_is_good = TRUE;
-
-
-  *temp_buff_pnt = n_char;
-  temp_buff_pnt++;
-  temp_buff_pnt_cnt--;
-
-
-  if(UART_GPS_FLG.endbyte_found)
-  {
-
-    endbyte_cnt--;
-    
-    if(endbyte_cnt == 0u)
-    {
-
-      // we are finished extracting the string!--> now we need to check the sum and if this is also good send it to its 
-      if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt) == TRUE)
-      {
-        
-        UART_GPS_FLG.gps_sentence_is_good = TRUE;
-        // we have now the full string in memory--> therefore we should be able to extract the different sub strings into the GPS_struct...
-
-        sentence_handler(gps_inst.sentence_id);
-        
-        
-        
-      }
-#if DEBUGGING_IS_ON      
-      else
-      {
-        if(gps_inst.sentence_id > 3)
-        {
-          
-          sentence_handler(gps_inst.sentence_id);
-          
-        }
-
-        DB_PRINT("Cerr\r\n");
-        
-        // the chcksum failed!!! we therefore just reset afterwards everything but do not save the received data...
-      }
-#endif
-
-      reset_uart_handler_flags();
-			
-    }
-  }
-  else if(UART_GPS_FLG.startword_found)
-  {
-
-    if(n_char == '*')
-    {
-  // the next startbyte was found and therefore the last 
-  // sentence got received completely--> we need to check 
-  // the data integrity and if good keep it free for further processing      
-      UART_GPS_FLG.endbyte_found = TRUE;	
-      
-    }
-
-
-  }
-  else if(UART_GPS_FLG.startbyte_found)
-  {	
-
-    startwordcnt++;
-    
-    if(const_STARTWORDCOUNT_LEN == startwordcnt)
-    {
-
-      *temp_buff_pnt = NULL_TERMINATOR;
-
-      if(check_against_header((const char *)src_buff_pnt) == TRUE)
-        
-      {
- 
-        // there wa a valid header found!
-        UART_GPS_FLG.startword_found = TRUE;
-        UART_GPS_FLG.valid_header_received = TRUE;
-        
-      }
-      else
-      {
-        
-        reset_uart_handler_flags();
-        
-      }
-    }
-  }
-  else if(n_char == '$')
-  {	
-// DB_PRINT("gps_A:\r\n");
-    // if we did not enter so far any of the above if statements we are looking fot the startbyte
-    UART_GPS_FLG.startbyte_found = TRUE;	// we have a startbyte!
-    startwordcnt = 1u;	// set the startwordcnt 
-  }
-  else
-  {
-    reset_uart_handler_flags();
-
-  }
-  
-  if(temp_buff_pnt_cnt == FALSE)
-  {					
-// DB_PRINT("Z\r\n");
-    // something went seriously wrong because we are on the end of the buffer but have not found the stopbyte-->
-    // therefore we need to reset the complete thing and start to keep searching for a "$" startbyte and thats all there is to it...
-//---> reset everything for a new search
-#if 1
-
-    reset_uart_handler_flags();
-    
-#endif      
-    
-  }
-
-#if RUN_ERTC_TEST
-// I need this timeout_tmr_is_running flag to avoid race conditions in the handlers	
-
-  if((UART_GPS_FLG.rtc_test_first_run == FALSE) && 
-     (UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
-
-  
-  {
-    
-    DB_PRINT("Sync\r\n");
-    
-    UART_GPS_FLG.rtc_test_first_run = TRUE;
-    // convert_utc_to_gps_rtc_time();
-    eRTC_clock_sync_to_gps(gps_rtc_time);
-    
-    eRTC_calculate_time_until_tx();
-    
-    handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
-    
-    // TODO:
-    // rtc_sync_rtc_to_gps_time(get_pointer_to_rmc());
-    // and then we should allready switch it off and save the sentence becasue we are all done...
-  }
-  
-#else
-// the release version here...  
-  // we have full position and therefore we need to calculate the sleep before transmission time and set the next state
-  
-#endif
+  gps_module.lock_time_end = eRTC_get_second_cnt();
   
 }
 
 
-
+void set_max_lock_time(void){
+  
+  gps_module.lock_time_end = gps_module.lock_time_start + gd.time_between_tx;
+  
+}
 
 #else
 
@@ -1190,7 +1005,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
         // we have now the full string in memory--> therefore we should be able to extract the different sub strings into the GPS_struct...
 
-        sentence_handler(gps_inst.sentence_id);
+        sentence_handler(gps_module.sentence_id);
         
         
         
@@ -1198,10 +1013,10 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 #if DEBUGGING_IS_ON      
       else
       {
-        if(gps_inst.sentence_id > 3)
+        if(gps_module.sentence_id > 3)
         {
           
-          sentence_handler(gps_inst.sentence_id);
+          sentence_handler(gps_module.sentence_id);
           
         }
 
@@ -1323,7 +1138,7 @@ static uint8_t check_against_header(const char *t_buffer){
     {
       ret_value = true;
       
-      gps_inst.sentence_id = hlooper;
+      gps_module.sentence_id = hlooper;
       
       break;
     }

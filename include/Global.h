@@ -63,7 +63,7 @@
 #define NOT_UNUSED_FUNCTIONS 0
 
 
-
+#define SEND_ALL_MESSAGES_FOR_TESTING 0
 
 
 
@@ -152,6 +152,8 @@ extern const uint16_t shifts[16];
 
 #define RUN_TMR0_TEST_SLOW_CLCK 1
 
+
+#define FAKE_GPS_VALIM DB_LED_3
 
 #else
   
@@ -265,10 +267,17 @@ error again --> that MIPS is not standard so far --> write it extra out
 
 #define EEPROM_TX_DURATION 0x0A
 #define EEPROM_BPS_CONFIG BPS_150
-#define EEPROM_MAX_DETECORES 0x06
+#define EEPROM_MAX_DETECORES 0x0C
 
 
 #define MAXIMUM_RESENT_SAME_POSITION 1
+
+// becaseu we want an hysteresis for the Vbat low signal we use a 500mV  
+// --> but the whole thing is basd on 1/100 therefore we delta = 5
+#define VBAT_DELTA 5
+
+// that means for example 2 --> locktime = 60 seconds --> 60*(10+2)/10 = 72;
+#define GPS_LOCK_TIME_DECIMO_PERCENTAGER 5  // == 50%, 1 = 10, 2 = 20 ...10 = 100;
 
 // * * * * * * * * * * * * *   I n c l i n a t i o n   S e n s o r   r e l a t e d     * * * * * * * * * * * * *  //
 // * * * * * * * * * * * * *   I n c l i n a t i o n   S e n s o r   r e l a t e d     * * * * * * * * * * * * *  //

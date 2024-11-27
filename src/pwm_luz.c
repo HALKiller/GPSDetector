@@ -58,18 +58,7 @@ struct udt_m{
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
- #if 0
- 
-static const uint16_t shifter[16] = {
-	
-	(1U << 0), (1U << 1), (1U << 2), (1U << 3), 
-	(1U << 4), (1U << 5), (1U << 6), (1U << 7), 
-  (1U << 8), (1U << 9), (1U << 10), (1U << 11), 
-	(1U << 12), (1U << 13), (1U << 14), (1U << 14), 
-	
-}; 
- 
-#endif
+
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
@@ -86,15 +75,6 @@ static const uint16_t shifter[16] = {
 #else
 #define MEASURE_ILUMINATION_TIME_CNT_BASE (45u*TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
 #endif
-
-
-// #define PWM_LUZ_DEBUG 0
-
-// #if PWM_LUZ_DEBUG
-// #define LED_SIMUL DB_LED_2
-// #else
-// #define LED_SIMUL  
-// #endif
 
 
 
@@ -115,7 +95,7 @@ struct udt_detector gd;
 
 uint8_t baterie_mV;
 
-static uint8_t gVoltajeBateriaTrasTransmision = 0;
+// static uint8_t gVoltajeBateriaTrasTransmision = 0;
 
 uint8_t FTW0[4];
 uint8_t FTW1[4];
@@ -125,6 +105,7 @@ uint8_t FTW3[4];
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
 static void measure_ilumination(void);
+static uint16_t calculate_voltage_from_input_value(uint16_t value);
 
 
 
@@ -179,6 +160,21 @@ void init_detector_config(void){
   
   gd.time_between_tx = gd.transmission_duration * gd.max_detectores;
   
+  gd.vbat_low = calculate_voltage_from_input_value(LeerEeprom(0x48u) * 4u);
+  
+  // and now we would need  to calculate back first the mV value ,
+  // add to it the dlta and then return the eeprom calculated value...
+  
+  gd.vbat_high = gd.vbat_low + VBAT_DELTA;
+  // gd.vbat_high = (((uint32_t)gd.vbat_low + VBAT_DELTA) * 1008u - 435u) / 131u; 
+  
+  DB_PRINT("Vbat_l: ");
+  UART_int(gd.vbat_low);
+  UART_CRLF;
+  DB_PRINT("Vbat_h: ");
+  UART_int(gd.vbat_high);
+  UART_CRLF;
+  
   for ( i = 0; i < 4; i++ )
   {
     FTW0[i] = LeerEeprom ( 0x22u + (uint8_t)i );
@@ -199,6 +195,8 @@ void init_detector_config(void){
   pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;  // becaseu we start with the pwm in off state...
   
   ee_retval = LeerEeprom ( 0x46u );
+ 
+  // gd.vbat_low = LeerEeprom(0x48u);
  
 #if DEBUGGING_IS_ON 
 
@@ -285,6 +283,94 @@ uint8_t get_max_detectores(void){
 }
 
 
+#if 1
+
+
+void LeerValorBateria(void){
+
+  uint16_t adcvalue;
+  uint16_t adcconv;
+  
+  ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
+
+  adcconv = ( (ADRESH * 256) + ADRESL );
+
+#if 0
+
+  // this is the original good one!
+  
+  adcvalue = ( ( ( adcconv * 10 + 36 ) / 18 ) + ( ( adcconv * 17 + 49 ) / 48 ) ) / 7;
+  
+#elif 1
+  
+  adcvalue = calculate_voltage_from_input_value(adcconv);
+  
+#else  
+  
+  DB_PRINT("\r\nOld: ");
+  
+  UART_int(adcvalue);
+  
+
+  
+  adcvalue = (adcconv * 131 + 759) / 1008;// that does not fit into a uint16_t 
+  DB_PRINT("\r\nNEW: ");
+  UART_int(adcvalue);
+  DB_PRINT("\r\n");
+#endif
+
+
+
+  baterie_mV = (adcvalue & 0x00ff);
+  // TODO:
+  // implement this line
+  // gTransmiteADoblePeriodo = ( ( adcconv / 4 ) <= LeerEeprom( 0x48 ) );
+  if((BAT_IS_LOW_FLG == true) && (adcvalue >= gd.vbat_high))
+  {
+    BAT_IS_LOW_FLG = FALSE;
+  }
+  else if((BAT_IS_LOW_FLG == false) && (adcvalue  <= gd.vbat_low))
+  {
+    BAT_IS_LOW_FLG = true;
+  }
+  
+}
+
+#if 1
+// 4 words shorter
+static uint16_t calculate_voltage_from_input_value(uint16_t value){
+  
+  uint16_t val_1 = 0;
+  uint16_t val_2 = 0;
+  uint16_t ret_value = 0u;
+  
+  val_1 = 5 * value / 9 + 2 ;
+  val_2 = (17 * value + 49 ) / 48;
+  ret_value = (val_1 + val_2) / 7;
+  
+  // ret_value = ( ( ( value * 5 + 9 ) / 2 ) + ( ( value * 17 + 49 ) / 48 ) ) / 7;
+  
+  return ret_value;
+  
+}
+
+#else
+  
+static uint16_t calculate_voltage_from_input_value(uint16_t value){
+  
+  
+  uint16_t ret_value = 0u;
+  
+  ret_value = ( ( ( value * 10 + 36 ) / 18 ) + ( ( value * 17 + 49 ) / 48 ) ) / 7;
+  
+  return ret_value;
+  
+}
+
+#endif
+
+#else
+  
 
 void LeerValorBateria(bool AntesDeTransmitir){
 
@@ -298,12 +384,7 @@ void LeerValorBateria(bool AntesDeTransmitir){
 
   adcconv = ( (ADRESH * 256) + ADRESL );
   
-  // adcconv = ADRESH;
-  // adcconv = adcconv<<8 & ADRESL;
   
-  // adcconv = ( (ADRESH << 8) & ADRESL );
-  
-	// restore_global_interrupt();
 
 #if 1
 
@@ -331,6 +412,8 @@ void LeerValorBateria(bool AntesDeTransmitir){
     // TODO:
     // implement this line
     // gTransmiteADoblePeriodo = ( ( adcconv / 4 ) <= LeerEeprom( 0x48 ) );
+    // BAT_IS_LOW_FLG = ( ( adcconv / 4 ) <= LeerEeprom( 0x48 ) );
+    
   }
   else
   {
@@ -343,7 +426,7 @@ void LeerValorBateria(bool AntesDeTransmitir){
 }
 
 
-
+#endif
 
 
 

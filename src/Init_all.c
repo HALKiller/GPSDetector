@@ -92,7 +92,7 @@ void init_all(void){
   // gFLGS reset ons startup
 #if DEBUGGING_IS_ON
 
-  uart_init_cfg(B57600);
+  uart_init_cfg(DEBUG_BAUDRATE);
 
 	UWT("BUILD: ");
 	UWT(__DATE__);
@@ -155,7 +155,7 @@ void init_all(void){
 	init_IO_PORTS();
  
    // hunting reset states...
-  DB_LED1_SWAP;
+  // DB_LED1_SWAP;
  
   configure_tmr4();
   
@@ -304,15 +304,16 @@ void startup(void){
   
   tilt_sensor_init();
   
+  gps_init();
+  
   // on startup we reset the time...
   RTC_TIME_IS_GOOD = false;
   RTC_ALARM_ON = false;
   eRTC_clock_reset();
+  
   // TODO:  we should reset the time also ...
   gd.no_position_cnt = 0u;
   
-  // RX_IF = FALSE;
-	// RX_IE = TRUE;
   
 	TMR0_IF = FALSE;
 	TMR0_IE = FALSE;

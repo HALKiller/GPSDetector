@@ -42,7 +42,7 @@ extern union8_t gd_flags;
 #define COPY_POS_IS_VALID   gd_flags.b3
 #define ALWAYS_TRANSMIT     gd_flags.b4
 #define PWM_IS_ON           gd_flags.b5 // when the TMR0_IE gers set 
-
+#define BAT_IS_LOW_FLG      gd_flags.b6 // when the bat is under the threshhold
 
 typedef union udt_generic_16bit_union{	
 	

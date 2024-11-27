@@ -67,7 +67,7 @@
 // --------   PORT A  ---------------
 #define SYNC_AD9954 	LATAbits.LATA0	// DB_LED_1  // 	
 #define SDIO_AD9954 	LATAbits.LATA1	// DB_LED_2  // 	
-#define SCLK_AD9954 	DB_LED_3  // LATAbits.LATA2	 
+#define SCLK_AD9954 	LATAbits.LATA2	 
 #define BATERIA 	    PORTAbits.PORTA3   
 #define VDD_AD9954 	  LATAbits.LATA4 // that gives Valim to the DDS and the Amplifier stage we do not really wanna tansmit anything...
 #define LDR 				  PORTAbits.PORTA5   
