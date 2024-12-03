@@ -62,9 +62,9 @@
 #define const_STARTWORDCOUNT_LEN 6
 
 #if DEBUGGING_IS_ON
-#define STARTUP_LOCK_TIME 30u
+#define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 #else
-#define STARTUP_LOCK_TIME 300u  
+#define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION  
 #endif
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
@@ -219,7 +219,7 @@ static uint32_t gps_lock_timer_end = 0u;
 
 static void try_reconfigure_gps(void);
 
-static void gps_reconfigure_uart(uint8_t slotter);
+// static void gps_reconfigure_uart(uint8_t slotter);
 
 static void send_recfg_gps_sentences(void);
  
@@ -271,9 +271,9 @@ void gps_init(void){
   
   // NONE
   UART_GPS_FLG.rtc_test_first_run = FALSE;
-  gps_module.lock_indexer = 0;
-  gps_module.lock_time_start = 0;
-  gps_module.lock_time_end = 0;
+  gps_module.lock_indexer = 0u;
+  gps_module.lock_time_start = 0u;
+  gps_module.lock_time_end = 0u;
   
   for(hlooper = 0; hlooper < LOCK_TIME_COUNTER; hlooper++)
   {
@@ -281,7 +281,6 @@ void gps_init(void){
   }
   gps_module.average_lock_time = STARTUP_LOCK_TIME;
   
- 
 }
 
 
@@ -339,8 +338,10 @@ void gps_reinit(void){
   // switch on the gps valim pin
   GPS_VALIM = TRUE;
 
+#if DEBUGGING_IS_ON
   FAKE_GPS_VALIM = true;
-  
+  // uart_init_cfg(B9600);
+#endif  
 #endif  
   
   
@@ -352,14 +353,10 @@ void gps_reinit(void){
  
   // TODO:
   // reset the uart buffer --> that should get perhaps on the initializer of the uart !
-  // tmr_handlers_initialize(GPS_TIME_OUT_TIMER);
-  
-  // tmr_handlers_start(GPS_TIME_OUT_TIMER);
+
   timers_set_tmr1_id(GPS_UART_TIMEOUT);
   reset_timeout_timer();
-  
-  
-  
+    
   TMR1_IE = TRUE;
   TMR1_ON = TRUE;
   
@@ -384,8 +381,12 @@ void gps_stop(void){
     // switch on the gps valim pin
   GPS_VALIM = FALSE;
 
+#if DEBUGGING_IS_ON
   FAKE_GPS_VALIM = false;
-
+  
+  // uart_init_cfg(B57600);
+  
+#endif
   // and switch off the valim_pin for the UART_CRLF
   UART_GPS_FLG.gps_stop_debug_flg = true;
 #else
@@ -430,7 +431,7 @@ void gps_calculate_lock_time(void){
   
 #if DEBUGGING_IS_ON
 
-  DB_PRINT("Lock_time: ");
+  DB_PRINT("\r\nLock_time: ");
   UART_int(gps_module.lock_times[gps_module.lock_indexer]);
   UART_CRLF;
 
@@ -489,7 +490,7 @@ gps_state_t gps_check_gps_error_status(void){
     
     gps_module.state = RECEIVING_NOT_CORRECTLY;
 #if GPS_PRINT           
-    DB_PRINT("\r\nGPS ERROR.\r\n");
+    DB_PRINT("\r\nGPS BAUD ERROR.\r\n");
  #endif          
     try_reconfigure_gps();
 
@@ -514,8 +515,6 @@ gps_state_t gps_check_gps_error_status(void){
 // receiving something but not reading quite --> reconfigure UART_CRLF// receive nothing --> fatal!
 gps_state_t gps_check_gps_error_status(void){
   
-  
-
   TMR1_ON = FALSE;
   
   gps_module.state = GPS_ALL_GOOD;
@@ -537,9 +536,7 @@ gps_state_t gps_check_gps_error_status(void){
 
 RMC_sentence_t *get_pointer_to_rmc(void){
   
-  
   return &rmc_sentence;
-  
   
 }
 
@@ -589,23 +586,10 @@ static void try_reconfigure_gps(void){
   static uint8_t maximum_reconfigure_cnt = 0;
   
   maximum_reconfigure_cnt++;
-  
-  // this one changes for debugging!!
-  // so speed first up for matching the GPS...
-  // uart_init_cfg(B57600);
-  
+   
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
   
-  // now reduce the GPS to 9600Baud
-  // UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");
-  
-#if DEBUGGING_IS_ON
-  // uart_init_cfg(B57600);
-#else
-  // and now reduce the UART to 9600 BAud
-  // uart_init_cfg(B9600);
-#endif  
   // and try again 
   
   gps_reinit();
@@ -614,10 +598,7 @@ static void try_reconfigure_gps(void){
   
 }
 
-
-#elif 1
-
-
+#else
 
 
 // this works perfectly !!
@@ -638,25 +619,14 @@ static void try_reconfigure_gps(void){
   // now reduce the GPS to 9600Baud
   UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");
   
-#if DEBUGGING_IS_ON
-  uart_init_cfg(DEBUG_BAUDRATE);
-#else
   // and now reduce the UART to 9600 BAud
   uart_init_cfg(B9600);
-#endif  
+ 
   // and try again 
-  
   gps_reinit();
-  
-  
-  
-  
   
 }
 
-
-#else
-  
 
 #endif
 
@@ -719,20 +689,17 @@ static  uint8_t gps_out_sentence_chck[] = {
   
   DB_PRINT("\r\nSent cfg\r\n");
   
-  
-  
-  
 }
 
 #endif
 
 
-static void gps_reconfigure_uart(uint8_t slotter){
+// static void gps_reconfigure_uart(uint8_t slotter){
   
  // TODO: 
 
   
-}
+// }
 
 // becasue we are onmly reconfiguring the baudrate and dont
  // want the GPS to startt all over again...
@@ -770,7 +737,7 @@ static void gps_uart_stop(void){
 
 
 
-#if DEBUGGING_IS_ON// using a db_flg to indicate that the gps is switched off...theoretically...
+#if 1 // DEBUGGING_IS_ON// using a db_flg to indicate that the gps is switched off...theoretically...
 
 // UART_GPS_FLG.gps_stop_debug_flg
 
@@ -913,12 +880,14 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     
   }
 
-#if RUN_ERTC_TEST
-// I need this timeout_tmr_is_running flag to avoid race conditions in the handlers	
 
+// I need this timeout_tmr_is_running flag to avoid race conditions in the handlers	
+#if DEBUGGING_IS_ON
   if((UART_GPS_FLG.rtc_test_first_run == FALSE) && 
      (UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
-
+#else
+    if((UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
+#endif
   {
     
     DB_PRINT("\r\nSync\r\n");
@@ -930,17 +899,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     
     // convert_utc_to_gps_rtc_time();
     eRTC_clock_sync_to_gps(gps_rtc_time);
- 
- #if 0
-    eRTC_calculate_time_until_tx();
-    
-    if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
-    {
-      gd.rtc_alarm = gd.seconds_until_next_tx;
-      RTC_ALARM_ON = true;
-      
-    }
-#endif    
+  
     // gd_states_set_next_state(E_TRANSMISSION_STATE);
     handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
     
@@ -949,11 +908,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     // and then we should allready switch it off and save the sentence becasue we are all done...
   }
   
-#else
-// the release version here...  
-  // we have full position and therefore we need to calculate the sleep before transmission time and set the next state
-  
-#endif
+
   
 }
 

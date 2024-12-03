@@ -28,9 +28,11 @@
 
 // #define DB_LED_PWM 0	// a special db case for testing...
 #define DEBUGGING_IS_ON 1
-#define G_ENABLE_ASSERT 1 // to reduce ROM
-#define COMPILE_WITH_RX_LUZ 0
-#define COMPILE_WITH_PWM_LUZ 0
+#define G_ENABLE_ASSERT 0 // to reduce ROM
+#define COMPILE_WITH_RX_LUZ 1
+#define COMPILE_WITH_PWM_LUZ 1
+
+#define DB_LUZ 0
 
 // when set we use a calculation to get thevalues for the registers
 // otherwise we just plug in precalculated values --> ROM friendly
@@ -187,7 +189,7 @@ extern const uint16_t shifts[16];
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 
-#define MIPS 8u
+#define MIPS 1u
 
 #define SLOW_CLCK LOW_500KHZ
 
@@ -265,19 +267,37 @@ error again --> that MIPS is not standard so far --> write it extra out
 #define BPS_150 0x90
 #define BPS_300 0x80
 
+
 #define EEPROM_TX_DURATION 0x0A
+#define TIEMPO_SINCRONISMO 0x01
+#define PWM_PORCENTAGE 0x03
+#define PWM_LUZ_ON_OFF 0x1A // high nibble = on_time, low_nibble = off_time
 #define EEPROM_BPS_CONFIG BPS_150
-#define EEPROM_MAX_DETECORES 0x0C
+#define EEPROM_MAX_DETECORES 0x06
 
-
+// how often we use the copy of position 
 #define MAXIMUM_RESENT_SAME_POSITION 1
+
+
+// to avoid a sync time which might be allready after the tx time --> 
+// therefroe calcualt ea time shorter than necessary and in case
+// give that time before transmission
+#define GPS_OFF_BEFORE_TX 1
+#define GPS_OFF_TIME_SAFE_SYNC 3u // these are three seconds safe time
+
 
 // becaseu we want an hysteresis for the Vbat low signal we use a 500mV  
 // --> but the whole thing is basd on 1/100 therefore we delta = 5
-#define VBAT_DELTA 5
+#define VBAT_DELTA 5u
 
 // that means for example 2 --> locktime = 60 seconds --> 60*(10+2)/10 = 72;
-#define GPS_LOCK_TIME_DECIMO_PERCENTAGER 5  // == 50%, 1 = 10, 2 = 20 ...10 = 100;
+#define GPS_LOCK_TIME_DECIMO_PERCENTAGER 5u  // == 50%, 1 = 10, 2 = 20 ...10 = 100;
+
+// to avoi dthat the gps on is to short at some moment
+#define MINIMUM_GPS_ON_BEFORE_TRANSMISSION 50u
+
+
+
 
 // * * * * * * * * * * * * *   I n c l i n a t i o n   S e n s o r   r e l a t e d     * * * * * * * * * * * * *  //
 // * * * * * * * * * * * * *   I n c l i n a t i o n   S e n s o r   r e l a t e d     * * * * * * * * * * * * *  //

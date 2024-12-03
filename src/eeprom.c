@@ -33,10 +33,10 @@ __eeprom unsigned char gContenidoEeprom[] = {
   
   0x00, /* T_ERROR_GPS. No se usa                                             */
   EEPROM_TX_DURATION, /* gTiempoDuracionTransmision: tiempo de transmisión  0A=10sg         */
-  0x01, /* gSegundosSincronismo:                                              */
+  TIEMPO_SINCRONISMO, /* gSegundosSincronismo:                                              */
         /* Número de segundos que dura la transmisión de sincronismo          */
-  0x05, /* gPorcentajePwm: Porcentaje de PWM de la ráfaga de luz / 10         */
-  0x2F, /* Nibble superior: gSegundosLuzEnOn.                                 */
+  PWM_PORCENTAGE, /* gPorcentajePwm: Porcentaje de PWM de la ráfaga de luz / 10         */
+  PWM_LUZ_ON_OFF, /* Nibble superior: gSegundosLuzEnOn.                                 */
         /* número de segundos con luz nocturna encendida.                     */
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */

@@ -32,8 +32,8 @@
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
-#define TMR1_2_SECOND_OF_CNT (uint8_t)MIPS*4u	
-#define TMR1_4_SECOND_OF_CNT (uint8_t)MIPS*8u	
+#define TMR1_2_SECOND_OF_CNT 30u  // (uint8_t)MIPS*4u	
+#define TMR1_4_SECOND_OF_CNT 60u  // (uint8_t)MIPS*8u	
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
@@ -73,11 +73,13 @@ static void tmr1_timeout_handler(void);
 #if 1
 
 void timers_set_tmr1_id(tmr1_id_t t_id){
-  
+
+#if DEBUGGING_IS_ON&&0
   DB_PRINT("TMR1: ");
   UART_int(t_id);
   UART_CRLF;
-  
+#endif  
+
   if(TMR1_ON == TRUE)
   {
     DB_PRINT("ERR_tmr1");
@@ -85,10 +87,12 @@ void timers_set_tmr1_id(tmr1_id_t t_id){
   
   tmr1_id = t_id;
   timeout_cnt_setter = timeout_setter[tmr1_id];
+  
+#if DEBUGGING_IS_ON&&0
   DB_PRINT("cnt: ");
   UART_int(timeout_cnt_setter);
   UART_CRLF;
-  
+#endif    
 }
 
 
@@ -232,56 +236,16 @@ void init_tmr1(void){
 	
 	
 	T1_PRESCALER = TMR1_MIPS_PSA;
+  
 	TMR1_ON = FALSE;
   TMR1_IE = FALSE;
   TMR1_IF = FALSE;
 	
-}
-
-
-void configure_tmr2(void){
+  TMR1H = 0u;
+	TMR1L = 0u;
   
-	
-	
-  TMR2_ON = FALSE;
-	
-#if 0	
-
-	T2_PRESCALER = TMR2_64_PRESCALER;
-	T2_POSTSCALER = TMR2_15_POSTSCALER;
-	PR2 = 250u;	
-
-#else	
-	
-#if MIPS==1
-	
-	T2_PRESCALER = TMR2_04_PRESCALER;
-	T2_POSTSCALER = TMR2_15_POSTSCALER;	// 0x0E;	// 0b0111;	// T2CONbits.T2OUTPS = 0b0111; // PostScaler 7  T2CONbits.TOUTPS = 0b0111; // PostScaler 7	
-	PR2 = 250;	//125;  // 250; // thereforefor 150ms we need a counter to 6 --> for halfbit cnt to 3
-
-#elif MIPS==2
-
-MISSING
-
-#elif MIPS==4
-
-MISSING
-
-#elif MIPS==8
-	
-	T2_PRESCALER = TMR2_64_PRESCALER;
-	T2_POSTSCALER = TMR2_15_POSTSCALER;
-	PR2 = (uint8_t)125;	
-
-#else	
-	
-error again --> that MIPS is not standard so far --> write it extra out
-
-#endif
-
-#endif
-
 }
+
 
 
 void init_wdt(void){
@@ -289,7 +253,7 @@ void init_wdt(void){
 	// TODO --> check WDT overflow time
 	WDTCONbits.WDTPS = WDT_TIMEOUT_004s_timeout;  // 0x0Bu;  // 0x0c = 4seconds
   
-	WDTCONbits.SWDTEN = TRUE;
+	WDTCONbits.SWDTEN = FALSE;
   
 
 }

@@ -81,10 +81,11 @@ void Transmite(bool TransmiteRadiogonio){
   DB_PRINT(sentence_buffer.gps_buffer); 
   UART_CRLF;
 
-
+#if 0
   RCIE   = false;
   TMR1IE = false;
   T0IE   = false;
+#endif
 	
 #if DEBUG_16F1936_PITADA
 	DB_LED = true;
@@ -120,12 +121,12 @@ void Transmite(bool TransmiteRadiogonio){
 	DB_LED = false;
 #endif	
 
-
+#if 0
   RCIE   = true;
   TMR1IE = true;
   T0IE   = true;
   TMR2IE = false;
-
+#endif
 
 }
 
@@ -135,10 +136,11 @@ void Transmite(bool TransmiteRadiogonio){
 
   uint8_t sync_time = get_sync_time();
 
+#if 0
   RCIE   = false; // correct
   TMR1IE = false;
   T0IE   = false;
-
+#endif
   // ENCIENDE_TRANSMISOR();  // That does not exist anymore...
   AD9954Enciende();
   AD9954Configura();
@@ -160,30 +162,16 @@ void Transmite(bool TransmiteRadiogonio){
   AD9954Apaga();
   // APAGA_TRANSMISOR();
 
+#if 0
   RCIE   = true;
   TMR1IE = true;
   T0IE   = true;
   TMR2IE = false;
+#endif
 
 }
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -229,8 +217,6 @@ void AD9954SelectorBanco3(void)
 void AD9954Configura(void){
   
  
-  
-  
   // DB_PRINT("A:\r\n");
   
   // Cuidado con las variables const.
@@ -854,8 +840,6 @@ void DDS_flush_buffer(void)
 
 static void AD9954Enciende(void){
   
-	
-
   TMR2_ON = FALSE;
   
   T2_POSTSCALER = 0u; // 0b0000; // PostScaler 1  T2CONbits.TOUTPS = 0b0000; // PostScaler 1

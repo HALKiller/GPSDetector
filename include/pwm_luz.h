@@ -7,10 +7,12 @@
 
 #define USE_PWM_LUZ_FILE 0
 
-#define PWM_LUZ_DEBUG 0
+#define PWM_LUZ_DEBUG 1
 
 #if PWM_LUZ_DEBUG
 
+
+#define LED_SIMUL DB_LED_2
 #define LED_SIMUL_ON DB_LED_2_ON
 #define LED_SIMUL_OFF DB_LED_2_OFF
 

@@ -74,6 +74,7 @@ void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
 
   ADCON0bits.GO_nDONE = 1;
   //ADCON0bits.GO_DONE = 1;
+  // TODO: check on GIE = false
   // Apaga todas las interrupciones y espera a salir por la conversión ADC
 #if 0
 

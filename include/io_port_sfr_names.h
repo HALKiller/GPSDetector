@@ -72,14 +72,14 @@
 #define VDD_AD9954 	  LATAbits.LATA4 // that gives Valim to the DDS and the Amplifier stage we do not really wanna tansmit anything...
 #define LDR 				  PORTAbits.PORTA5   
 #define FREE_RA6      LATAbits.LATA6  // becaseu that is always together with the DDS
+// #define LED           //LATAbits.LATA7
 #define LED           LATAbits.LATA7
-
 
 
 // --------   PORT B  ---------------
 #define TILT_SENSOR 	PORTBbits.RB0
 #define FREE_RB1 	    LATBbits.LATB1
-#define PS0_AD9954 	  DB_LED_1  // LATBbits.LATB2
+#define PS0_AD9954 	  LATBbits.LATB2 // DB_LED_1  // 
 #define PS1_AD9954 	  DB_LED_2  // LATBbits.LATB3
 #define UPDATE_AD9954 LATBbits.LATB4
 #define FREE_RB5 	    LATBbits.LATB5
@@ -167,7 +167,7 @@
 // --------   DEBUGGING  ---------------
 #if DEBUGGING_IS_ON&&1
 
-#define DB_LED_1 LED 
+#define DB_LED_1 ICSPCLCK 
 #define DB_LED_2 GPS_VALIM 
 #define DB_LED_3 ICSPDAT
 

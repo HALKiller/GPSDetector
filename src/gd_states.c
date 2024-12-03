@@ -76,7 +76,7 @@ static gpsd_state_t detector_state;
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
 
-#if DEBUGGING_IS_ON&&1
+#if DEBUGGING_IS_ON&&0
 
   static const char *app_txt[] = {
     
@@ -200,7 +200,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   detector_state.last_state = detector_state.actual_state;
   
 #if DEBUGGING_IS_ON
-  DB_PRINT("LS: ");
+  DB_PRINT("\r\nLS: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
   UART_CRLF;
 #endif

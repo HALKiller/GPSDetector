@@ -18,6 +18,10 @@
 
 #include "ring_buffer.h"
 
+#if DEBUGGING_IS_ON
+#include "UART.h"
+
+#endif
 
 #define TMR0_ADJUSTMENT (uint8_t)0x05u
 
@@ -81,19 +85,24 @@ void __interrupt() isr(void){
   // then reset the luz
 	if((TMR0_IE == TRUE) && (TMR0_IF == TRUE))
 	{
-#if COMPILE_WITH_PWM_LUZ    
+#if COMPILE_WITH_PWM_LUZ   
+
     pwm_of_cnt++;
     
     if(pwm_of_cnt == get_pwm_luz_pwm_value()) // pwm_luz.pwm_value)
     {
       LED = 0u;
+#if PWM_LUZ_DEBUG      
       LED_SIMUL_OFF;
+#endif      
     }
     
     if(pwm_of_cnt >= 10u)
     {
       LED = 1u;
+#if PWM_LUZ_DEBUG      
       LED_SIMUL_ON;
+#endif      
       pwm_of_cnt = 0u;
     }
     

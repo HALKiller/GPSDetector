@@ -18,26 +18,19 @@
 #include "Global.h"
 #include "UART.h"
 #include "io_port_sfr_names.h"
-
 #include "Clock.h"
 #include "ADC.h"
 #include "Init_all.h"
 #include "my_assert.h"
 #include "generic_union_flgs.h"
-
 #include "tilt_sensor.h"
 #include "gd_states.h"
 // TODO: --> because of tmr4 config move it
 #include "Init_all.h"
-
 #include "gps.h"
-
 #include "e_rtc.h"
-
 #include "pwm_luz.h"
-
 #include "DDS.h"
-
 #include "messages.h"
 
 #include <stdint.h>
@@ -53,7 +46,7 @@ static void f_tilt_sensor_to_check(void);
 
 //  **********************  PRIVATE FUNCTIONS PROTOTYPES  ************************  //
 
-static void set_handler_FLG(uint8_t handler_flg_spot);
+// static void set_handler_FLG(uint8_t handler_flg_spot);
 static void reset_handler_FLG(uint8_t handler_flg_spot);
 static void f_gd_off(void);
 
@@ -136,33 +129,18 @@ const uint16_t shifts[16] = {
 };
 
 //  **********************  MACRO DEFINITIONS  ************************  //
-// #define TIME_BASE 2
-#define MS_PER_SECOND 1000
-#define DB_HANDLER_CF 0
-#define c_ADC_OVERSAMPLING 8
-#define cADC_BATERIA_MIMIMUM_THRESHHOLD 127	// these are ADC
-#define BATERIE_MINIMUM_mv_LEVEL	6000
 
 
-// #define SEG_7D_REFRESH 2000
 
-#define OF_CNT_100MS 50
-#define OF_CNT_200MS 100
-#define OF_CNT_1000MS 500
-#define OF_CNT_500MS 250
-#define OF_CNT_2000MS 1000
 
-// #define C_OF_CNT_SEG_7D SEG_7D_REFRESH/TIME_BASE
 
-// #define MAX_SWOFF_TMR_CNT 50	// 50 x 200 = 10000ms
+
 
 //  **********************  STATIC DATA DECLARATIONS  ************************  //
 
 static volatile uint16_t Handler_FLGS = 0;
 
-static volatile uint8_t temp_clockspeed_flg = false;
 
-static uint16_t of_cnt_200ms = 0;
 
 //  **********************  PUBLIC FUNCTIONS BODY  ************************  //
 
@@ -219,7 +197,7 @@ void get_the_next_handler(void){
       
       CLRWDT();
       DB_LED1_SWAP;
-      
+      // LED_SIMUL = LED;
     }
 
     temp_handler_FLGS = Handler_FLGS;
@@ -357,11 +335,7 @@ void get_the_next_handler(void){
   }
 }
 
-
-
 #endif
-
-
 
 
 void reset_ring_buffer_handler_FLG(void){
@@ -377,9 +351,16 @@ void handlers_generic_set_handler_FLG(uint8_t handler_set){
   bool temp_GIE = GLOBAL_IE;
 
 	GIE = false;
+
+#if 1
+
+  Handler_FLGS = Handler_FLGS | (shifts[handler_set]);	// sets the bit....
+
+#else
 	
   set_handler_FLG(handler_set);
- 
+
+#endif 
   // restore GIE	
 	GIE = temp_GIE;
   
@@ -400,22 +381,15 @@ void handlers_generic_set_handler_FLG(uint8_t handler_set){
 // with preconditioned bitshifting inside: 8MIPS --> 7.6us, 500kHz -> 463us
 // #pragma interrupt_level 1
 
+#if 0
 static void set_handler_FLG(uint8_t handler_flg_spot){
 
 
-	
-#if 1
-  // this is much faster...
 	Handler_FLGS = Handler_FLGS | (shifts[handler_flg_spot]);	// sets the bit....
-	
- #else
-  
-	Handler_FLGS = set_single_bit_in_int(Handler_FLGS, handler_flg_spot);
+
+}
 
 #endif
-
-	
-}
 
 #if 1
 
@@ -479,22 +453,33 @@ static void local_up_f1(void){
 
 static void rtc_1000ms_handler(void){
   
-  
+#if DEBUGGING_IS_ON      
+  static uint8_t sec_cnt = 10u;
+#endif  
   // TODO: a flag which indicates if we are at the moment with some kind of doncnt timer
   
   if(RTC_ALARM_ON == true)
   {
     
     gd.rtc_alarm--; // seconds_until_next_tx--;
-  
-    UART_int(gd.rtc_alarm);
-    UART_CRLF;
-  
+#if DEBUGGING_IS_ON        
+    DB_PRINT(".");
+    sec_cnt--;
+    if(sec_cnt == 0u)
+    {
+      UART_CRLF;
+      sec_cnt = 10;
+      // UART_CRLF;
+      UART_int(gd.rtc_alarm);
+    }
+    // UART_int(gd.rtc_alarm);
+    // UART_CRLF;
+#endif  
     if(gd.rtc_alarm == 0u)  // seconds_until_next_tx == 0)
     {
-
-      rtc_alarm_handler();
+      
       RTC_ALARM_ON = false;
+      rtc_alarm_handler();
       
     }
   }
@@ -507,7 +492,7 @@ static void rtc_1000ms_handler(void){
   }
 #endif    
   
-  DB_LED2_SWAP;
+  
   
   
 }
@@ -535,7 +520,7 @@ static void rtc_alarm_handler(void){
       // stop_gps_lock_time_cnt();
       
       gps_calculate_lock_time();
-      
+   
       if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) && (COPY_POS_IS_VALID == true))
       {
         
@@ -550,11 +535,21 @@ static void rtc_alarm_handler(void){
       }
       
       gd.no_position_cnt++;
+#if GPS_OFF_BEFORE_TX
       
+      gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
+      
+      gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+      
+      RTC_ALARM_ON = true;
+
+#else         
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
-      
+#endif      
+
       DB_PRINT("No position found\r\n");
-      
+
+
     break;
     case E_SLEEP_BEFORE_TRANSMISSION_STATE:
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
@@ -679,6 +674,42 @@ static void f_tilt_sensor_to_check(void){
 #endif
 
 
+#if GPS_OFF_BEFORE_TX
+// GPS_OFF_TIME_SAFE_SYNC
+
+// E_SEARCH_POSITION_STATE handler here
+static void f_gps_on(void){
+  
+  DB_PRINT("GPS_ON\r\n");
+  
+  if(RTC_TIME_IS_GOOD == true)
+  {
+    eRTC_calculate_time_until_tx();
+    
+    if(gd.seconds_until_next_tx > GPS_OFF_TIME_SAFE_SYNC)
+    {
+      gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
+    }
+    
+    RTC_ALARM_ON = true;
+  }
+  else
+  {
+    // TODO: setup a starting rtc time...
+  }
+  
+  gps_startup_initializer();
+  
+  
+  // set up the GPS for reception --> bla bla, timeout timer, etc...
+  // TODO:
+  // UART_on
+  // TIMEout timer on
+
+}
+
+#else
+  
 // E_SEARCH_POSITION_STATE handler here
 static void f_gps_on(void){
   
@@ -702,11 +733,10 @@ static void f_gps_on(void){
   // TODO:
   // UART_on
   // TIMEout timer on
-  
-  
-  
-  
+
 }
+
+#endif
 
 
 static void f_gps_test_rx(void){
@@ -762,7 +792,7 @@ static void f_gps_has_position(void){
   if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
   {
     copy_position_from_to(SAVEPOSITION);
-    DB_PRINT("G_off\r\n");
+    
     gd.rtc_alarm = gd.seconds_until_next_tx;
     RTC_ALARM_ON = true;
     set_message_for_tx(e_send_position);
@@ -809,6 +839,7 @@ static void f_prepare_msg(void){
   
   if(gd_states_get_last_state() == E_GPS_CHECK_ON_ACTIVATION)
   {
+    // TODO --> at some stage we would need to transmit something...
     gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
   }
   else
@@ -857,11 +888,16 @@ static void f_prepare_msg(void){
 
 #endif
 
+
+
+
 static void f_rx_luz_com_handler(void){
   
 #if COMPILE_WITH_RX_LUZ  
   check_on_rx_luz();
 #endif
+  
+  WDTCONbits.SWDTEN = TRUE;
   
   gd_states_switch_to_next_state(E_STARTUP_STATE);
   
@@ -892,7 +928,7 @@ static void f_gd_on(void){
 	RX_IE = TRUE;
   
   
-  DB_PRINT("GD_on");
+  DB_PRINT("GD_startup");
 #endif
   
   
@@ -1042,6 +1078,14 @@ static void f_setup_sleep_before_search(void){
 
   locker = locker * (10u + GPS_LOCK_TIME_DECIMO_PERCENTAGER) / 10u;
   
+  // to avoid that the gps_on before transmission gets to low we check if it smaller than the
+  // minimum time we have set in the config....
+  
+  if(locker < MINIMUM_GPS_ON_BEFORE_TRANSMISSION)
+  {
+    locker = MINIMUM_GPS_ON_BEFORE_TRANSMISSION;
+  }
+  
   // well --> lets calculate the time for sleep, 
   // set it up and clock down the baby...
   eRTC_calculate_time_until_tx();
@@ -1069,11 +1113,13 @@ static void f_setup_sleep_before_search(void){
     gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
   }
   
-  DB_PRINT("S_till_tx: ");
+  DB_PRINT("S_2_tx: ");
   UART_int(gd.seconds_until_next_tx);
   UART_CRLF;
+  DB_PRINT("S_locker: ");
   UART_int(locker);
   UART_CRLF;
+  DB_PRINT("rtc_alarm: ");
   UART_int(gd.rtc_alarm);
   UART_CRLF;
   

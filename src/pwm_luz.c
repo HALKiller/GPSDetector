@@ -71,9 +71,9 @@ struct udt_m{
 
 
 #if DEBUGGING_IS_ON
-#define MEASURE_ILUMINATION_TIME_CNT_BASE (15u*TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+#define MEASURE_ILUMINATION_TIME_CNT_BASE (15u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
 #else
-#define MEASURE_ILUMINATION_TIME_CNT_BASE (45u*TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+#define MEASURE_ILUMINATION_TIME_CNT_BASE (45u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
 #endif
 
 
@@ -198,17 +198,8 @@ void init_detector_config(void){
  
   // gd.vbat_low = LeerEeprom(0x48u);
  
-#if DEBUGGING_IS_ON 
 
-  DB_PRINT("CFG: ");
-  
-  UART_int(ee_retval);
-  
-  DB_PRINT("\r\n");
-  
-#endif
-  
-#if 1
+
 
   DOUBLE_PERIOD  = !(ee_retval & shifts[BIT_SLOT_DOUBLE_PERIOD]);
 
@@ -224,28 +215,30 @@ void init_detector_config(void){
   }
   
 
-#elif 1
+#if DEBUGGING_IS_ON
 
-
-  DOUBLE_PERIOD  = !(ee_retval & shifts[BIT_SLOT_DOUBLE_PERIOD]);
+  DB_PRINT("CFG: ");
+  
+  UART_int(ee_retval);
+  
+  DB_PRINT("\r\n");
+  
+  // DOUBLE_PERIOD  = !(ee_retval & shifts[BIT_SLOT_DOUBLE_PERIOD]);
   
   db_printing_bits(DOUBLE_PERIOD);
 
-  LUZ_ENABLED = !(ee_retval & shifts[BIT_SLOT_LUZ_ENABLED]);
+  // LUZ_ENABLED = !(ee_retval & shifts[BIT_SLOT_LUZ_ENABLED]);
   
   db_printing_bits(LUZ_ENABLED);
   
-  TX_150BPS = (ee_retval & shifts[BIT_SLOT_TX_150BPS]);
+  // TX_150BPS = (ee_retval & shifts[BIT_SLOT_TX_150BPS]);
   
   db_printing_bits(TX_150BPS);
   
-  ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
+  // ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
 
   db_printing_bits(ALWAYS_TRANSMIT);
 
-
-#else  
-  
 
   
 #endif
@@ -433,13 +426,17 @@ void LeerValorBateria(bool AntesDeTransmitir){
 
 
 
+uint8_t read_ilum_sensor(void){
 
+	uint8_t ret_value;
 
-
-
-
-
-
+  ConversionAdc(LEFT_JUSTIFIED, LDR_ADC_CHANNEL);
+	
+  ret_value = ADRESH;
+	
+	return ret_value;
+	
+}
 
 
 #if COMPILE_WITH_PWM_LUZ
@@ -471,8 +468,8 @@ void pwm_luz_time_update(void){
         PWM_IS_ON = TRUE;
       }
     }
-#if DEBUGGING_IS_ON&&0    
-    UWT("\r\nONOFFcnt: ");
+#if DEBUGGING_IS_ON&&0 
+    UWT("\r\nl_c: ");
     UART_int(pwm_luz.pwm_onoff_time_cnt);
 #endif    
   }
@@ -502,32 +499,10 @@ uint8_t get_pwm_luz_pwm_value(void){
 
 
 
-#if 0
-void swap_luz_on_off(void){
-  
-  LUZ_HANDLER_ON = !LUZ_HANDLER_ON;
-  db_printing_bits(LUZ_HANDLER_ON);
-  
-}
 
-#endif
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
-
-
-uint8_t read_ilum_sensor(void){
-
-	uint8_t ret_value;
-
-
-  ConversionAdc(LEFT_JUSTIFIED, LDR_ADC_CHANNEL);
-	
-  ret_value = ADRESH;
-	
-	return ret_value;
-	
-}
 
 
 
@@ -541,12 +516,20 @@ static void measure_ilumination(void){
   // TODO:
   // measure the adc from the sensor and compare to thresholde
   // if there is a change --> run the change setter for on or for off
-#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG   
+#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0   
   DB_PRINT("\r\nIlum: ");
 #endif  
   
   TMR0_IE = FALSE;
   LED = false;  // so that we are not measuring the LED
+  
+  
+  
+  // and now we need a delay to assure that 
+  // we are not measring the LED actually
+  // easiest solution is to give a 30ms delay
+  __delay_ms(30);
+  
 #if PWM_LUZ_DEBUG
   LED_SIMUL_OFF;
 #endif        
@@ -561,14 +544,14 @@ static void measure_ilumination(void){
   temp_flg = ( t_val > LUZ_ADC_DARK_THRESHOLD );
 #endif
 
-#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG
+#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0
   UART_int(t_val);
   DB_PRINT("\r\n");
 #endif  
 
   if(LUZ_HANDLER_ON != temp_flg)
   {
-    
+    // DB_PRINT("LUZ_ON\r\n");
     LUZ_HANDLER_ON = !LUZ_HANDLER_ON;
     
     if(LUZ_HANDLER_ON == FALSE)

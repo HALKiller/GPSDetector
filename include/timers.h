@@ -445,27 +445,16 @@ uint8_t timeout_checker(void);
 
 void reset_timeout_timer(void);
 
-
 void configure_tmr4(void);
-
-
-void configure_tmr2(void);
-
 
 void init_tmr0(void);
 
-
 void init_tmr1(void);
 
-
 void init_wdt(void);
-// void eRTC_clock_reset(void);
-
-
 
 extern volatile uint8_t tmr4_200ms_of;
 
-// extern volatile uint8_t tmr4_of_cnt;
 
 
 

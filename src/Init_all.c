@@ -25,10 +25,6 @@
 
 #include "io_port_sfr_names.h"
 
-// #include "device_driver_config.h"
-
-// #include "ADC.h"
-
 #include "generic_union_flgs.h"
 
 #include "tilt_sensor.h"
@@ -48,8 +44,6 @@
 
 #define MHZ32_TEST 0
 
-// static uint8_t temp_tilt_sensor_tester(void);
-// static void next_clock(void);
 
 
 
@@ -86,7 +80,7 @@ void init_all(void){
 	
 	init_tmr1();
 	
-	// configure_tmr2();
+	
 	
   // TODO:
   // gFLGS reset ons startup
@@ -224,7 +218,7 @@ void init_all(void){
 	
 	// init_tmr1();
 	
-	// configure_tmr2();
+	
 	
   // TODO:
   // gFLGS reset ons startup
@@ -403,8 +397,6 @@ static void init_IO_PORTS(void){
 
 #else
 
-
-
 	ANSELA = 40u; // 0x03;	
 	ANSELB = 0x00;	
 	// ANSELC = 0x00;
@@ -413,17 +405,10 @@ static void init_IO_PORTS(void){
 	LATB = 0x00;
 	LATC = 0x04;
 
-
-
 	TRISA = 40u;  // 0x1F;
 	TRISB = 1u; // 0x00;
 	TRISC = 128u; // 0x80;
 
-
-	
-  
-  
-  
 	WPUB = 0b00000000;
 
 
