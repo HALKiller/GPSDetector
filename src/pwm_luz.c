@@ -33,17 +33,6 @@
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
-#if 0
-struct udt_detector{
-  
-  uint8_t number;
-  uint8_t max_detectores;
-  uint8_t transmission_duration;
-  uint8_t syncro_time;
-  uint16_t seconds_until_next_tx;
-  
-};
-#endif
 
 
 struct udt_m{
@@ -122,10 +111,10 @@ static void db_printing_bits(uint8_t onoff_bit){
   {
     DB_PRINT("On\r\n");
   }
-  
-  
-  
+ 
 }
+
+
 
 #if 0
 
@@ -206,16 +195,21 @@ void init_detector_config(void){
   LUZ_ENABLED = !(ee_retval & shifts[BIT_SLOT_LUZ_ENABLED]);
   
   TX_150BPS = (ee_retval & shifts[BIT_SLOT_TX_150BPS]);
-  
+#if DB_67||1
+  // ALWAYS_TRANSMIT = TRUE;
+  TX_150BPS = TRUE;
+#else
   ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
-
+#endif 
   if(ALWAYS_TRANSMIT == true)
   {
     handlers_generic_set_handler_FLG(e_always_transmit_handler);
   }
   
+ 
+  
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON||1
 
   DB_PRINT("CFG: ");
   
@@ -469,7 +463,7 @@ void pwm_luz_time_update(void){
       }
     }
 #if DEBUGGING_IS_ON&&0 
-    UWT("\r\nl_c: ");
+    DB_PRINT("\r\nl_c: ");
     UART_int(pwm_luz.pwm_onoff_time_cnt);
 #endif    
   }

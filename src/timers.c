@@ -251,7 +251,7 @@ void init_tmr1(void){
 void init_wdt(void){
 	
 	// TODO --> check WDT overflow time
-	WDTCONbits.WDTPS = WDT_TIMEOUT_004s_timeout;  // 0x0Bu;  // 0x0c = 4seconds
+	WDTCONbits.WDTPS = WDT_TIMEOUT_016s_timeout;  // 0x0Bu;  // 0x0c = 4seconds
   
 	WDTCONbits.SWDTEN = FALSE;
   

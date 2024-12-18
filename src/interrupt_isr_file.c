@@ -99,7 +99,10 @@ void __interrupt() isr(void){
     
     if(pwm_of_cnt >= 10u)
     {
+#if USE_PWM_LED      
       LED = 1u;
+#endif      
+      
 #if PWM_LUZ_DEBUG      
       LED_SIMUL_ON;
 #endif      

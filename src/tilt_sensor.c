@@ -122,7 +122,37 @@ void tilt_sensor_get_state(void){
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
 
 
-#if 1
+#if TILT_IS_ALWAYS_ON
+
+// a count algorithm in function of the last read state --> therefroe we are changoing the state only on 
+// count > than threshold. and there can be two different thresholds for up and downcount.
+void update_tilt_sensor_state(void){
+
+
+  uint8_t read_state = TILT_SENSOR;
+
+
+   
+   
+    if(tilt_sensor.detector_is_on != TS_ON_STATE)
+    {
+
+        tilt_sensor.detector_is_on = TS_ON_STATE;
+        gd_states_switch_to_next_state(E_GPS_CHECK_ON_ACTIVATION);
+     
+    }
+
+
+	
+	
+}
+
+
+
+
+
+#else
+
 
 // a count algorithm in function of the last read state --> therefroe we are changoing the state only on 
 // count > than threshold. and there can be two different thresholds for up and downcount.
@@ -174,71 +204,6 @@ void update_tilt_sensor_state(void){
 
 
 
-#else
-  
-// a count algorithm in function of the last read state --> therefroe we are changoing the state only on 
-// count > than threshold. and there can be two different thresholds for up and downcount.
-static void update_tilt_sensor_state(uint8_t read_state){
-
-
-	if(read_state == SENSOR_IS_TOP_MOUNTED)
-	{
-   
-		tilt_sensor.on_cnt++;
-    // tilt_sensor.on_cnt = tilt_sensor.on_cnt + 1u;
-		
-		tilt_sensor.off_cnt = (uint8_t)0u;
-		
-		if(tilt_sensor.on_cnt > CONST_ON_CNT_DEBOUNCED)
-		{
-      
-      tilt_sensor.detector_is_on = TS_ON_STATE;
-			
-			tilt_sensor.on_cnt = CONST_ON_CNT_DEBOUNCED;
-      
-      if(tilt_sensor.detector_is_on != tilt_sensor.last_state)
-      {
-        
-        tilt_sensor.last_state = tilt_sensor.detector_is_on;
-        
-        gd_states_switch_to_next_state(E_GPS_CHECK_ON_ACTIVATION);
-        
-        // UWT("T_S_ON\r\n");
-        
-      }
-      
-		}
-
-	}
-	else
-	{
-
-		tilt_sensor.off_cnt++;
-    
-		tilt_sensor.on_cnt = (uint8_t)0u;
-				
-		if(tilt_sensor.off_cnt > CONST_OFF_CNT_DEBOUNCED)
-		{
-      
-			tilt_sensor.detector_is_on = TS_OFF_STATE;
-			
-			tilt_sensor.off_cnt = CONST_OFF_CNT_DEBOUNCED;
-			
-      if(tilt_sensor.detector_is_on != tilt_sensor.last_state)
-      {
-        
-        tilt_sensor.last_state = tilt_sensor.detector_is_on;
-        
-        gd_states_switch_to_next_state(E_OFF_STATE);
-        
-        // UWT("T_S_OFF\r\n");
-        
-      }
-		}	
-	}
-	
-	
-}
 
 
 #endif

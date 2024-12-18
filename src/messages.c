@@ -28,6 +28,8 @@
 
 #include "e_rtc.h"
 
+#include "generic_union_flgs.h" // for the BAT_LOW_FLG
+
 #if DEBUGGING_IS_ON
 #include "UART.h"
 #endif
@@ -135,7 +137,7 @@ static uint16_t version_nr = 0;
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
 static void msg_activation(void);
-static void msg_position(void);
+static void msg_position(uint8_t resend);
 static void msg_no_gps(void);
 
 
@@ -172,7 +174,10 @@ void messages_before_transmission(void){
       msg_activation();
     break;
     case e_send_position:
-      msg_position();
+      msg_position(false);
+    break;
+    case e_resend_position:
+      msg_position(true);
     break;
     case e_No_gps:
       msg_no_gps();
@@ -368,7 +373,7 @@ void calculate_version_number(void) {
 #endif
 
 // e_send_position
-static void msg_position(void)
+static void msg_position(uint8_t resend)
 {
 
   insert_msg_header();
@@ -387,10 +392,18 @@ static void msg_position(void)
   sentence_buffer.gps_buffer[44] =  '.';
   sentence_buffer.gps_buffer[25] =  ':';
   sentence_buffer.gps_buffer[41] =  ':';
+
   sentence_buffer.gps_buffer[61] =  'H';
-
-
-
+  
+  if(resend == true)
+  {
+    sentence_buffer.gps_buffer[61] = 'J';
+  }
+  // TODO: Get bat level:
+  if(BAT_IS_LOW_FLG == true)
+  {
+    sentence_buffer.gps_buffer[61] = sentence_buffer.gps_buffer[61] + 1u;
+  }
 
 // TODO: 
 // optimize that in the way that the enum value is straight out the char we need

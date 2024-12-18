@@ -7,7 +7,7 @@
 
 #define USE_PWM_LUZ_FILE 0
 
-#define PWM_LUZ_DEBUG 1
+#define PWM_LUZ_DEBUG 0
 
 #if PWM_LUZ_DEBUG
 
@@ -27,7 +27,7 @@
 
 // TODO: that should get into a own cfg.h file i think...
 // because there is now a design where the fototransistor is on low side switching...
-#define INVERTED_LDR_SENSOR 1  
+ 
 
 // agaisnt this threshold we cpompare if it is dark or not...
 // with the LDR that is set to 50

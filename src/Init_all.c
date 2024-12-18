@@ -61,7 +61,7 @@ static uint8_t t_status __at(0x16F); // (0xA0);
 void init_all(void){
 
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
   uint8_t t_var = (uint8_t)MIPS;
 #endif
 
@@ -74,9 +74,12 @@ void init_all(void){
 // datasheet --> switching to the PLL can take +- 2ms --> 
 	__delay_ms(5u);
 
+#if DEBUGGING_BB_IS_ON
+  init_TMR_bitbang_uart(NORMAL_CLOCK);
+#endif
   
 	calculate_version_number();
-	// init_tmr0();
+
 	
 	init_tmr1();
 	
@@ -84,52 +87,27 @@ void init_all(void){
 	
   // TODO:
   // gFLGS reset ons startup
+#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)&&1
 #if DEBUGGING_IS_ON
-
   uart_init_cfg(DEBUG_BAUDRATE);
-
-	UWT("BUILD: ");
-	UWT(__DATE__);
-	UWT("  ");
-	UWT(__TIME__);
-	UWT("\r\n");
-	UWT("MIPS: ");
+#endif
+	DB_PRINT("BUILD: ");
+	DB_PRINT(__DATE__);
+	DB_PRINT("  ");
+	DB_PRINT(__TIME__);
+	DB_PRINT("\r\n");
+	DB_PRINT("MIPS: ");
 	UART_int(t_var);
-  UWT("\r\n");
+  // DB_PRINT("\r\n");
   
- #if 0 
-  
-  char date_str[11];
-  int mes = 0u;
-  strncpy(date_str, __DATE__, 11);
-  DB_PRINT("new: ");
-  DB_PRINT(&date_str);
-  mes = get_month_index();
-  if(mes != (-1))
-  {
-    UART_int((uint8_t)mes);
-  }
-  else
-  {
-      DB_PRINT("Not found!\r\n");
-  }
-  UART_CRLF;
-  
-#endif  
-  
-  
-  
-  
-  
-  
-  
+
 #if USE_NEW_VERSION_ID&&0
   
-  UWT("Week: ");
+  DB_PRINT("Week: ");
   t_var = (uint8_t)WEEK_OF_YEAR;
   UART_int(t_var);
   
-  UWT("Version: ");
+  DB_PRINT("Version: ");
   t_var = (uint8_t)COMBINED_CODE;
   UART_int(t_var);
   
@@ -157,37 +135,14 @@ void init_all(void){
   
 	init_wdt();
 
-#if 1
 
+
+  // TODO:
+  //04122024 --> init the gps speed straight away --> perhaps that gives a beeter result...
+
+  
+  gps_first_run();
   startup();
-  
-#else  
-  
-	RX_IF = FALSE;
-	RX_IE = TRUE;
-  
-	TMR0_IF = FALSE;
-	TMR0_IE = FALSE;
-
-
-	PERIPHERIC_IE = TRUE;
-	GLOBAL_IE = TRUE;
-
-  TMR4_IF = FALSE;
-  TMR4_IE = TRUE;
-  
-  TMR4_ON = TRUE;
-  
-#endif
-  
-  
-// for reference...
-  // TMR4ON = true;   // bad
-  // TMR4_ON = TRUE;  // good
-  // TMR4ON = TRUE;   // bad
-  // TMR4_ON = true;  // bad
-  
-
 
 	
 }
@@ -221,6 +176,7 @@ void init_all(void){
 	
 	
   // TODO:
+  //04122024 --> init the gps speed straight away --> perhaps that gives a beeter result...
   // gFLGS reset ons startup
   
 
@@ -231,13 +187,13 @@ void init_all(void){
 	
 	init_IO_PORTS();
   
-#if DEBUGGING_IS_ON
-	UWT("BUILD: ");
-	UWT(__DATE__);
-	UWT("  ");
-	UWT(__TIME__);
-	UWT("\r\n");
-	UWT("MIPS: ");
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
+	DB_PRINT("BUILD: ");
+	DB_PRINT(__DATE__);
+	DB_PRINT("  ");
+	DB_PRINT(__TIME__);
+	DB_PRINT("\r\n");
+	DB_PRINT("MIPS: ");
 	UART_int(t_var);
 	UART_CRLF;
 #endif
@@ -400,8 +356,11 @@ static void init_IO_PORTS(void){
 	ANSELA = 40u; // 0x03;	
 	ANSELB = 0x00;	
 	// ANSELC = 0x00;
-
+#if PCB_VERSION == 67
+	LATA = 0x40;  // Becasu there is an inverted logic implemented...
+#else
 	LATA = 0x00;
+#endif
 	LATB = 0x00;
 	LATC = 0x04;
 
@@ -423,7 +382,7 @@ static void init_IO_PORTS(void){
 
 
 // from_here_1
-  UWT("LAT: ");
+  DB_PRINT("LAT: ");
   UART_int(LATA);
   UART_CRLF;
   
@@ -433,7 +392,7 @@ static void init_IO_PORTS(void){
   UART_int(LATC);
   UART_CRLF;
   
-   UWT("TRIS: ");
+   DB_PRINT("TRIS: ");
   UART_int(TRISA);
   UART_CRLF;
   
@@ -444,7 +403,7 @@ static void init_IO_PORTS(void){
   UART_CRLF;
   
   
-  UWT("ANSEL: ");
+  DB_PRINT("ANSEL: ");
   UART_int(ANSELA);
   UART_CRLF;
   

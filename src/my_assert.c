@@ -16,6 +16,8 @@
 
 #include "my_assert.h"
 
+#include "Global.h"
+
 #include "UART.h"
 
 // #include "xc.h"
@@ -64,7 +66,7 @@
 
 void assertion_failure(char *expr, char* file){
 	
-	UWT("\r\nASSERT FAILURE!");
+	DB_PRINT("\r\nASSERT FAILURE!");
 	
 	while(1);
   
@@ -88,12 +90,12 @@ void assertion_failure(char* expr, char* file, uint16_t linenum) {
     v_linenum  = linenum;
 		
 		// UART_CRLF;
-		UWT("\r\nASSERT FAILURE \r\n");
+		DB_PRINT("\r\nASSERT FAILURE \r\n");
 		// UART_int(*expr);
-		UWT("File: ");
-		UWT(file);
+		DB_PRINT("File: ");
+		DB_PRINT(file);
 		
-		UWT("In line: ");
+		DB_PRINT("In line: ");
 		UART_int(linenum);
     
 		
@@ -135,12 +137,12 @@ uint8_t hlooper = 0;
     v_linenum  = linenum;
 		
 		// UART_CRLF;
-		UWT_NON_DMA("\r\nASSERT FAILURE \r\n");
+		DB_PRINT_NON_DMA("\r\nASSERT FAILURE \r\n");
 		// UART_int(*expr);
-		UWT_NON_DMA("File: ");
-		UWT_NON_DMA(file);
+		DB_PRINT_NON_DMA("File: ");
+		DB_PRINT_NON_DMA(file);
 		
-		UWT_NON_DMA("In line: ");
+		DB_PRINT_NON_DMA("In line: ");
 		UART_int(linenum);
     
 		
@@ -223,7 +225,7 @@ uint8_t hlooper = 0;
 #if MY_TRY
 void assertion_failure(char *expr, char* file){
 	
-	UWT("\r\nASSERT FAILURE!");
+	DB_PRINT("\r\nASSERT FAILURE!");
 	
 	while(1);
 }
@@ -247,12 +249,12 @@ void assertion_failure(char* expr, char* file, uint16_t linenum) {
   v_linenum  = linenum;
   
   // UART_CRLF;
-  UWT("\r\nASSERT FAILURE \r\n");
+  DB_PRINT("\r\nASSERT FAILURE \r\n");
   // UART_int(*expr);
-  UWT("File: ");
-  UWT(file);
+  DB_PRINT("File: ");
+  DB_PRINT(file);
   
-  UWT("In line: ");
+  DB_PRINT("In line: ");
   UART_int(linenum);
   
   
@@ -292,12 +294,12 @@ uint8_t hlooper = 0;
     v_linenum  = linenum;
 		
 		// UART_CRLF;
-		UWT_NON_DMA("\r\nASSERT FAILURE \r\n");
+		DB_PRINT_NON_DMA("\r\nASSERT FAILURE \r\n");
 		// UART_int(*expr);
-		UWT_NON_DMA("File: ");
-		UWT_NON_DMA(file);
+		DB_PRINT_NON_DMA("File: ");
+		DB_PRINT_NON_DMA(file);
 		
-		UWT_NON_DMA("In line: ");
+		DB_PRINT_NON_DMA("In line: ");
 		UART_int(linenum);
     
 		

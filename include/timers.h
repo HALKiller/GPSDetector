@@ -29,6 +29,7 @@
 #define TMR1_4_PRESCALER	2u
 #define TMR1_8_PRESCALER	3u
 
+
 #define USE_TMR1_FLG 1
 
 #if MIPS == 8
@@ -98,7 +99,7 @@ wat
 #define TMR2_150BAUD_POST  TMR2_14_POSTSCALER;
 #define TMR2_150BAUD_PR    (uint8_t)238;	
 
-#define TMR2_DDS_CFG_PR    (uint8_t)80;	
+#define TMR2_DDS_CFG_PR    (uint8_t)160; // (uint8_t)80;	
 
 // the rx_luz tmr2 cfg
 #define TMR2_15MS_PRE     TMR2_64_PRESCALER
@@ -129,7 +130,7 @@ wat
 #define TMR2_150BAUD_POST  TMR2_07_POSTSCALER;
 #define TMR2_150BAUD_PR    (uint8_t)238;	
 
-#define TMR2_DDS_CFG_PR    (uint8_t)40;	
+#define TMR2_DDS_CFG_PR    (uint8_t)80; // (uint8_t)40;	
 
 // the rx_luz tmr2 cfg
 #define TMR2_15MS_PRE     TMR2_16_PRESCALER
@@ -162,7 +163,7 @@ wat
 #define TMR2_150BAUD_POST  TMR2_14_POSTSCALER;
 #define TMR2_150BAUD_PR    (uint8_t)238;		
 
-#define TMR2_DDS_CFG_PR    (uint8_t)20;	
+#define TMR2_DDS_CFG_PR    (uint8_t)40; // (uint8_t)20;	
 
 // the rx_luz tmr2 cfg
 #define TMR2_15MS_PRE     TMR2_16_PRESCALER
@@ -194,7 +195,7 @@ wat
 #define TMR2_150BAUD_POST  TMR2_07_POSTSCALER;
 #define TMR2_150BAUD_PR    (uint8_t)238;			
 
-#define TMR2_DDS_CFG_PR    (uint8_t)10;	
+#define TMR2_DDS_CFG_PR    (uint8_t)20; // (uint8_t)10;	
 
 
 // the rx_luz tmr2 cfg

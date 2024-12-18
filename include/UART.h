@@ -101,7 +101,7 @@ typedef enum baudtype{
 #endif
 
 // #define UWT send_string
-#define UART_CRLF UWT("\r\n");
+#define UART_CRLF DB_PRINT("\r\n");
 // #define UART_CRLF UWT((const unsigned char *)"\r\n");
 
 #define USE_TX_ISR 0
@@ -170,7 +170,8 @@ void send_character(uint8_t the_char);
 
 uint8_t *get_pnt_to_uart_rx_buffer(void);
 
-
+void UART_off(void);
+void UART_on(void);
 
 
 

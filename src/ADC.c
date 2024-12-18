@@ -177,10 +177,7 @@ uint8_t adc_samples_channel(uint8_t channel_to_sample){
 	while(START_CONVERSION == true);	// waiting until the Conversion has finished...
 	
 	temp_val = ADRESH;
-#if 0	
-	UWT("A: ");
-	UART_int(temp_val);
-#endif	
+
 	return temp_val;
 	
 	

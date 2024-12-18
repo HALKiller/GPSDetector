@@ -196,7 +196,7 @@ void get_the_next_handler(void){
     {
       
       CLRWDT();
-      DB_LED1_SWAP;
+      // DB_LED1_SWAP;
       // LED_SIMUL = LED;
     }
 
@@ -453,7 +453,7 @@ static void local_up_f1(void){
 
 static void rtc_1000ms_handler(void){
   
-#if DEBUGGING_IS_ON      
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON      
   static uint8_t sec_cnt = 10u;
 #endif  
   // TODO: a flag which indicates if we are at the moment with some kind of doncnt timer
@@ -462,7 +462,7 @@ static void rtc_1000ms_handler(void){
   {
     
     gd.rtc_alarm--; // seconds_until_next_tx--;
-#if DEBUGGING_IS_ON        
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON      
     DB_PRINT(".");
     sec_cnt--;
     if(sec_cnt == 0u)
@@ -634,7 +634,7 @@ static void rtc_200ms_handler(void){
       uart_init_cfg(B9600_low_clk);
       // uart_init_slow_clock();
     }
-    // DB_PRINT("O.k.\r\n");
+    
     s_cnt = 0;
     SWITCH_CLOCK = TRUE;
   }
@@ -695,7 +695,10 @@ static void f_gps_on(void){
   }
   else
   {
-    // TODO: setup a starting rtc time...
+    // TODO: setup a starting rtc time --> overwork it if it works..
+    gd.seconds_until_next_tx = gd.time_between_tx;
+    gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
+    RTC_ALARM_ON = true;
   }
   
   gps_startup_initializer();
@@ -764,29 +767,21 @@ static void f_gps_test_rx(void){
 
   }
   
+
   
 }
 
 
 static void f_gps_has_position(void){
-  
-  
-  // well, then we need to do all the things blablabla..
-  
-  // TODO:
-  // Calculate the lock time and move that into the array, 
-  // based on that calculate the minimum gps_on time...
-  
+
   gps_stop();
   
   gps_calculate_lock_time();
   
-  // and what to do next? well, depends on what we were doinfgin first place....
-  
-  
   eRTC_calculate_time_until_tx();
   
-  DB_PRINT("G_off\r\n");
+  DB_PRINT("GPS_OFF\r\n");
+  
   gd.no_position_cnt = 0;
   
   if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
@@ -800,7 +795,6 @@ static void f_gps_has_position(void){
     
   }
   
-
   
 }
 
@@ -835,8 +829,17 @@ static void f_prepare_msg(void){
   // we would need to know what message and that would depend on where we are coming from
   messages_before_transmission();
   
+
+#if 1 
+  
+  WDTCONbits.SWDTEN = FALSE;
+
   Transmite(false);
   
+  WDTCONbits.SWDTEN = TRUE;
+  
+#endif  
+
   if(gd_states_get_last_state() == E_GPS_CHECK_ON_ACTIVATION)
   {
     // TODO --> at some stage we would need to transmit something...
@@ -924,13 +927,19 @@ static void f_gd_on(void){
 #if DEBUGGING_IS_ON  
 
   uart_init_cfg(DEBUG_BAUDRATE);
+  
   RX_IF = FALSE;
 	RX_IE = TRUE;
   
+#elif DEBUGGING_BB_IS_ON
+
+  init_TMR_bitbang_uart(NORMAL_CLOCK);  
+    
+#endif     
+  
+  
   
   DB_PRINT("GD_startup");
-#endif
-  
   
   
 }
@@ -951,13 +960,21 @@ static void f_gd_off(void){
     
   }
 
-#if DEBUGGING_IS_ON
   DB_PRINT("GD OFF\r\n");
+
+#if DEBUGGING_IS_ON
+  
   while(TXSTAbits.TRMT == FALSE)
   {
     // waiting loop for finisheg the transmission
   }  
+#elif DEBUGGING_BB_IS_ON
+
+  init_TMR_bitbang_uart(NORMAL_CLOCK); 
+  
 #endif  
+  
+  gps_stop();
   
   PERIPHERIC_IE = FALSE;
 	GLOBAL_IE = FALSE;
@@ -978,6 +995,7 @@ static void f_gd_off(void){
   // and jsut checking the Input pin for activation
   
   WDTCONbits.WDTPS = WDT_TIMEOUT_256s_timeout;
+  
   WDTCONbits.SWDTEN = 0x01u;  // wdton = true
   
 
@@ -990,7 +1008,7 @@ static void f_gd_off(void){
   
   init_wdt();
   
-  // WDTCONbits.SWDTEN = 0x00u;  // wdton = true
+
   
   
   
@@ -1000,10 +1018,17 @@ static void f_gd_off(void){
   {
     init_clock();
     configure_tmr4();
+    
+// #elif DEBUGGING_BB_IS_ON
+
+  // init_TMR_bitbang_uart(NORMAL_CLOCK);      
     // __delay_ms(5);
     // DB_PRINT("DETECTOR IS ON\r\n"); 
   }
 #endif
+
+
+
  
   INTCONbits.INTE = FALSE;
 
@@ -1011,21 +1036,25 @@ static void f_gd_off(void){
   // wait for clck to stailize before tx_DP_PRINT info...
   
   gd_states_switch_to_next_state(E_STARTUP_STATE);
-  // DB_PRINT("SUP\r\n");
+  
+  DB_PRINT("SUP\r\n");
 
 }
 
 
 static void f_always_transmit(void){
   
+  
+  
   while(1)
   {
     
     set_message_for_tx(e_Activation);
     messages_before_transmission();
-    
+
     Transmite(false);
-  
+    __delay_ms(1000);
+    
   }
   
 }
@@ -1043,6 +1072,11 @@ static void fn_clock_switching(void){
     // uart_init_slow_clock();
 
     uart_init_cfg(B9600_low_clk);
+    
+#elif DEBUGGING_BB_IS_ON
+
+    init_TMR_bitbang_uart(SLOW_CLOCK);  
+    
 #endif       
     set_slow_clock();
     configure_tmr4();
@@ -1056,7 +1090,10 @@ static void fn_clock_switching(void){
     // init_UART();
 #if DEBUGGING_IS_ON
     uart_init_cfg(DEBUG_BAUDRATE);
+#elif DEBUGGING_BB_IS_ON
+    init_TMR_bitbang_uart(NORMAL_CLOCK);  
 #endif    
+
   }
   
   TMR4_ON = true;
@@ -1067,7 +1104,7 @@ static void fn_clock_switching(void){
 #endif
 
 
-#if DEBUGGING_IS_ON
+#if 1 // DEBUGGING_IS_ON
 
 // the sleep before search state
 static void f_setup_sleep_before_search(void){
@@ -1095,6 +1132,7 @@ static void f_setup_sleep_before_search(void){
   if(BAT_IS_LOW_FLG == true)
   {
     gd.seconds_until_next_tx = gd.seconds_until_next_tx + gd.time_between_tx;
+    DB_PRINT("\r\nLow Bat\r\n");
   }
   
   if(gd.seconds_until_next_tx > locker)

@@ -122,34 +122,7 @@ static void prepare_tx_handler(void);
 
 //  **********************  PUBLIC FUNCTIONS BODY  ************************  //
 
-#if 0
 
-void init_uart_flags(void){
-	
-	
-	huart.FLGS.reg = 0u;
-	huart.data_lencnt = 0u;
-	huart.header_lencnt = 0u;
-	huart.header_pnt = &(huart.header[0]);
-	huart.data_pnt = &tx_data[0];
-	huart.header[5] = NULL_TERMINATOR;
-	
-}
-
-
-
-// this one functions now in the way that we parse into it the 
-// baudrate and the CLockspeed --> therefroe it calcultaes by
-// itself the necessary settings
-void init_UART_calculated(uint32_t baudrate){
-  
-  uint32_t clck = MIPS * 4000000u;
-  
-
-  
-}
-
-#endif
 
 #if SLOW_CLCK==LOW_31_25KHZ
 
@@ -252,7 +225,6 @@ void uart_init_cfg(baudrate_t baudrate){
   
 void uart_init_cfg(baudrate_t baudrate){
   
-
   
   SYNC = FALSE;
   
@@ -285,11 +257,12 @@ void uart_init_cfg(baudrate_t baudrate){
   
  
  
-#if DEBUGGING_IS_ON
+#if 0
 
 	RCSTAbits.SPEN = TRUE;
 	
 	RCSTAbits.CREN = TRUE;
+  
 	TXSTAbits.TXEN = TRUE;
 
 #endif
@@ -297,11 +270,13 @@ void uart_init_cfg(baudrate_t baudrate){
   __delay_ms(100);
   
 #if DEBUGGING_IS_ON&&0
+
   DB_PRINT("\r\nBRGH: ");
   UART_int(SPBRGH);
   DB_PRINT("\r\nBRG: ");
   UART_int(SPBRG);
   UART_CRLF;
+  
 #endif
 
 
@@ -310,6 +285,27 @@ void uart_init_cfg(baudrate_t baudrate){
 
 
 #endif
+
+void UART_on(void){
+  
+  RCSTAbits.SPEN = TRUE;
+	
+	RCSTAbits.CREN = TRUE;
+  
+	TXSTAbits.TXEN = TRUE;
+  
+}
+
+void UART_off(void){
+  
+  RCSTAbits.SPEN = FALSE;
+	
+	RCSTAbits.CREN = FALSE;
+  
+	TXSTAbits.TXEN = FALSE;
+  
+}
+
 
 
 #if 0
@@ -488,7 +484,7 @@ void UART_ui2s(void* hvar, size_t size){
   // uint_to_str(hvar, size, str);
 
   // Send the string via UART (simulated here)
-  UWT(str);
+  DB_PRINT(str);
   
 }
 
@@ -502,7 +498,7 @@ void UART_int(uint16_t hvar){
 
   uint_to_str(parser, str);
 	
-  UWT(&str[0]);
+  DB_PRINT(&str[0]);
 	
 }
 
@@ -530,11 +526,9 @@ void UART_int(uint16_t hvar){
   int_to_str_converter(hvar, str);
 #endif
 	
+
   
-  
-  // UWT("INT_val: ");
-  
-  UWT(&str[0]);
+  DB_PRINT(&str[0]);
 	
 }
 
@@ -746,12 +740,12 @@ void send_string(const unsigned char *str_pnt){
 
   const uint8_t const_max_length = 128;
   uint8_t sent_char_cnt = 0;
-
-	while((*str_pnt != NULL_TERMINATOR) && (sent_char_cnt < const_max_length))
+  unsigned char *local_pnt = str_pnt;
+	while((*local_pnt != NULL_TERMINATOR) && (sent_char_cnt < const_max_length))
 	{
 		
-		transmit_char(*str_pnt);
-		str_pnt++;
+		transmit_char(*local_pnt);
+		local_pnt++;
 #if ENFORCE_MISRA_RULE    
     sent_char_cnt = (uint8_t)((uint16_t)sent_char_cnt + 1u);
 #else    
@@ -759,6 +753,13 @@ void send_string(const unsigned char *str_pnt){
 #endif  
 	}	
 	
+  
+  
+#if DEBUGGING_BB_IS_ON&&0
+  send_bb_string(str_pnt);
+#endif
+  
+  
 
 }
 

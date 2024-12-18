@@ -49,7 +49,7 @@
 
 #include "gd_states.h"
 
-// #include "io_port_sfr_names.h"
+#include "io_port_sfr_names.h"
 
 #include "my_assert.h"
 
@@ -63,42 +63,13 @@
 union8_t gFLAGS;
 
 
+// TODO before rc --> Watch Dog timer !
+
 
 /******************************************************************************/
 /* Main Program                                                               */
 /******************************************************************************/
 #if 0
-void main(void)
-{
-  
-  
-// #if DEBUGGING_IS_ON
-
-  // const unsigned char SW_version[] = "GPSDetector_v.1.0_db\r\n";
-  
-// #else
-  
-  // const unsigned char SW_version[] = "GPSDetector_v.1.0_rc\r\n";
-  
-// #endif
-
-
-
-	init_all();
-
-  while(1);
-  // UWT(&SW_version[0]);
-
-	// get_the_next_handler();
-
-  // becasue we should never ever get back here 
-  // --> we reset the stackptr
-  // assert(false);
-
-}
-
-#else
-  /******************************************************************************/
 void main(void)
 {
   
@@ -120,9 +91,52 @@ void main(void)
 
 	init_all();
 
+  while(1)
+  {
+    DB_PRINT(&SW_version[0]);
+    __delay_ms(500);
+    // LED = !LED;
+    // __delay_ms(500);
+  }
+
+
+  // the reset is over --> lets swap to the next gd_state...
+  
+  gd_states_switch_to_next_state(E_LUZ_COM_STATE);
+  
+	get_the_next_handler();
+
+  // becasue we should never ever get back here 
+  // --> we reset the stackptr
+  assert(false);
+
+}
+
+#else
+  /******************************************************************************/
+void main(void)
+{
+  
+  // TODO: the init_routine needs to get overworked becasue the rx_luz is going 
+  // to be happening before anything else
+  // and therefore there should not be any 
+// Isr be active allready except perhaps the UART during debugging!!!
+  
 #if DEBUGGING_IS_ON
-  DB_PRINT(&SW_version[0]);
+
+  const unsigned char SW_version[] = "GPSD_v.1.0_db\r\n";
+  
+#else
+  
+  const unsigned char SW_version[] = "GPSD_v.1.0_rc\r\n";
+  
 #endif
+
+
+	init_all();
+
+  DB_PRINT(&SW_version[0]);
+
   // the reset is over --> lets swap to the next gd_state...
   
   gd_states_switch_to_next_state(E_LUZ_COM_STATE);

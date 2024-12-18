@@ -1,6 +1,7 @@
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 
-
+// because we are having a really slow clock with 500kHz i dropped the Baudrate down to 4800.
+// the easiest way to to so was to increase the Post from 1:1 to 2:1
 
 
 //   * * * * * *      I N C L U D E S   B L O C K     * * * * * * * * * * * * * * * * * * * * *  //
@@ -8,16 +9,16 @@
 
 
 #include "bit_banged_uart.h"
-// #include "bsp.h"
-#include "io_port_sfr_names.h"
-#include "xc.h"
+
 #include "Global.h"
 
-#include <stdint.h>
+#include "timers.h"
 
+#include "generic_union_flgs.h"
 
+#include "xc.h"
 
-
+// #include "io_port_sfr_names.h"
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -31,21 +32,66 @@ static const uint8_t const_max_str_length = 64;
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
-#define NULL_TERMINATOR '\0'
-
-#define STARTBIT false	
+// #define NULL_TERMINATOR '\0'
+#define STARTBIT false
 #define STOPBIT true
 
-#define TMR2_ON T2CONbits.TMR2ON
-#define TMR2_POSTSCALER T2CONbits.T2OUTPS
-#define TMR2_PRESCALER  T2CONbits.T2CKPS
-#define TMR2_IF PIR1bits.TMR2IF
+
+#define BB_TMR            TMR6
+#define BB_TMR_ON         T6CONbits.TMR6ON
+#define BB_TMR_POSTSCALER T6CONbits.T6OUTPS
+#define BB_TMR_PRESCALER  T6CONbits.T6CKPS
+#define BB_TMR_IF         PIR3bits.TMR6IF
+#define BB_TMR_IE         PIE3bits.TMR6IE
+
+// #define ICSPCLCK 			LATBbits.LATB6
+// #define ICSPDAT 			  LATBbits.LATB7
+
+#define BB_UART           LATBbits.LATB6// LATAbits.LATA7 // 
 
 
-// #define TMR2_ON T2CONbits.TMR2ON
-// #define TMR2_POSTSCALER T2CONbits.T2OUTPS
-// #define TMR2_PRESCALER  T2CONbits.T2CKPS
-// #define TMR2_IF PIR1bits.TMR2IF
+#if MIPS == 1
+
+#define BB_PR	104 // 
+
+#define BB_PSA  TMR6_01_PRESCALER 
+#define BB_POST TMR6_02_POSTSCALER
+
+#elif MIPS==2
+
+#define BB_PR	208 // 
+
+#define BB_PSA  TMR6_01_PRESCALER 
+#define BB_POST TMR6_02_POSTSCALER
+
+#elif MIPS==4
+
+#define BB_PR	104 // 
+
+#define BB_PSA  TMR6_04_PRESCALER 
+#define BB_POST TMR6_02_POSTSCALER
+
+#elif MIPS==8
+
+#define BB_PR	52 // 153600
+
+#define BB_PSA  TMR6_01_PRESCALER 
+#define BB_POST TMR6_02_POSTSCALER
+
+#if 0
+#define BB_PR	208 // 
+
+#define BB_PSA  TMR6_04_PRESCALER 
+#define BB_POST TMR6_02_POSTSCALER
+#endif
+
+
+#else	
+wat
+#endif
+
+#define BB_SLOW	12
+
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
@@ -59,7 +105,9 @@ static const uint8_t const_max_str_length = 64;
 static void bang_char_out(uint8_t the_char);
 
 static void set_bb_uart(uint8_t b_val);
-static void send_it(const uint8_t *bit_arr);
+
+static void send_it(uint8_t *bit_arr);
+
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
@@ -70,9 +118,10 @@ static void send_it(const uint8_t *bit_arr);
 
 // setting up for 104us --> 1 bit length time for 9600 Baud
 // by 16MHz clock
-void init_TMR_bitbang_uart(void){
+void init_TMR_bitbang_uart(uint8_t clockspeed){
 	
-	TMR2_ON = false;
+  
+	BB_TMR_ON = false;
 	
 	
 	// 1:1 = 0
@@ -82,30 +131,41 @@ void init_TMR_bitbang_uart(void){
 	//		.
 	//		.
 	//		.
-	TMR2_POSTSCALER = 0x01;	
+	BB_TMR_POSTSCALER = BB_POST; // 0x01;	
 	
 	// 1:1 = 0
 	// 1:4 = 1
 	// 1:16 = 2
 	// 1:64 = 3
-	TMR2_PRESCALER = 0x00;
+	BB_TMR_PRESCALER = BB_PSA; // 0x00;
 	
-	PR2 = 208;
-	
-	TMR2_IF = false;
-	
-	
-	TRISAbits.TRISA2 = false; // the UART__BB
   
-	set_bb_uart(true);	// because UART TX is idle high
+	PR6 = BB_PR;
 	
+  if(clockspeed == SLOW_CLOCK)
+  {
+    PR6 = BB_SLOW;
+  }
+	BB_TMR_IF = false;
+	
+	TRISBbits.TRISB6 = false; // the UART__BB
+  
+	// set_bb_uart(true);	// because UART TX is idle high
+	
+  BB_UART = true;
+  
+  
+  
 }
 
 
 
-void send_string_bit_banged(const char *str_pnt){
-	uint8_t lencnt = 0;
+void send_bb_string(const unsigned char *str_pnt){
 	
+  uint8_t lencnt = 0;
+	
+  
+  
 	while((*str_pnt != NULL_TERMINATOR) && (const_max_str_length > lencnt))
 	{
 		bang_char_out(*str_pnt);
@@ -117,12 +177,7 @@ void send_string_bit_banged(const char *str_pnt){
 	
 }
 
-void send_bit_banged_char(uint8_t the_char){
-	
-	bang_char_out(the_char);
-	
-	
-}
+
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
@@ -137,7 +192,6 @@ static void bang_char_out(uint8_t the_char){
 	
   
   bitwise[0] = STARTBIT;
-	
 	for(hlooper = 0; hlooper < 8; hlooper++)
 	{
 		
@@ -150,136 +204,137 @@ static void bang_char_out(uint8_t the_char){
 
 }
 
-#if 0
-static void send_bit(uint8_t the_bit){
-	
-	LED_GREEN = true;
-	
-	TMR2_ON = false;
-	TMR2 = 0;
-	TMR2_IF = false;
-		
-	GIE = false;
-	
-	set_bb_uart(the_bit);
-	
 
-	
-	TMR2_ON = true;
-	
-	while(TMR2_IF == false);
-	// {
-		// CLRWDT();
-	// }
-	
-	GIE = true;
-	
-	LED_GREEN = false;
-	
-}
-
-#endif
-
-
-#if 1
-
-static void send_it(const uint8_t *bit_arr){
-	
-	uint8_t hlooper = 0;
-	
-	
-	TMR0_ON = false;
-	TMR0 = 0;
-	
-	// GIE = false;
-	
-	TMR0_IF = false;
-	TMR0_ON = true;
-
-	for(hlooper = 0; hlooper < 10; hlooper++)
-	{
-		set_bb_uart(*bit_arr);
-		bit_arr++;
-		
-		TMR0_IF = false;
-		while(TMR0_IF == false);
-		// {
-			// CLRWDT();
-		// }
-		
-
-	}
-	
-	
-  TMR0_ON = false;
-  TMR0_IF = false;
-	
-	// GIE = true;
-
-}
-
-
-#else
-	
 static void send_it(uint8_t *bit_arr){
 	
 	uint8_t hlooper = 0;
 	
 	
-	TMR2_ON = false;
-	TMR2 = 0;
-	TMR2_IF = false;
+	BB_TMR_ON = false;
+	BB_TMR = 0;
+	
 	GIE = false;
-	set_bb_uart(false);
 	
-	TMR2_ON = true;
-	while(TMR2_IF == false);
-	// {
-		// CLRWDT();
-	// }
-	
-	for(hlooper = 0; hlooper < 8; hlooper++)
+	BB_TMR_IF = false;
+	BB_TMR_ON = true;
+
+#if 0
+
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+
+
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+
+
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+
+
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+  
+  
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+
+
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+  
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+
+
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+  
+  
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+
+
+  BB_UART = *bit_arr;
+    
+  bit_arr++;
+  
+  BB_TMR_IF = false;
+  
+  while(BB_TMR_IF == false);
+
+#else
+
+	for(hlooper = 0; hlooper < 10; hlooper++)
 	{
-		set_bb_uart(*bit_arr);
-	
+    
+    BB_UART = *bit_arr;
+    
 		bit_arr++;
-		TMR2_IF = false;
-		while(TMR2_IF == false);
+		
+		BB_TMR_IF = false;
+    
+		while(BB_TMR_IF == false);
 		// {
 			// CLRWDT();
 		// }
 		
 
 	}
+  
+#endif	
 	
-	set_bb_uart(true);
-	TMR2_IF = false;
-	while(TMR2_IF == false);
-	// {
-		// CLRWDT();
-	// }
-	
+  BB_TMR_ON = false;
+  BB_TMR_IF = false;
 	GIE = true;
-	TMR2_ON = false;;
 
 }
 
-#endif
-
-
-static void set_bb_uart(uint8_t b_val){
-	
-	if(b_val == true)
-	{
-		TX_LUZ = false;
-	}
-	else
-	{
-		TX_LUZ = true;
-	}
-
-	
-}
 
 
 

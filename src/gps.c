@@ -161,14 +161,16 @@ static const char *sentences[] = {
 const uint8_t c_GPRMC[] = "$GPRMC";
 const uint8_t c_GNRMC[] = "$GNRMC";
 const uint8_t c_GPGSA[] = "$GPGSA";
-
+const uint8_t c_GNGSA[] = "$GNGSA";
+const uint8_t c_EERES[] = "$EESLf"; // Reset MCU
 
 const uint8_t *const sentences[] = {
   
   c_GPRMC,
   c_GNRMC,
   c_GPGSA,
-  
+  c_GNGSA,
+  c_EERES
 };
 
 #endif
@@ -281,8 +283,27 @@ void gps_init(void){
   }
   gps_module.average_lock_time = STARTUP_LOCK_TIME;
   
+  // on first run reconfigure gps -->
+  // uart_init_cfg(9600);
+  // UART_on();
+  // GPS_VALIM = TRUE;
+  // try_reconfigure_gps();
+  // GPS_VALIM = FALSE;
+  // UART_off;
+  
+  
 }
 
+void gps_first_run(void){
+  
+  UART_on();
+  GPS_VALIM = TRUE;
+  try_reconfigure_gps();
+  GPS_VALIM = FALSE;
+  UART_off;
+  
+  
+}
 
 uint32_t gps_rtc_get_second_cnt(void){
   
@@ -308,6 +329,13 @@ uint16_t gps_get_average_lock_time(void){
 
 void gps_startup_initializer(void){
 
+  uart_init_cfg(9600);
+  
+  UART_on();
+  
+  // RCSTAbits.SPEN = TRUE;
+	// RCSTAbits.CREN = TRUE;
+	// TXSTAbits.TXEN = TRUE;
   
   gps_module.baudslot = 0u;
   
@@ -399,11 +427,13 @@ void gps_stop(void){
 
   RX_IE = FALSE;
   
-  RCSTAbits.SPEN = FALSE;
-	
-	RCSTAbits.CREN = FALSE;
+  UART_off();
   
-	TXSTAbits.TXEN = FALSE;
+  // RCSTAbits.SPEN = FALSE;
+	
+	// RCSTAbits.CREN = FALSE;
+  
+	// TXSTAbits.TXEN = FALSE;
 
 #endif  
   
@@ -429,7 +459,7 @@ void gps_calculate_lock_time(void){
   gps_module.lock_times[gps_module.lock_indexer] = gps_module.lock_time_end - gps_module.lock_time_start;
   
   
-#if DEBUGGING_IS_ON
+#if DEBUGGING_BB_IS_ON
 
   DB_PRINT("\r\nLock_time: ");
   UART_int(gps_module.lock_times[gps_module.lock_indexer]);
@@ -456,7 +486,7 @@ void gps_calculate_lock_time(void){
 }
 
 
-#if DEBUGGING_IS_ON
+#if 1 // DEBUGGING_IS_ON
 // because during the development its interesting to see where it fails, in the release it makes no difference, it works or it does not
 // we are checking here to find out:
 // receiving all good? best!
@@ -480,26 +510,26 @@ gps_state_t gps_check_gps_error_status(void){
     
     gps_module.state = NOT_RECEIVING;
 #if GPS_PRINT       
-    DB_PRINT("\r\nGPS FATAL ERROR.\r\n");
+    DB_PRINT("\r\nGPS F ERR\r\n");
  #endif       
     try_reconfigure_gps();
-
+gps_reinit();
   }
   else if(UART_GPS_FLG.valid_header_received == FALSE)
   {
     
     gps_module.state = RECEIVING_NOT_CORRECTLY;
 #if GPS_PRINT           
-    DB_PRINT("\r\nGPS BAUD ERROR.\r\n");
+    DB_PRINT("\r\nGPS B ERR\r\n");
  #endif          
     try_reconfigure_gps();
-
+gps_reinit();
   }
   else
   {
     gps_module.state = GPS_SENTENCE_RECEIVING;
 #if GPS_PRINT           
-    DB_PRINT("\r\nGPS CFG O.K.\r\n");
+    DB_PRINT("\r\nGPS O.K.\r\n");
  #endif          
   }
   return gps_module.state;
@@ -594,9 +624,67 @@ static void try_reconfigure_gps(void){
   
   gps_reinit();
   
- 
+  
   
 }
+
+#elif 1
+
+// this works perfectly !!
+static void try_reconfigure_gps(void){
+  
+  // this one increases whenever we are having looper 
+  // over all gps settings in the array and there was no good sentece...
+  static uint8_t maximum_reconfigure_cnt = 0;
+  
+  maximum_reconfigure_cnt++;
+  
+  // so speed first up for matching the GPS...
+  uart_init_cfg(B115200);
+  
+  //give a delay to stabilize the baud rate generator...lets start with a 100ms...
+  __delay_ms(100);
+  
+  // now reduce the GPS to 9600Baud
+  UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");
+  
+    //give a delay to 
+  __delay_ms(100);
+  
+  // swoff --> reboot
+  GPS_VALIM = FALSE;
+  
+      //give a delay to 
+  __delay_ms(1000);
+  
+  // swoff --> reboot
+  GPS_VALIM = TRUE;
+  
+  // so slow down again to 9600matching the GPS...
+  uart_init_cfg(B9600);
+  
+      //give a delay to 
+  __delay_ms(100);
+  
+  // now send the reduction of sentences from the GPS
+  send_recfg_gps_sentences();
+  
+
+  
+  // and now reduce the UART to 9600 BAud
+  // uart_init_cfg(B9600);
+ 
+  __delay_ms(100);
+  // and try again --> we call taht from the calling function now...
+  // gps_reinit();
+  
+  DB_PRINT("\r\ncfg_sent\r\nb");
+  
+  
+}
+
+
+
 
 #else
 
@@ -613,6 +701,9 @@ static void try_reconfigure_gps(void){
   // so speed first up for matching the GPS...
   uart_init_cfg(B115200);
   
+  //give a delay to stabilize the baud rate generator...lets start with a 100ms...
+  __delay_ms(100);
+  
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
   
@@ -622,8 +713,12 @@ static void try_reconfigure_gps(void){
   // and now reduce the UART to 9600 BAud
   uart_init_cfg(B9600);
  
+  __delay_ms(100);
   // and try again 
   gps_reinit();
+  
+  DB_PRINT("\r\ncfg_sent\r\nb");
+  
   
 }
 
@@ -683,7 +778,11 @@ static  uint8_t gps_out_sentence_chck[] = {
     sentence_buffer.gps_buffer[9] = gps_out_sentence[hlooper];
     sentence_buffer.gps_buffer[14] = gps_out_sentence_chck[hlooper];
     
+    
+    DB_PRINT(&sentence_buffer.gps_buffer[0]);
     UART_GPS_SEND(&sentence_buffer.gps_buffer[0]);
+    
+    __delay_ms(100);
     
   }
   
@@ -886,7 +985,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   if((UART_GPS_FLG.rtc_test_first_run == FALSE) && 
      (UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
 #else
-    if((UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
+  if((UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
 #endif
   {
     
@@ -903,6 +1002,8 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     // gd_states_set_next_state(E_TRANSMISSION_STATE);
     handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
     
+    UART_GPS_FLG.gsa_position_is_good = FALSE;
+    UART_GPS_FLG.rmc_time_is_good = FALSE;
     // TODO:
     // rtc_sync_rtc_to_gps_time(get_pointer_to_rmc());
     // and then we should allready switch it off and save the sentence becasue we are all done...
@@ -911,6 +1012,8 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 
   
 }
+
+
 
 void stop_gps_lock_time_cnt(void){
   
@@ -975,7 +1078,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
         
         
       }
-#if DEBUGGING_IS_ON      
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON      
       else
       {
         if(gps_module.sentence_id > 3)
@@ -985,7 +1088,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
           
         }
 
-        DB_PRINT("Cerr\r\n");
+        
         
         // the chcksum failed!!! we therefore just reset afterwards everything but do not save the received data...
       }
@@ -1142,8 +1245,6 @@ static void reset_uart_handler_flags(void){
 
 
 
-#if 1
-
 // takes a pointer to the first character, the length of the sentence inclusive checksum delimiter and checksum
 // returns true if check is good or false if it does not sum up
 uint8_t GPS_checksum_checker(uint8_t *d_pnt, uint8_t d_length){
@@ -1202,178 +1303,6 @@ uint8_t GPS_checksum_checker(uint8_t *d_pnt, uint8_t d_length){
 
 }
 
-#elif DEBUGGING_IS_ON
-// takes a pointer to the first character, the length of the sentence inclusive checksum delimiter and checksum
-// returns true if check is good or false if it does not sum up
-uint8_t GPS_checksum_checker(uint8_t *d_pnt, uint8_t d_length){
-	
-#define KLEIN_GROSS_SCHREIBUNG	0xDF
-	
-#define SEND_GPS_UART_DB_DATA	0	
-uint8_t hlooper = 0;
-uint8_t chcksum = 0x00;
-uint8_t received_chcksum = 0;
-uint8_t temp_char = 0;
-
-
-#if SEND_GPS_UART_DB_DATA
-	UART_CRLF;
-	UWT("***********************************************");
-	UART_CRLF;
-	UWT("Checksum Function Start:");
-	
-	UWT("Data_length: ");
-	UART_int(d_length);
-	UWC(*d_pnt);
-#endif	
-
-	d_pnt++;
-	for(hlooper = 1; hlooper < (d_length - 3); hlooper++){
-		// UWC(*d_pnt);
-		chcksum = chcksum ^ *d_pnt;
-		d_pnt++;	
-	}
-	d_pnt++;
-	
-	// that converts to the same output independent of mayuscula or not
-	if(*d_pnt > 70){
-		temp_char = (*d_pnt & KLEIN_GROSS_SCHREIBUNG)  - 0x30;
-	}else{
-		temp_char = *d_pnt  - 0x30;
-	}
-	// temp_char = (*d_pnt & KLEIN_GROSS_SCHREIBUNG)  - 0x30;
-	// temp_char = *d_pnt  - 0x30;
-	
-	if(temp_char > 9){
-		temp_char = temp_char - 7;	
-	}
-#if SEND_GPS_UART_DB_DATA	
-	UWT("received high nibble: ");
-	UWC(*d_pnt);
-	UART_CRLF;
-	UART_int(temp_char);
-#endif	
-	
-	received_chcksum = (uint8_t)(temp_char << 4);
-  
-	d_pnt++;
-	// temp_char = (*d_pnt & KLEIN_GROSS_SCHREIBUNG) - 0x30;
-	
-	if(*d_pnt > 70){
-		temp_char = (*d_pnt & KLEIN_GROSS_SCHREIBUNG)  - 0x30;
-	}else{
-		temp_char = *d_pnt  - 0x30;
-	}
-	
-	
-	// temp_char = *d_pnt  - 0x30;	
-	if(temp_char > 9){
-		temp_char = temp_char - 7;	
-	}
-	
-#if SEND_GPS_UART_DB_DATA	
-	UWT("received low nibble: ");
-	UWC(*d_pnt);
-	UART_CRLF;
-	UART_int(temp_char);
-#endif	
-	
-	
-	received_chcksum = received_chcksum + temp_char;
-
-#if	SEND_GPS_UART_DB_DATA	// SEND_GPS_UART_DB_DATA	
-	UWT("Calculated chcksum: ");
-	UART_int(chcksum);
-	UWT("Received chcksum: ");
-	UART_int(received_chcksum);	
-#endif	
-
-	if(received_chcksum == chcksum){
-		return true;
-	}else{
-		return false;
-	}
-	
-
-}
-
-
-#else
-  
-// takes a pointer to the first character, the length of the sentence inclusive checksum delimiter and checksum
-// returns true if check is good or false if it does not sum up
-uint8_t GPS_checksum_checker(uint8_t *d_pnt, uint8_t d_length){
-	
-#define KLEIN_GROSS_SCHREIBUNG	0xDF
-	
-
-  uint8_t hlooper = 0;
-  uint8_t chcksum = 0x00;
-  uint8_t received_chcksum = 0;
-  uint8_t temp_char = 0;
-
-
-	d_pnt++;
-  
-	for(hlooper = 1; hlooper < (d_length - 3); hlooper++)
-  {
-		
-		chcksum = chcksum ^ *d_pnt;
-		d_pnt++;
-    
-	}
-  
-	d_pnt++;
-	
-	// that converts to the same output independent of mayuscula or not
-	if(*d_pnt > 70)
-  {
-		temp_char = (*d_pnt & KLEIN_GROSS_SCHREIBUNG)  - 0x30;
-	}
-  else
-  {
-		temp_char = *d_pnt  - 0x30;
-	}
-
-	if(temp_char > 9)
-  {
-		temp_char = temp_char - 7;	
-	}
-
-	received_chcksum = (uint8_t)(temp_char << 4);
-  
-	d_pnt++;
-
-	if(*d_pnt > 70)
-  {
-		temp_char = (*d_pnt & KLEIN_GROSS_SCHREIBUNG)  - 0x30;
-	}
-  else
-  {
-		temp_char = *d_pnt  - 0x30;
-	}
-	
-	if(temp_char > 9)
-  {
-		temp_char = temp_char - 7;	
-	}
-
-	received_chcksum = received_chcksum + temp_char;
-
-	if(received_chcksum == chcksum)
-  {
-		return true;
-	}
-  else
-  {
-		return false;
-	}
-	
-
-}
-
-#endif
-
 
 
 
@@ -1429,13 +1358,17 @@ static void sentence_handler(uint8_t sentence_id){
     case 0:
     case 1:
       process_rmc_sentence();
+      // DB_PRINT("\r\n rmc\r\n");
     break;
     
     case 2:   
     case 3:
       process_gsa_sentence();
+      // DB_PRINT("\r\n gsa\r\n");
     break;
-    
+    case 4:
+      RESET();
+    break;
     default:
       assert(false);
     break;

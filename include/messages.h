@@ -52,6 +52,7 @@ typedef enum message_type{
   
   e_Activation,             // msg_activation --> activation and receiving something usable
   e_send_position,          // msg_position   --> position got locked            // PreparaMensajePosicion
+  e_resend_position,        // msg_position   --> position not found resend last one            // PreparaMensajePosicion  
   e_No_gps,                 // msg_no_gps     --> not receiving nothing            // PreparaMensajeNoHayGps
   e_No_position_no_time,    // msg_no_position_no_time --> only on startup! because of that there is always the "activation" after allready working for a while    //PreparaMensajeNoHayPosNiHora
   e_No_gps_reception,       // msg_no_gps_reception       // PreparaMensajeFueraDeCobertura

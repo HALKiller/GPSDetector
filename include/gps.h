@@ -88,6 +88,8 @@ typedef enum fromto_cpy_type{
 
 void gps_init(void);
 
+void gps_first_run(void);
+
 uint32_t gps_rtc_get_second_cnt(void);
 
 uint16_t gps_get_average_lock_time(void);
