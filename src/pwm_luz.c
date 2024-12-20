@@ -31,6 +31,46 @@
 
 
 
+
+//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define PWM_LUZ_PWM_VALUE_EEPROM_ADDRESS 0x44u
+
+#define  BIT_SLOT_DOUBLE_PERIOD 0u
+#define  BIT_SLOT_ALWAYS_TRANSMIT 1u
+#define  BIT_SLOT_TX_150BPS 4u
+#define  BIT_SLOT_LUZ_ENABLED 5u
+
+
+#if DEBUGGING_IS_ON||0
+#define MEASURE_ILUMINATION_TIME_CNT_BASE (5u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+#else
+#define MEASURE_ILUMINATION_TIME_CNT_BASE (45u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+#endif
+
+
+
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -46,24 +86,13 @@ struct udt_m{
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
- 
+const uint8_t shifts_8bit[8] = {
+	
+	(1U << 0), (1U << 1), (1U << 2), (1U << 3), 
+	(1U << 4), (1U << 5), (1U << 6), (1U << 7), 
 
-
-//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
-
-#define PWM_LUZ_PWM_VALUE_EEPROM_ADDRESS 0x44u
-
-#define  BIT_SLOT_DOUBLE_PERIOD 0
-#define  BIT_SLOT_ALWAYS_TRANSMIT 1
-#define  BIT_SLOT_TX_150BPS 4
-#define  BIT_SLOT_LUZ_ENABLED 5
-
-
-#if DEBUGGING_IS_ON
-#define MEASURE_ILUMINATION_TIME_CNT_BASE (15u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
-#else
-#define MEASURE_ILUMINATION_TIME_CNT_BASE (45u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
-#endif
+	
+}; 
 
 
 
@@ -136,6 +165,10 @@ void init_detector_config(void){
   
   uint8_t gd_number = 0u;
  
+ 
+  gd_flags.reg = 0u;
+  
+  
   for ( i = 0; i < 3u; i++ )
   {
     gd_number = gd_number * 10u + ( LeerEeprom ( 0x3Eu + (uint8_t)i ) & 0xFu );
@@ -156,14 +189,14 @@ void init_detector_config(void){
   
   gd.vbat_high = gd.vbat_low + VBAT_DELTA;
   // gd.vbat_high = (((uint32_t)gd.vbat_low + VBAT_DELTA) * 1008u - 435u) / 131u; 
-  
+  #if 0
   DB_PRINT("Vbat_l: ");
   UART_int(gd.vbat_low);
   UART_CRLF;
   DB_PRINT("Vbat_h: ");
   UART_int(gd.vbat_high);
   UART_CRLF;
-  
+  #endif
   for ( i = 0; i < 4; i++ )
   {
     FTW0[i] = LeerEeprom ( 0x22u + (uint8_t)i );
@@ -185,22 +218,75 @@ void init_detector_config(void){
   
   ee_retval = LeerEeprom ( 0x46u );
  
-  // gd.vbat_low = LeerEeprom(0x48u);
- 
+
+#if 1
 
 
+  if((ee_retval & 0x01) == false)
+  {
+    
+    DOUBLE_PERIOD = true;
+    
+  }
 
-  DOUBLE_PERIOD  = !(ee_retval & shifts[BIT_SLOT_DOUBLE_PERIOD]);
-
-  LUZ_ENABLED = !(ee_retval & shifts[BIT_SLOT_LUZ_ENABLED]);
+  if((ee_retval & 0x02) != false)
+  {
+    
+    ALWAYS_TRANSMIT = true;
+    
+  }
   
-  TX_150BPS = (ee_retval & shifts[BIT_SLOT_TX_150BPS]);
-#if DB_67||1
-  // ALWAYS_TRANSMIT = TRUE;
-  TX_150BPS = TRUE;
+  if((ee_retval & 0x10) != false)
+  {
+    
+    TX_150BPS = true;
+    
+  }
+  
+  if((ee_retval & 0x20) == false)
+  {
+    
+    LUZ_ENABLED = true;
+    
+  }
+  
+#elif 1
+  
+  DOUBLE_PERIOD  = !(ee_retval & 0x01);
+  
+  ALWAYS_TRANSMIT = (ee_retval & 0x02);
+  
+  TX_150BPS = (ee_retval & 0x10);      
+  
+  LUZ_ENABLED = !(ee_retval & 0x20);   
+  
+
+#elif 1
+
+  DOUBLE_PERIOD  = !(ee_retval & 0x01); // shifts_8bit[BIT_SLOT_DOUBLE_PERIOD]);
+  
+  ALWAYS_TRANSMIT = (ee_retval & 0x02); // shifts_8bit[BIT_SLOT_ALWAYS_TRANSMIT]);
+  
+  TX_150BPS = (ee_retval & 0x10); // shifts_8bit[BIT_SLOT_TX_150BPS]);
+  
+  LUZ_ENABLED = !(ee_retval & 0x20);  // shifts_8bit[BIT_SLOT_LUZ_ENABLED]);
+  
+ 
+  
+  
+  
 #else
-  ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
-#endif 
+    
+  DOUBLE_PERIOD  = !(ee_retval & shifts_8bit[BIT_SLOT_DOUBLE_PERIOD]);
+
+  LUZ_ENABLED = !(ee_retval & shifts_8bit[BIT_SLOT_LUZ_ENABLED]);
+  
+  TX_150BPS = (ee_retval & shifts_8bit[BIT_SLOT_TX_150BPS]);
+  
+  ALWAYS_TRANSMIT = (ee_retval & shifts_8bit[BIT_SLOT_ALWAYS_TRANSMIT]);
+  
+#endif  
+
   if(ALWAYS_TRANSMIT == true)
   {
     handlers_generic_set_handler_FLG(e_always_transmit_handler);
@@ -209,7 +295,7 @@ void init_detector_config(void){
  
   
 
-#if DEBUGGING_IS_ON||1
+#if DEBUGGING_IS_ON||0
 
   DB_PRINT("CFG: ");
   
@@ -217,19 +303,19 @@ void init_detector_config(void){
   
   DB_PRINT("\r\n");
   
-  // DOUBLE_PERIOD  = !(ee_retval & shifts[BIT_SLOT_DOUBLE_PERIOD]);
+  DB_PRINT("DOUBLE_PERIOD: ");  //   = !(ee_retval & shifts_8bit[BIT_SLOT_DOUBLE_PERIOD]);
   
   db_printing_bits(DOUBLE_PERIOD);
 
-  // LUZ_ENABLED = !(ee_retval & shifts[BIT_SLOT_LUZ_ENABLED]);
+  DB_PRINT("LUZ_ENABLED: "); // LUZ_ENABLED = !(ee_retval & shifts_8bit[BIT_SLOT_LUZ_ENABLED]);
   
   db_printing_bits(LUZ_ENABLED);
   
-  // TX_150BPS = (ee_retval & shifts[BIT_SLOT_TX_150BPS]);
+  DB_PRINT("TX_150BPS: "); // TX_150BPS = (ee_retval & shifts_8bit[BIT_SLOT_TX_150BPS]);
   
   db_printing_bits(TX_150BPS);
   
-  // ALWAYS_TRANSMIT = (ee_retval & shifts[BIT_SLOT_ALWAYS_TRANSMIT]);
+  DB_PRINT("ALWAYS_TRANSMIT: "); // ALWAYS_TRANSMIT = (ee_retval & shifts_8bit[BIT_SLOT_ALWAYS_TRANSMIT]);
 
   db_printing_bits(ALWAYS_TRANSMIT);
 
@@ -462,7 +548,7 @@ void pwm_luz_time_update(void){
         PWM_IS_ON = TRUE;
       }
     }
-#if DEBUGGING_IS_ON&&0 
+#if DEBUGGING_BB_IS_ON&&0
     DB_PRINT("\r\nl_c: ");
     UART_int(pwm_luz.pwm_onoff_time_cnt);
 #endif    
@@ -510,8 +596,8 @@ static void measure_ilumination(void){
   // TODO:
   // measure the adc from the sensor and compare to thresholde
   // if there is a change --> run the change setter for on or for off
-#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0   
-  DB_PRINT("\r\nIlum: ");
+#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0 //   DEBUGGING_BB_IS_ON  // 
+  DB_PRINT("\r\nIlu: ");
 #endif  
   
   TMR0_IE = FALSE;
@@ -538,10 +624,14 @@ static void measure_ilumination(void){
   temp_flg = ( t_val > LUZ_ADC_DARK_THRESHOLD );
 #endif
 
-#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0
+#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0// DEBUGGING_BB_IS_ON  // 
   UART_int(t_val);
   DB_PRINT("\r\n");
+  
+  
 #endif  
+
+
 
   if(LUZ_HANDLER_ON != temp_flg)
   {
@@ -556,7 +646,11 @@ static void measure_ilumination(void){
 #if PWM_LUZ_DEBUG
       LED_SIMUL_OFF;
 #endif        
-  
+      DB_PRINT("\r\nLUZ_h_OFF\r\n");
+    }
+    else
+    {
+      DB_PRINT("\r\nLUZ_h_ON\r\n");
     }
   }
 }

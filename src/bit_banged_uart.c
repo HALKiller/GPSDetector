@@ -218,98 +218,6 @@ static void send_it(uint8_t *bit_arr){
 	BB_TMR_IF = false;
 	BB_TMR_ON = true;
 
-#if 0
-
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-
-
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-
-
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-
-
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-  
-  
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-
-
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-  
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-
-
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-  
-  
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-
-
-  BB_UART = *bit_arr;
-    
-  bit_arr++;
-  
-  BB_TMR_IF = false;
-  
-  while(BB_TMR_IF == false);
-
-#else
-
 	for(hlooper = 0; hlooper < 10; hlooper++)
 	{
     
@@ -320,15 +228,9 @@ static void send_it(uint8_t *bit_arr){
 		BB_TMR_IF = false;
     
 		while(BB_TMR_IF == false);
-		// {
-			// CLRWDT();
-		// }
-		
 
 	}
   
-#endif	
-	
   BB_TMR_ON = false;
   BB_TMR_IF = false;
 	GIE = true;

@@ -25,12 +25,14 @@
 
 //  * * * * * * * * * * * * *  D E B U G G I N G   r e l a t e d     * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  D E B U G G I N G   r e l a t e d     * * * * * * * * * * * * *  //
+#define COMPILE_FOR_RELEASE 0
 
+#if COMPILE_FOR_RELEASE
 
 
 #define DEBUGGING_IS_ON 0
-#define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
-#define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no aserts
+#define DEBUGGING_BB_IS_ON 0  // Bit Banged UART
+#define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
 #define COMPILE_WITH_RX_LUZ 1
 #define COMPILE_WITH_PWM_LUZ 1
 
@@ -39,15 +41,52 @@
 
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
-#define USE_PWM_LED 0
+#define USE_PWM_LED 1
 
 //********************
 // so that the tilt sensor is not 
 // activating/deactivating the detector but is always on
-#define TILT_IS_ALWAYS_ON 1
+#define TILT_IS_ALWAYS_ON 0
 
-
+#define READBACK_DDS 0
 #define DB_LUZ 0
+
+
+#else // COMPILE_FOR_RELEASE
+
+
+#define DEBUGGING_IS_ON 0
+#define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
+#define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
+#define COMPILE_WITH_RX_LUZ 1
+#define COMPILE_WITH_PWM_LUZ 1
+
+#define DO_TRANSMIT_RF 0  // when reset(0) we do not transmit over radio
+#define DB_67 0
+
+//************************
+// when set the LED really iluminates, otherwise we skpip one instruction
+#define USE_PWM_LED 1
+
+//********************
+// so that the tilt sensor is not 
+// activating/deactivating the detector but is always on
+#define TILT_IS_ALWAYS_ON 0
+
+#define READBACK_DDS 1
+#define DB_LUZ 0
+
+#endif  // COMPILE_FOR_RELEASE
+
+
+#if PCB_VERSION==67
+#define USE_SPI_TILT 0
+#else
+#define USE_SPI_TILT 0
+#endif
+
+
+
 
 //****************************
 // when set we use a calculation to get thevalues for the registers
@@ -87,7 +126,7 @@
 //  * * * * * * * * * * * * *  B S P related    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  B S P related    * * * * * * * * * * * * *  //
 
-#define PCB_VERSION 68  // 
+#define PCB_VERSION 67  // 
 
 #if PCB_VERSION == 68
 #define INVERTED_LDR_SENSOR 1 
@@ -115,6 +154,8 @@ wat
 #define NOT_COMPILED_FOR_BOOTLOADING 0
 
 
+
+#if 0
 // thiswould give a colour reflecting the state of the batterie and not just red or green
 #define IMPLEMENT_BATLED 0
 
@@ -127,14 +168,13 @@ wat
 
 #define REDUCE_CONSUMPTION  0
 
-// works with inverted logic that statement --> that is when set we swoff the display 
-// that one is only getting used for products on the feria or over my lab table
-#define DISPLAY_IS_NOT_ALWAYS_ON 1
+#endif
 
 
 
 
-#define ADC_BAT_DB_IS_ON 0  // To read out the ADC from the bat measurement
+
+
 
 
 

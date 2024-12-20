@@ -74,18 +74,9 @@ struct MonthDay months[] = {
 #if 1
 
 const char gMensajeActivandose  [] = "ACTIVANDOSE ";
-// const char gMensajeRadiogonio   [] = "RADIOGONIO ";
-// const char gMensajeNoHay        [] = "NO HAY ";
-// const char gMensajeBuscando     [] = "BUSCANDO ";
+
 const char msg_gps_error        [] = "FALLO MODULO GPS >-< ERROR ";
 
-// const char gMensajeNoCobertura  [] = "FUERA DE COBERTURA ";
-// const char gMensajeRevisar      [] = "REVISE ANTENA ";
-// const char gMensajeApagado      [] = "APAGADO DURANTE XX MINUTOS";
-// const char gMensajeBateriaBaja  [] = "BATERIA BAJA ";
-// const char gMensajeLucesActivas [] = "LUCES ACTIVADAS ";
-// const char gMensajePos          [] = "POS ";
-// const char gMensajeGps          [] = "GPS ";
 const char gMensajeGuion        [] = ">-< ";
 const char gMensajeHora         [] = "HORA ";
 
@@ -93,11 +84,13 @@ const char gMensajeHora         [] = "HORA ";
 const char gMensajeVersion_H      [] = "V>";
 const char gMensajeVersion_T      [] = "< ";
 #else
+  
 #if PIC_16F1936
 const char gMensajeVersion      [] = "V>0267< ";
 #else
 const char gMensajeVersion      [] = "V>xx67< ";
 #endif
+
 #endif
 
 #else
@@ -394,7 +387,8 @@ static void msg_position(uint8_t resend)
   sentence_buffer.gps_buffer[41] =  ':';
 
   sentence_buffer.gps_buffer[61] =  'H';
-  
+
+#if 0  
   if(resend == true)
   {
     sentence_buffer.gps_buffer[61] = 'J';
@@ -405,6 +399,7 @@ static void msg_position(uint8_t resend)
     sentence_buffer.gps_buffer[61] = sentence_buffer.gps_buffer[61] + 1u;
   }
 
+#endif
 // TODO: 
 // optimize that in the way that the enum value is straight out the char we need
 // --> optimizing the usage of RAM and ROM
@@ -455,12 +450,12 @@ static void msg_position(uint8_t resend)
 #if 1
 
 static void msg_no_gps(void){
-// PreparaMensajeNoHayGps(void)
+
 
   insert_msg_header();
   
   strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_error);
-  // strcpy((char*)sentence_buffer.gps_buffer + 30, gMensajeGps);
+
   
 #if USE_NEW_VERSION_ID
 
@@ -468,13 +463,13 @@ static void msg_no_gps(void){
   insert_version((char*)(sentence_buffer.gps_buffer + 53));
   strcpy ( (char*)(sentence_buffer.gps_buffer + 57), gMensajeVersion_T );
   
-  
-  
+ 
 #else  
-  strcpy((char*)sentence_buffer.gps_buffer + 34, gMensajeVersion);
-#endif
   
-  // strcpy((char*)sentence_buffer.gps_buffer + 42, gMensajeRadiogonio);
+  strcpy((char*)sentence_buffer.gps_buffer + 34, gMensajeVersion);
+  
+#endif
+
   
 }
 

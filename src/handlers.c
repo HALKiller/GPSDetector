@@ -526,7 +526,7 @@ static void rtc_alarm_handler(void){
         
         // copy old position and create set it up for transmission...
         copy_position_from_to(RECOVERPOSITION);
-        set_message_for_tx(e_send_position);
+        set_message_for_tx(e_resend_position);
       }
       else
       {
@@ -535,6 +535,7 @@ static void rtc_alarm_handler(void){
       }
       
       gd.no_position_cnt++;
+      
 #if GPS_OFF_BEFORE_TX
       
       gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
@@ -547,7 +548,7 @@ static void rtc_alarm_handler(void){
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
 #endif      
 
-      DB_PRINT("No position found\r\n");
+      DB_PRINT("No pos.\r\n");
 
 
     break;
@@ -695,8 +696,8 @@ static void f_gps_on(void){
   }
   else
   {
-    // TODO: setup a starting rtc time --> overwork it if it works..
-    gd.seconds_until_next_tx = gd.time_between_tx;
+   
+    gd.seconds_until_next_tx = 600u;  //gd.time_between_tx;
     gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
   }
@@ -851,8 +852,10 @@ static void f_prepare_msg(void){
     // TODO: that might be different if we did not get a valid lock on the position the last time!
     // calculate the sleep before search time depending on alöl the possible things and then set it up
   }
+  
   ertc_convert_to_real_time(eRTC_get_second_cnt());
   ertc_convert_to_str();
+  
   // and on return we should look if we can go to sleep or if we are going to search position
   DB_PRINT("\r\nTx_done\r\n");
 
@@ -945,6 +948,101 @@ static void f_gd_on(void){
 }
 
 
+
+
+#if USE_SPI_TILT
+
+static void f_gd_off(void){
+  
+  // when we enter here we do NOT need to take care of the oscillator timing related switch over
+  // because the WDT clock is so unreliable that we are not further bothered...
+  // --> that is going to be taken care of by the watch dog timer and sleep instruction...
+
+  if(FAST_CLOCK == false)
+  {
+    
+    init_clock();
+    configure_tmr4();
+    
+  }
+
+  DB_PRINT("GD OFF\r\n");
+
+#if DEBUGGING_IS_ON
+  
+  while(TXSTAbits.TRMT == FALSE)
+  {
+    // waiting loop for finisheg the transmission
+  }
+  
+#elif DEBUGGING_BB_IS_ON
+
+  init_TMR_bitbang_uart(NORMAL_CLOCK); 
+  
+#endif  
+  
+  gps_stop();
+  
+  PERIPHERIC_IE = FALSE;
+	GLOBAL_IE = FALSE;
+  TMR4_IE = FALSE;
+  TMR4_ON = FALSE;
+  
+// TODO: this needs to get overworked  
+  LATC &= 0b11011011;
+  LATB &= 0b00100011;
+  LATA |= 0b01000000;
+  LATA &= 0b11101000;
+  
+
+  
+  // and now set all the super low power things so that there is almost no consumption...
+  // and jsut checking the Input pin for activation
+  
+  WDTCONbits.WDTPS = WDT_TIMEOUT_256ms_timeout;
+  
+  WDTCONbits.SWDTEN = 0x01u;  // wdton = true
+  
+
+
+
+  SLEEP();
+
+  // and now we need to check on the tilt sensor
+
+  
+  init_wdt();
+  
+
+  
+  
+  
+#if DEBUGGING_IS_ON
+// becasue in debugging we are sending ,sg and for that we will need speed in the clock
+  if(FAST_CLOCK == FALSE)
+  {
+    init_clock();
+    configure_tmr4();
+    
+// #elif DEBUGGING_BB_IS_ON
+
+  // init_TMR_bitbang_uart(NORMAL_CLOCK);      
+    // __delay_ms(5);
+    // DB_PRINT("DETECTOR IS ON\r\n"); 
+  }
+#endif
+
+  // TODO: 
+  // wait for clck to stailize before tx_DP_PRINT info...
+  
+  gd_states_switch_to_next_state(E_STARTUP_STATE);
+  
+  DB_PRINT("SUP\r\n");
+
+}
+
+#else
+  
 
 static void f_gd_off(void){
   
@@ -1041,10 +1139,9 @@ static void f_gd_off(void){
 
 }
 
+#endif
 
 static void f_always_transmit(void){
-  
-  
   
   while(1)
   {
@@ -1074,7 +1171,7 @@ static void fn_clock_switching(void){
     uart_init_cfg(B9600_low_clk);
     
 #elif DEBUGGING_BB_IS_ON
-
+    DB_PRINT("\r\nCLCK_L\r\n");
     init_TMR_bitbang_uart(SLOW_CLOCK);  
     
 #endif       
@@ -1092,6 +1189,7 @@ static void fn_clock_switching(void){
     uart_init_cfg(DEBUG_BAUDRATE);
 #elif DEBUGGING_BB_IS_ON
     init_TMR_bitbang_uart(NORMAL_CLOCK);  
+    DB_PRINT("\r\nCLCK_H\r\n");
 #endif    
 
   }

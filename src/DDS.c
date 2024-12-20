@@ -95,6 +95,7 @@ void Transmite(bool TransmiteRadiogonio){
 
   uint8_t sync_time = get_sync_time();
 
+  UART_CRLF;
   DB_PRINT(sentence_buffer.gps_buffer); 
   UART_CRLF;
   
@@ -151,76 +152,69 @@ void Transmite(bool TransmiteRadiogonio){
 void AD9954Configura(void){
   
  
-  // DB_PRINT("A:\r\n");
   
   // Cuidado con las variables const.
   // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
   AD9954PulsoUpdate();
   
   select_bank(0u);
-  // AD9954SelectorBanco0();
-  
+
   AD9954PulsoIoSync();
+  
   AD9954EscribeRegistro((uint8_t *)CFR1Info, 4, (uint8_t *)CFR1);
   
-  // DB_PRINT("B:\r\n");
-  
   AD9954PulsoUpdate();
   
-  
   AD9954PulsoIoSync();
+  
   AD9954EscribeRegistro((uint8_t *)CFR2Info, 3, (uint8_t *)CFR2);
   
-  // DB_PRINT("C:\r\n");
-  
   AD9954PulsoUpdate();
   AD9954PulsoIoSync();
+  
   AD9954EscribeRegistro((uint8_t *)RSCW0Info, 5, (uint8_t *)RSCW0);
- 
-  // DB_PRINT("D:\r\n");
   
   AD9954PulsoUpdate();
   select_bank(1u);
-  // AD9954SelectorBanco1();
   
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)RSCW1Info, 5, (uint8_t *)RSCW1);
-  // DB_PRINT("E:\r\n");
+  
   AD9954PulsoUpdate();
   select_bank(2u);
-  // AD9954SelectorBanco2();
+  
   
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)RSCW2Info, 5, (uint8_t *)RSCW2);
-  // DB_PRINT("F:\r\n");
+  
   AD9954PulsoUpdate();
   select_bank(3u);
-  // AD9954SelectorBanco3();
+  
   
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)RSCW3Info, 5, (uint8_t *)RSCW3);
-  // DB_PRINT("G:\r\n");
+  
   AD9954PulsoUpdate();
   select_bank(0);
-  // AD9954SelectorBanco0();
+  
   
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW0);
   AD9954PulsoUpdate();
   select_bank(1);
-  // AD9954SelectorBanco1();
+  
   
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW1);
   AD9954PulsoUpdate();
   select_bank(2u);
-  // AD9954SelectorBanco2();
+  
   
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW2);
   AD9954PulsoUpdate();
   select_bank(3u);
-  // AD9954SelectorBanco3();
+  
   
   AD9954PulsoIoSync();
   AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW3);
@@ -346,7 +340,7 @@ static void SpiTransmite(uint8_t Dato)
     SCLK_AD9954 = 0;
     
     SDIO_AD9954 = (Dato >> (hlooper - 1)) & 0x01;;  // Dato & shifts[7 - hlooper];
-    // SDIO_AD9954 = Dato & shifts[7 - hlooper];
+    
   
     TMR2ON = 1;
     while ( TMR2ON );
@@ -374,7 +368,24 @@ static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint16_t NumDatos,
   }
 }
 
+#if READBACK_DDS
 
+static void dds_read_register(uint8_t *DireccionRegistro, uint16_t NumDatos, uint8_t *DatosAEnviar){
+  
+  
+  SpiTransmite(DireccionRegistro[0]);
+  
+  for (uint16_t i = 0; i < NumDatos; i++)
+  {
+    SpiReceive(DatosAEnviar[i]);
+  }
+  
+  
+}
+
+
+
+#endif
 
 
 // This is used D. 02062021

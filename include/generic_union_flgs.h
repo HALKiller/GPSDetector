@@ -3,26 +3,8 @@
 
 #include <stdint.h>
 
-typedef union udt_generic_8bit_union{	
-	
-  uint8_t reg;
-	
-	struct{
-    
-		unsigned b0: 1;
-		unsigned b1: 1;
-		unsigned b2: 1;
-		unsigned b3: 1;
-		unsigned b4: 1;
-		unsigned b5: 1;
-		unsigned b6: 1;
-		unsigned b7: 1;
 
-	};
-}union8_t;
-
-extern union8_t gFLAGS;
-extern union8_t gd_flags;
+#if 1
 
 // TODO: --> reset on startup the correct ones
 #define SWITCH_CLOCK          gFLAGS.b0
@@ -43,6 +25,58 @@ extern union8_t gd_flags;
 #define ALWAYS_TRANSMIT     gd_flags.b4
 #define PWM_IS_ON           gd_flags.b5 // when the TMR0_IE gers set 
 #define BAT_IS_LOW_FLG      gd_flags.b6 // when the bat is under the threshhold
+
+#else
+ 
+// that does not compile...
+#define SWITCH_CLOCK          gFLAGS.b0
+#define FAST_CLOCK            gFLAGS.b1
+#define TIMEOUT_FLG           gFLAGS.b3 
+#define RTC_TIME_IS_GOOD      gFLAGS.b4
+#define PWM_IS_ON             gflags.b5 // when the TMR0_IE gers set 
+#define RTC_ALARM_ON          gFLAGS.b6
+#define DEBUG_FLG_PRINT_TIME  gFLAGS.b7
+
+
+
+#define DOUBLE_PERIOD       gd_flags.b0
+#define ALWAYS_TRANSMIT     gd_flags.b1
+#define LUZ_HANDLER_ON      gd_flags.b2 // that is getting set when the sensor measures it is dark
+#define COPY_POS_IS_VALID   gd_flags.b3
+#define TX_150BPS           gd_FLAGS.b4
+#define LUZ_ENABLED         gd_FLAGS.b5
+#define BAT_IS_LOW_FLG      gd_flags.b6 // when the bat is under the threshhold
+
+#endif
+
+
+
+typedef union udt_generic_8bit_union{	
+	
+  uint8_t reg;
+	
+	struct{
+    
+		unsigned b0: 1;
+		unsigned b1: 1;
+		unsigned b2: 1;
+		unsigned b3: 1;
+		unsigned b4: 1;
+		unsigned b5: 1;
+		unsigned b6: 1;
+		unsigned b7: 1;
+
+	};
+}union8_t;
+
+
+extern union8_t gFLAGS;
+extern union8_t gd_flags;
+
+
+
+
+
 
 typedef union udt_generic_16bit_union{	
 	

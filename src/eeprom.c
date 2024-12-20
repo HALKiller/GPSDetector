@@ -91,7 +91,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
   
   'D', 'C', 'T', 'C', /* Cabecera: DCTC  ¡                                    */
   '9', '9', '9', '8', /* Número de cliente, gIdentificadorCliente             */
-  '0', '0', '2',      /* Número de baliza,  gNumeroDeBaliza                   */
+  '0', '0', '3',      /* Número de baliza,  gNumeroDeBaliza                   */
   
   0x00, /* T_ERROR_GPS. No se usa                                             */
   0x0A, /* gTiempoDuracionTransmision: tiempo de transmisión  0A=10sg         */
@@ -102,7 +102,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
         /* número de segundos con luz nocturna encendida.                     */
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */
-  0x92, /* Tipo de configuración de la baliza   90=150bps   80=300bps         */
+  0x90, // 0x92, /* Tipo de configuración de la baliza   90=150bps   80=300bps         */
   0x06, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
   0xD7, /* Valor de batería para transmisión cada 2 ciclos  CF=10.8  D7=11.2  */
   0xFC, /* Segunda palabra de configuración de la baliza                      */

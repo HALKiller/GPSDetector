@@ -38,9 +38,7 @@
 
 #define REDUCE_MEM_USAGE 1
 
-// #define NOT_USE_TMR1_RESET_FUNCTION 0
 
-// #define FAST_PROGRAMMER 1
 
 union udt_flags{
 	uint8_t reg;
