@@ -98,13 +98,13 @@ typedef struct IO_ConfigType {
 
 static const IO_ConfigType IO_Config_Port[] = {
 	
-  //	PORT_PIN			       AN_DIGI		AN_CH		  TRISA		Init  PERIFERIC			
+  //	PORT_PIN			   AN_DIGI		AN_CH		  TRISA		Init  PERIFERIC			
 	{ IO_SYNC_AD9954 	  ,DIGITAL		,0			,OUTPUT		,LOW,		GPIO },	 //	RA_0  DONE
 	{ IO_SDIO_AD9954    ,DIGITAL		,1			,OUTPUT		,LOW,		GPIO },  //	RA_1  DONE
 	{ IO_SCLK_AD9954 		,DIGITAL		,2			,OUTPUT		,LOW,	  GPIO },  //	RA_2  DONE
-	{ IO_BATERIA 	      ,ANALOG		  ,3			,INPUT		,LOW,		GPIO },  //	RA_3  DONE
+	{ IO_LDR 	          ,ANALOG		  ,3			,INPUT		,LOW,		GPIO },  //	RA_3  DONE
 	{ IO_VDD_AD9954 	  ,DIGITAL		,NO_CH	,OUTPUT		,LOW,		GPIO },	 //	RA_4  DONE
-	{ IO_LDR 				    ,ANALOG		  ,4			,INPUT		,LOW,		GPIO },  //	RA_5  DONE
+	{ IO_BATERIA 				,ANALOG		  ,4			,INPUT		,LOW,		GPIO },  //	RA_5  DONE
 	{ IO_FREE_RA6 	    ,DIGITAL		,NO_CH	,OUTPUT		,LOW,	  GPIO },  //	RA_6  DONE
 	{ IO_DB_LED_1 		  ,DIGITAL		,NO_CH	,OUTPUT		,LOW,		GPIO },	 //	RA_7  DONE
 	

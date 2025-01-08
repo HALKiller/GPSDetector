@@ -189,14 +189,17 @@ void init_detector_config(void){
   
   gd.vbat_high = gd.vbat_low + VBAT_DELTA;
   // gd.vbat_high = (((uint32_t)gd.vbat_low + VBAT_DELTA) * 1008u - 435u) / 131u; 
-  #if 0
-  DB_PRINT("Vbat_l: ");
+#if DEBUGGING_BB_IS_ON
+
+  DB_PRINT("Vbat_L: ");
   UART_int(gd.vbat_low);
   UART_CRLF;
-  DB_PRINT("Vbat_h: ");
+  DB_PRINT("Vbat_H: ");
   UART_int(gd.vbat_high);
   UART_CRLF;
-  #endif
+  
+#endif
+  
   for ( i = 0; i < 4; i++ )
   {
     FTW0[i] = LeerEeprom ( 0x22u + (uint8_t)i );

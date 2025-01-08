@@ -209,7 +209,7 @@
 // --------   PORT C  ---------------
 #define FREE_RC0 			LATCbits.LATC0
 #define FREE_RC1 			LATCbits.LATC1
-#define RESET_AD9954  LATCbits.LATC2
+#define RESET_AD9954  LATCbits.LATC2  // that is basically unused so far...
 #define FREE_RC3		  LATCbits.LATC3
 #define FREE_RC4		  LATCbits.LATC4
 #define GPS_VALIM			LATCbits.LATC5

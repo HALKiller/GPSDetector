@@ -38,9 +38,9 @@ typedef enum{
   IO_SYNC_AD9954 			    ,
   IO_SDIO_AD9954 				  ,
   IO_SCLK_AD9954 		      ,
-  IO_BATERIA 	            ,
+  IO_LDR 	                ,
   IO_VDD_AD9954 	        ,
-  IO_LDR 				          ,
+  IO_BATERIA 				      ,
   IO_FREE_RA6 	          ,
   IO_DB_LED_1             ,           // IO_LUZ_ON_OFF-->LED outputs
 

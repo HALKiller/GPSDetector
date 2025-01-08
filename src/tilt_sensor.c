@@ -6,9 +6,7 @@
 // this is the api for the handling of the tilt sensor ->
 // the sensor needs thes input output  and periferics to make it work:
 // Comparator
-// * Vref comparador
-// * Vsignal tilt_sensor 
-// * activate tilt_sensor
+
 
 // timing characteristics:
 // we need to have a few different timing setups:
@@ -98,10 +96,11 @@
 // these defines are needed but that can be existing SPI lines from other peripherics
 #if 1
 
-#define BB_SPI_CLCK LATAbits.LATA2
-#define BB_SPI_SDO  LATAbits.LATA1
-#define BB_SPI_SDI  PORTCbits.RC0
-#define BB_SPI_CS   LATCbits.LATC1
+#define BB_SPI_CS   LATCbits.LATC0
+#define BB_SPI_CLCK LATCbits.LATC1
+#define BB_SPI_SDO  LATCbits.LATC3
+#define BB_SPI_SDI  PORTCbits.RC4
+
 
 #endif
 
@@ -202,7 +201,7 @@ void update_tilt_sensor_state(void){
 
 
 #if USE_SPI_TILT
-  uint8_t read_state = get_tilt_data();;
+  uint8_t read_state = get_tilt_data();
 #else
   uint8_t read_state = TILT_SENSOR;
 #endif
@@ -227,7 +226,7 @@ void update_tilt_sensor_state(void){
 void update_tilt_sensor_state(void){
 
 #if USE_SPI_TILT
-  uint8_t read_state = get_tilt_data();;
+  uint8_t read_state = get_tilt_data();
 #else
   uint8_t read_state = TILT_SENSOR;
 #endif
@@ -237,7 +236,8 @@ void update_tilt_sensor_state(void){
 	if(read_state == SENSOR_IS_TOP_MOUNTED)
 	{
 
-    if(tilt_sensor.detector_is_on != TS_ON_STATE)
+    if(tilt_sensor.detector_is_on != 
+    )
     {
       tilt_sensor.on_cnt++;
       tilt_sensor.off_cnt = (uint8_t)0u;

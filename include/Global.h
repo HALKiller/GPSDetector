@@ -27,6 +27,8 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   r e l a t e d     * * * * * * * * * * * * *  //
 #define COMPILE_FOR_RELEASE 0
 
+#define PCB_VERSION 68  // 
+
 #if COMPILE_FOR_RELEASE
 
 
@@ -41,7 +43,7 @@
 
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
-#define USE_PWM_LED 1
+#define USE_PWM_LED 0
 
 //********************
 // so that the tilt sensor is not 
@@ -71,12 +73,18 @@
 //********************
 // so that the tilt sensor is not 
 // activating/deactivating the detector but is always on
-#define TILT_IS_ALWAYS_ON 0
+#define TILT_IS_ALWAYS_ON 1
 
-#define READBACK_DDS 1
+#define READBACK_DDS 0
 #define DB_LUZ 0
 
 #endif  // COMPILE_FOR_RELEASE
+
+
+// when set we replace the seconds in the messages with an err code --> therefore 
+
+#define SEND_ERROR_CODES_IN_SECONDS_SLOT 1
+
 
 
 #if PCB_VERSION==67
@@ -126,7 +134,7 @@
 //  * * * * * * * * * * * * *  B S P related    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  B S P related    * * * * * * * * * * * * *  //
 
-#define PCB_VERSION 67  // 
+
 
 #if PCB_VERSION == 68
 #define INVERTED_LDR_SENSOR 1 

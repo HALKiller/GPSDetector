@@ -425,19 +425,36 @@ static void msg_position(uint8_t resend)
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 38, rmc_sentence.Longitude.Grados       , 3, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 42, rmc_sentence.Longitude.Minutos      , 2, false );
 
-#if 1  
+#if SEND_ERROR_CODES_IN_SECONDS_SLOT
+  
+  ertc_convert_to_real_time(eRTC_get_second_cnt());
+
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + 54, ertc.hours    , 2, false );
+  DecimalUint8ToA ( sentence_buffer.gps_buffer + 56, ertc.minutes  , 2, false );
+  
+  sentence_buffer.gps_buffer[58] = '0';
+  
+  if(resend == true)
+  {
+    sentence_buffer.gps_buffer[58] = '1';
+  }
+  
+  sentence_buffer.gps_buffer[59] = '0';
+  // TODO: Get bat level:
+  if(BAT_IS_LOW_FLG == true)
+  {
+    sentence_buffer.gps_buffer[59] = '5';
+  }
+  
+
+ 
+ #else
   
   ertc_convert_to_real_time(eRTC_get_second_cnt());
 
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 54, ertc.hours    , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 56, ertc.minutes  , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 58, ertc.seconds  , 2, false );
- 
- #else
-  
-  DecimalUint8ToA ( sentence_buffer.gps_buffer + 54, rmc_sentence.UtcOfPosition.Horas    , 2, false );
-  DecimalUint8ToA ( sentence_buffer.gps_buffer + 56, rmc_sentence.UtcOfPosition.Minutos  , 2, false );
-  DecimalUint8ToA ( sentence_buffer.gps_buffer + 58, rmc_sentence.UtcOfPosition.Segundos , 2, false );
 
 #endif
   

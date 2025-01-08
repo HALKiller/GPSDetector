@@ -300,20 +300,11 @@ static void init_IO_PORTS(void){
 	
 	LCDCONbits.LCDEN = 0;	// that should be false anyway after reset but well...
 
-
-	
-
 	LATA = 0x40;
 	LATB = 0x00;
 	LATC = 0x04;
 
-
-
-
   /* TODO Initialize User Ports/Peripherals/Project here */
-
-
-
 
   /* Iniciar configuración de puertos */
 //  TRISAbits.TRISA0 = 0; // A0 - Salida: Conectado a IOSYNC del AD9954
@@ -351,7 +342,67 @@ static void init_IO_PORTS(void){
   ANSELA = 0b00101000;
   ANSELB = 0x00;
 
+
+
+#elif USE_SPI_TILT
+
+
+
+	ANSELA = 0x28;  // 40u; // 0x03;	
+	ANSELB = 0x00;	
+
+#if PCB_VERSION == 67
+	LATA = 0x40;  // Becasu there is an inverted logic implemented...
 #else
+	LATA = 0x00;
+#endif
+
+	LATB = 0x00;
+	LATC = 0x04;
+
+	TRISA = 0x28; // 40u;  // 0x1F;
+	TRISB = 0x01; // 0x00;
+	TRISC = 0x80; // 0x80;
+
+	WPUB = 0b00000000;
+
+
+
+
+#elif 0
+
+
+
+
+	ANSELA = 0x28u; // 0x03;	
+	ANSELB = 0x00;	
+
+#if PCB_VERSION == 67
+	LATA = 0x40;  // Becasu there is an inverted logic implemented...
+#else
+	LATA = 0x00;
+#endif
+
+	LATB = 0x00;
+	LATC = 0x04;
+
+	TRISA = 0x28; // 40u;  // 0x1F;
+	TRISB = 0x01; // 0x00;
+	TRISC = 0x80; // 128u; // 0x80;
+
+	WPUB = 0x00;  // 0b00000000;
+
+
+
+
+
+
+#else
+
+
+
+
+
 
 	ANSELA = 40u; // 0x03;	
 	ANSELB = 0x00;	
@@ -364,9 +415,9 @@ static void init_IO_PORTS(void){
 	LATB = 0x00;
 	LATC = 0x04;
 
-	TRISA = 40u;  // 0x1F;
-	TRISB = 1u; // 0x00;
-	TRISC = 128u; // 0x80;
+	TRISA = 40u;  // 0x1F; 0x28; // 
+	TRISB = 1u; // 0x00;   0x01; //  
+	TRISC = 128u; // 0x80; 0x00; // 
 
 	WPUB = 0b00000000;
 
@@ -376,10 +427,8 @@ static void init_IO_PORTS(void){
 }
 
 
-// OBSOLETE
-
+// for checking the correct cfg io
 #if 0
-
 
 // from_here_1
   DB_PRINT("LAT: ");
@@ -392,7 +441,7 @@ static void init_IO_PORTS(void){
   UART_int(LATC);
   UART_CRLF;
   
-   DB_PRINT("TRIS: ");
+  DB_PRINT("TRIS: ");
   UART_int(TRISA);
   UART_CRLF;
   
@@ -409,11 +458,7 @@ static void init_IO_PORTS(void){
   
   UART_int(ANSELB);
   UART_CRLF;
-// to_here_1
 
-
-// from_here_2
-// to_here_2
 
 #endif
 

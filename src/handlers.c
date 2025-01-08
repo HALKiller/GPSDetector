@@ -988,29 +988,41 @@ static void f_gd_off(void){
   TMR4_IE = FALSE;
   TMR4_ON = FALSE;
   
-// TODO: this needs to get overworked  
+#if PCB_VERSION == 67
+  LATA = 0x40;
+  LATB = 0x00;
+  LATC = 0x00;
+#elif PCB_VERSION == 68
+// TODO: CS line needs to stay high!!
+  LATA = 0x00;
+  LATB = 0x00;
+  LATC = 0x00; 
+#else  
   LATC &= 0b11011011;
   LATB &= 0b00100011;
   LATA |= 0b01000000;
   LATA &= 0b11101000;
+#endif
   
 
   
   // and now set all the super low power things so that there is almost no consumption...
   // and jsut checking the Input pin for activation
   
-  WDTCONbits.WDTPS = WDT_TIMEOUT_256ms_timeout;
+  
+  // TODO: a direct call on wake up to the inclination sensor and afterwards test the state --> 
+  // if the state changed to activation we exit and start that 
+  
+  
+  WDTCONbits.WDTPS = WDT_TIMEOUT_512ms_timeout;
   
   WDTCONbits.SWDTEN = 0x01u;  // wdton = true
   
-
-
 
   SLEEP();
 
   // and now we need to check on the tilt sensor
 
-  
   init_wdt();
   
 
@@ -1079,11 +1091,21 @@ static void f_gd_off(void){
   TMR4_IE = FALSE;
   TMR4_ON = FALSE;
   
+  
+#if PCB_VERSION == 67
+  LATA = 0x40;
+  LATB = 0x00;
+  LATC = 0x00;
+#elif PCB_VERSION == 68
+  LATA = 0x00;
+  LATB = 0x00;
+  LATC = 0x00; 
+#else  
   LATC &= 0b11011011;
   LATB &= 0b00100011;
   LATA |= 0b01000000;
   LATA &= 0b11101000;
-  
+#endif
   // And we need to swoff all the periferic ISR IE
   OPTION_REGbits.INTEDG = TRUE;
   INTCONbits.INTE = TRUE;
