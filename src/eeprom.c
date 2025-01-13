@@ -82,16 +82,16 @@ __eeprom unsigned char gContenidoEeprom[] = {
 
     /* Frecuencia.  Normal = 26.666 USB; Radiogonio = 26.620 LSB */
   /* Frecuencias del sintetizador. */
-  0x0B, /* No se usa */ 0x15, 0x5D, 0x7D, 0xBF, /* FTW0 - Normal 0     */
-  0x0B, /* No se usa */ 0x15, 0x5D, 0x63, 0x88, /* FTW1 - Normal 1     */
-  0x0B, /* No se usa */ 0x15, 0x5D, 0x7D, 0xBF, /* FTW2 - Radiogonio 0 */
-  0x0B, /* No se usa */ 0x15, 0x5D, 0x63, 0x88, /* FTW3 - Radiogonio 1 */
+  0x0B, /* No se usa */ 0x15, 0x39, 0x2B, 0x7F, /* FTW0 - Normal 0     */
+  0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW1 - Normal 1     */
+  0x0B, /* No se usa */ 0x15, 0x39, 0x2B, 0x7F, /* FTW2 - Radiogonio 0 */
+  0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW3 - Radiogonio 1 */
   
   0xFF, /* No se usa */
   
   'D', 'C', 'T', 'C', /* Cabecera: DCTC  ¡                                    */
   '9', '9', '9', '8', /* Número de cliente, gIdentificadorCliente             */
-  '0', '0', '3',      /* Número de baliza,  gNumeroDeBaliza                   */
+  '0', '0', '5',      /* Número de baliza,  gNumeroDeBaliza                   */
   
   0x00, /* T_ERROR_GPS. No se usa                                             */
   0x0A, /* gTiempoDuracionTransmision: tiempo de transmisión  0A=10sg         */
@@ -103,7 +103,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */
   0x90, // 0x92, /* Tipo de configuración de la baliza   90=150bps   80=300bps         */
-  0x06, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
+  0x0C, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
   0xD7, /* Valor de batería para transmisión cada 2 ciclos  CF=10.8  D7=11.2  */
   0xFC, /* Segunda palabra de configuración de la baliza                      */
   0x02, /* Número de satélites a la vista antes de apagar el GPS (no usado)   */

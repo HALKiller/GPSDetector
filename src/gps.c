@@ -1331,6 +1331,7 @@ static void sentence_handler(uint8_t sentence_id){
       UART_GPS_FLG.rmc_time_is_good = FALSE;
     break;
     case 6:
+    
       SWITCH_CLOCK = TRUE;
       
     break;

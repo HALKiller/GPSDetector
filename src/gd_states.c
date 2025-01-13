@@ -94,7 +94,7 @@ static gpsd_state_t detector_state;
   };
 
 #elif 1
-// const char *app_txt[] = {
+
   const char * const app_txt[] = {
     
     "E0",
@@ -199,7 +199,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.last_state = detector_state.actual_state;
   
-#if DEBUGGING_IS_ON
+#if DEBUGGING_BB_IS_ON
   DB_PRINT("\r\nLS: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
   UART_CRLF;
@@ -210,7 +210,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.actual_state = next_state;
   
-#if DEBUGGING_IS_ON
+#if DEBUGGING_BB_IS_ON
   DB_PRINT("NS: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
   UART_CRLF;

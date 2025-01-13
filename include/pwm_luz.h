@@ -40,9 +40,11 @@
 
 struct udt_detector{
   
+  uint32_t next_time_tx;
   uint16_t time_between_tx;
   uint16_t seconds_until_next_tx;
   uint16_t rtc_alarm;
+  
   uint8_t number;
   uint8_t max_detectores;
   uint8_t transmission_duration;

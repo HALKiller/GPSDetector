@@ -23,6 +23,8 @@
 
 #include "pwm_luz.h"
 
+#include "eeprom.h"
+
 #include <string.h>
 
 
@@ -33,14 +35,23 @@
 static uint8_t msg_header[] = "<<\r\n";
 static uint8_t msg_tail[] = "X\r\n";
 
+static uint8_t FTW_TX[5];
+
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
+
+
+#define SDIO_TRIS TRISAbits.TRISA1
+#define PIN_INPUT 1u
+#define PIN_OUTPUT 0u
 
 #define AD9954_TRANSMITE_CARACTER_ASCII(X) \
 AD9954TransmiteByte((uint8_t)(gTablaAsciiABaudot[ (int)X ]))
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
+
+#if USE_OLD_CFG_SETTER
 
 const uint8_t CFR1[]      = { 0x80, 0x00, 0x00, 0x40 };
 const uint8_t CFR1Info[]  = { 0x00 };
@@ -56,6 +67,52 @@ const uint8_t RSCW3[]     = { 0x00, 0x00, 0x03, 0x0C, 0x00 };
 const uint8_t RSCW3Info[] = { 0x0A };
 const uint8_t FTWInfo[]   = { 0x0B };
 
+#else
+
+
+const uint8_t CFR1Info[]  = { 0x00, 0x80, 0x00, 0x00, 0x40 };
+
+const uint8_t CFR2Info[]  = { 0x01, 0x00, 0x08, 0x24 };
+
+const uint8_t RSCW0Info[] = { 0x07, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+const uint8_t RSCW1Info[] = { 0x08, 0x00, 0x00, 0x01, 0x04, 0x00 };
+
+const uint8_t RSCW2Info[] = { 0x09, 0x00, 0x00, 0x02, 0x08, 0x00 };
+
+const uint8_t RSCW3Info[] = { 0x0A, 0x00, 0x00, 0x03, 0x0C, 0x00 };
+
+const uint8_t FTWInfo[]   = { 0x0B };
+
+
+const uint8_t c_base_address[4] = { 0x22u, 0x27u, 0x2Cu, 0x31u };
+
+
+const uint8_t *reg_pnt[] = {
+  
+  &RSCW0Info[0],
+  &RSCW1Info[0],
+  &RSCW2Info[0],
+  &RSCW3Info[0],
+  
+};
+
+
+#endif
+
+
+const uint8_t shifts_8bit[8] = {
+	
+	(1U << 0), (1U << 1), (1U << 2), (1U << 3), 
+	(1U << 4), (1U << 5), (1U << 6), (1U << 7), 
+
+	
+}; 
+
+
+
+
+
 uint16_t gTimerBitNormal;
 uint16_t gTimerBitFinal;
 
@@ -68,11 +125,22 @@ static void AD9954Enciende(void);
 static void AD9954Apaga(void);
 static void SpiTransmite(uint8_t Dato);
 static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos);
+#if USE_OLD_CFG_SETTER
 static void AD9954EscribeRegistro( uint8_t *DireccionRegistro, uint16_t NumDatos, uint8_t *DatosAEnviar);
+#else
+  
+static void AD9954EscribeRegistro( uint8_t *DireccionRegistro, uint8_t NumDatos);
+static void get_next_frequ_from_EEPROM(uint8_t base_address_indexer);
+static uint8_t SpiReceive(void);
+
+#endif
 static void AD9954TransmiteByte(uint8_t ByteBaudot);
 static void AD9954PulsoUpdate(void);
 static void AD9954PulsoIoSync(void);
 static void select_bank(uint8_t bankbits);
+
+static void dds_read_all(void);
+static uint8_t dds_read_register(uint8_t *DireccionRegistro, uint8_t NumDatos);
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
@@ -108,6 +176,11 @@ void Transmite(bool TransmiteRadiogonio){
   AD9954Enciende();
   // DB_PRINT("A1\r\n");
   AD9954Configura();
+
+#if READBACK_DDS  
+  dds_read_all();
+#endif  
+  
   // DB_PRINT("A2\r\n");
   // Transmisión de sincronismo
   PS1_AD9954 = TransmiteRadiogonio;
@@ -144,6 +217,7 @@ void Transmite(bool TransmiteRadiogonio){
 
 
 
+#if USE_OLD_CFG_SETTER
 
 
 // POSRED: it would be possible to reduce the ROM footprint if we create a 
@@ -164,7 +238,6 @@ void AD9954Configura(void){
   AD9954EscribeRegistro((uint8_t *)CFR1Info, 4, (uint8_t *)CFR1);
   
   AD9954PulsoUpdate();
-  
   AD9954PulsoIoSync();
   
   AD9954EscribeRegistro((uint8_t *)CFR2Info, 3, (uint8_t *)CFR2);
@@ -223,7 +296,195 @@ void AD9954Configura(void){
 }
 
 
+#else
 
+// POSRED: it would be possible to reduce the ROM footprint if we create a 
+// typedef structure and loop over the setting
+// 
+
+
+static void get_next_frequ_from_EEPROM(uint8_t base_address_indexer){
+  
+  uint8_t base_address = c_base_address[base_address_indexer];
+  uint8_t hlooper = 0;
+  FTW_TX[0] = 0x0B;
+  
+  for ( hlooper = 0; hlooper < 4; hlooper++ )
+  {
+    
+    FTW_TX[hlooper + 1] = LeerEeprom ( base_address + hlooper );
+
+  }
+  
+  
+  
+}
+
+#if 1
+
+
+void AD9954Configura(void){
+  
+uint8_t hlooper = 0;
+  // Cuidado con las variables const.
+  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
+  AD9954PulsoUpdate();
+  
+  select_bank(0u);
+
+  AD9954PulsoIoSync();
+  
+  AD9954EscribeRegistro((uint8_t *)CFR1Info, 5);
+  
+  AD9954PulsoUpdate();
+  AD9954PulsoIoSync();
+  
+#if READBACK_DDS&&0
+  dds_read_register((uint8_t *)CFR1Info, 5);
+#endif  
+  
+  
+  AD9954EscribeRegistro((uint8_t *)CFR2Info, 4);
+  
+  AD9954PulsoUpdate();
+  AD9954PulsoIoSync();
+  
+
+  for(hlooper = 0; hlooper < 4; hlooper++)
+  {
+    
+    AD9954PulsoUpdate();
+    select_bank(hlooper);
+    AD9954PulsoIoSync();
+
+    AD9954EscribeRegistro(reg_pnt[hlooper], 6);
+
+  }
+  
+
+  
+  for(hlooper = 0; hlooper < 4; hlooper++)
+  {
+    
+    AD9954PulsoUpdate();
+    select_bank(hlooper);
+    AD9954PulsoIoSync();
+
+    get_next_frequ_from_EEPROM(hlooper);
+
+    AD9954EscribeRegistro(FTW_TX, 5);
+
+  }
+  
+
+  
+  AD9954PulsoIoSync();
+  
+}
+
+
+
+#else
+
+
+
+void AD9954Configura(void){
+  
+uint8_t hlooper = 0;
+  // Cuidado con las variables const.
+  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
+  AD9954PulsoUpdate();
+  
+  select_bank(0u);
+
+  AD9954PulsoIoSync();
+  
+  AD9954EscribeRegistro((uint8_t *)CFR1Info, 4);
+  
+  AD9954PulsoUpdate();
+  AD9954PulsoIoSync();
+  
+  AD9954EscribeRegistro((uint8_t *)CFR2Info, 3);
+  
+  AD9954PulsoUpdate();
+  AD9954PulsoIoSync();
+  
+  AD9954EscribeRegistro((uint8_t *)RSCW0Info, 5);
+  
+  AD9954PulsoUpdate();
+  select_bank(1u);
+  
+  AD9954PulsoIoSync();
+  AD9954EscribeRegistro((uint8_t *)RSCW1Info, 5);
+  
+  AD9954PulsoUpdate();
+  select_bank(2u);
+  
+  
+  AD9954PulsoIoSync();
+  AD9954EscribeRegistro((uint8_t *)RSCW2Info, 5);
+  
+  AD9954PulsoUpdate();
+  select_bank(3u);
+  
+  
+  AD9954PulsoIoSync();
+  AD9954EscribeRegistro((uint8_t *)RSCW3Info, 5);
+  
+  
+  for(hlooper = 0; hlooper < 4; hlooper++){
+    
+    AD9954PulsoUpdate();
+    select_bank(hlooper);
+    AD9954PulsoIoSync();
+
+    get_next_frequ_from_EEPROM(hlooper);
+
+    AD9954EscribeRegistro(FTW_TX, 4);
+
+  }
+  
+  
+#if 0  
+
+  AD9954PulsoUpdate();
+  select_bank(0u);
+  AD9954PulsoIoSync();
+  
+
+  
+  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW0);
+  
+  AD9954PulsoUpdate(); 
+  select_bank(1u);
+  
+  
+  AD9954PulsoIoSync();
+  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW1);
+  
+  AD9954PulsoUpdate();
+  select_bank(2u);
+  
+  
+  AD9954PulsoIoSync();
+  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW2);
+  
+  AD9954PulsoUpdate();
+  select_bank(3u);
+  
+  
+  AD9954PulsoIoSync();
+  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW3);
+  
+  #endif
+  
+  AD9954PulsoIoSync();
+  
+}
+
+#endif
+
+#endif
 
 
 #if 1
@@ -339,7 +600,7 @@ static void SpiTransmite(uint8_t Dato)
     
     SCLK_AD9954 = 0;
     
-    SDIO_AD9954 = (Dato >> (hlooper - 1)) & 0x01;;  // Dato & shifts[7 - hlooper];
+    SDIO_AD9954 = (Dato >> (hlooper - 1)) & 0x01;  // Dato & shifts[7 - hlooper];
     
   
     TMR2ON = 1;
@@ -358,6 +619,8 @@ static void SpiTransmite(uint8_t Dato)
 }
 
 
+#if USE_OLD_CFG_SETTER
+
 static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint16_t NumDatos, uint8_t *DatosAEnviar){
   
   SpiTransmite(DireccionRegistro[0]);
@@ -368,18 +631,171 @@ static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint16_t NumDatos,
   }
 }
 
-#if READBACK_DDS
+#else
 
-static void dds_read_register(uint8_t *DireccionRegistro, uint16_t NumDatos, uint8_t *DatosAEnviar){
+static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint8_t NumDatos){
   
   
-  SpiTransmite(DireccionRegistro[0]);
+  // TODO:
+  // if this should work we can streamline that from the calling funciton in future
+  // NumDatos++;
   
-  for (uint16_t i = 0; i < NumDatos; i++)
+  for (int8_t i = 0; i < NumDatos; i++)
   {
-    SpiReceive(DatosAEnviar[i]);
+    SpiTransmite(DireccionRegistro[i]);
+  }
+}
+
+
+
+
+static uint8_t SpiReceive(void){
+
+  uint8_t hlooper = 0;
+  uint8_t received = 0;
+  
+  TMR2 = 0;
+  TMR2IF = 0;
+  TMR2IE = 1;
+
+
+
+  for(hlooper = 8; hlooper > 0; hlooper--)
+  {
+    
+    SCLK_AD9954 = 0;
+    
+    // SDIO_AD9954 = (Dato >> (hlooper - 1)) & 0x01;;  // Dato & shifts[7 - hlooper];
+    
+  
+    TMR2ON = 1;
+    while ( TMR2ON );
+    SCLK_AD9954 = 1;  // shifted data out
+    TMR2ON = 1;
+    while ( TMR2ON );
+    if(SDIO_AD9954 == true)
+    { 
+  DB_PRINT("Set\r\n");
+      received |= (shifts_8bit[hlooper - 1]); 
+    }
+    
   }
   
+  SCLK_AD9954 = 0;
+  // SDIO_AD9954 = 0;
+  
+  return received;
+  
+}
+
+
+
+
+
+
+#endif
+
+#if READBACK_DDS
+
+static void dds_read_all(void){
+  
+  uint8_t hlooper = 0;
+
+  // AD9954PulsoUpdate();
+  
+  select_bank(0u);
+
+  AD9954PulsoIoSync();
+  
+  dds_read_register((uint8_t *)CFR1Info, 5);
+  
+  // AD9954PulsoUpdate();
+  AD9954PulsoIoSync();
+  
+  dds_read_register((uint8_t *)CFR2Info, 4);
+  
+  // AD9954PulsoUpdate();
+  AD9954PulsoIoSync();
+  
+
+  for(hlooper = 0; hlooper < 4; hlooper++)
+  {
+    
+    // AD9954PulsoUpdate();
+    select_bank(hlooper);
+    AD9954PulsoIoSync();
+
+    dds_read_register(reg_pnt[hlooper], 6);
+
+  }
+  
+
+  
+  for(hlooper = 0; hlooper < 4; hlooper++)
+  {
+    
+    // AD9954PulsoUpdate();
+    select_bank(hlooper);
+    AD9954PulsoIoSync();
+
+    get_next_frequ_from_EEPROM(hlooper);
+
+    dds_read_register(FTW_TX, 5);
+
+  }
+  
+
+  
+  AD9954PulsoIoSync();
+  
+  
+  
+  
+  
+}
+
+
+// the readback is in the way that the highest bit needs to get set....
+
+static uint8_t dds_read_register(uint8_t *DireccionRegistro, uint8_t NumDatos){
+  
+  // set highest bit of the address....
+  uint8_t rx_tx_byte = DireccionRegistro[0] | 0x80;
+  uint8_t ret_value = 1u;
+  
+  DB_PRINT("Reg_address: ");
+  UART_int(rx_tx_byte);
+  UART_CRLF;
+  
+  
+  SpiTransmite(rx_tx_byte);
+  
+  SDIO_TRIS = PIN_INPUT;
+  // now we need to change to receive information...
+  // therefore invert the TRIS register for the SDIO PIN
+  DB_PRINT("RB: ");
+  for (uint8_t i = 1; i < NumDatos; i++)
+  {
+    rx_tx_byte = SpiReceive();
+    
+#if DEBUGGING_BB_IS_ON
+     
+     UART_int(i);
+     DB_PRINT(" ");
+     UART_int(rx_tx_byte);
+     UART_CRLF;
+#endif
+    
+    // rx_tx_byte = SpiReceive(DatosAEnviar[i]);
+    if(rx_tx_byte != DireccionRegistro[i])
+    {
+      ret_value = false;
+    }
+  }
+  
+  SDIO_TRIS = PIN_OUTPUT;
+  
+  return ret_value;
   
 }
 
@@ -668,195 +1084,6 @@ static void AD9954PulsoIoSync(void){
 
 
 #if 0
-
-
-static void SpiTransmite(uint8_t Dato)
-{
-  // Se resetea el valor del timer 2
-  TMR2 = 0;
-  // Se ajustan los flags de interrupción y activación
-  TMR2IF = 0;
-  TMR2IE = 1;
-
-  SCLK_AD9954 = 0;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b7;
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b6;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b5;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b4;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b3;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b2;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b1;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = ((t_byte *) &Dato)->b0;
-  while ( TMR2ON );
-  
-  TMR2ON = 1;
-  SCLK_AD9954 = ~SCLK_AD9954;
-  while ( TMR2ON );
-  
-  SCLK_AD9954 = ~SCLK_AD9954;
-  SDIO_AD9954 = 0;
-}
-
-
-
-
-
-
-
-void AD9954SelectorBanco0(void)
-{
-  PS1_AD9954 = 0;
-  PS0_AD9954 = 0;
-}
-
-void AD9954SelectorBanco1(void) 
-{
-  PS1_AD9954 = 0;
-  PS0_AD9954 = 1;
-}
-
-void AD9954SelectorBanco2(void)
-{
-  PS1_AD9954 = 1;
-  PS0_AD9954 = 0;
-}
-
-void AD9954SelectorBanco3(void)
-{
-  PS1_AD9954 = 1;
-  PS0_AD9954 = 1;
-}
-
-
-
-void AD9954Configura(void){
-  
-  
-  
-  
-  // Cuidado con las variables const.
-  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
-  AD9954PulsoUpdate();
-
-  AD9954SelectorBanco0();
-  AD9954PulsoIoSync();
-  // DB_PRINT("B1\r\n");
-  AD9954EscribeRegistro((uint8_t *)CFR1Info, 4, (uint8_t *)CFR1);
-  // DB_PRINT("B2\r\n");
-  AD9954PulsoUpdate();
-  // DB_PRINT("B3\r\n");
-  AD9954PulsoIoSync();
-  // DB_PRINT("B4\r\n");
-  AD9954EscribeRegistro((uint8_t *)CFR2Info, 3, (uint8_t *)CFR2);
-  AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW0Info, 5, (uint8_t *)RSCW0);
-  AD9954PulsoUpdate();
-  AD9954SelectorBanco1();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW1Info, 5, (uint8_t *)RSCW1);
-  AD9954PulsoUpdate();
-  AD9954SelectorBanco2();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW2Info, 5, (uint8_t *)RSCW2);
-  AD9954PulsoUpdate();
-  AD9954SelectorBanco3();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW3Info, 5, (uint8_t *)RSCW3);
-  AD9954PulsoUpdate();
-  AD9954SelectorBanco0();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW0);
-  AD9954PulsoUpdate();
-  AD9954SelectorBanco1();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW1);
-  AD9954PulsoUpdate();
-  AD9954SelectorBanco2();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW2);
-  AD9954PulsoUpdate();
-  AD9954SelectorBanco3();
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW3);
-  AD9954PulsoIoSync();
-}
-
-
-
-
-
-#if 0
-// it seems to me that this is not getting used at all actually....
-void AD9954AjustaVelocidadDeTransmision(int Bps)
-{
-  switch(Bps)
-  {
-    case 300:
-      gTrueSi150FalseSi300 = false;
-      break;
-    case 150:
-      gTrueSi150FalseSi300 = true;
-      break;
-  }
-}
-
-#endif
 
 
 

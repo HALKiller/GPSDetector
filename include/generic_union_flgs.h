@@ -25,6 +25,7 @@
 #define ALWAYS_TRANSMIT     gd_flags.b4
 #define PWM_IS_ON           gd_flags.b5 // when the TMR0_IE gers set 
 #define BAT_IS_LOW_FLG      gd_flags.b6 // when the bat is under the threshhold
+#define BAT_IS_TOO_LOW      gd_flags.b7 // once we reach that we swoff off for one hour
 
 #else
  

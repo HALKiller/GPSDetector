@@ -116,8 +116,7 @@ static void send_it(uint8_t *bit_arr);
 
 
 
-// setting up for 104us --> 1 bit length time for 9600 Baud
-// by 16MHz clock
+
 void init_TMR_bitbang_uart(uint8_t clockspeed){
 	
   

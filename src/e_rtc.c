@@ -208,6 +208,21 @@ void eRTC_calculate_time_until_tx(void)
     
   }
 
+#if 1  
+
+  gd.next_time_tx = gd.seconds_until_next_tx + time_now;
+  
+  if(gd.next_time_tx > SECONDS_PER_DAY)
+  {
+    gd.next_time_tx = gd.next_time_tx - SECONDS_PER_DAY;
+  }
+  
+  ertc_convert_to_real_time(gd.next_time_tx);
+  DB_PRINT("N_tx: ");
+  ertc_convert_to_str();
+  
+  
+#endif
   
 #if DEBUGGING_IS_ON&&0
   DB_PRINT("Wait: ");

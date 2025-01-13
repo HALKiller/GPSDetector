@@ -37,23 +37,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #define PWM_LUZ_PWM_VALUE_EEPROM_ADDRESS 0x44u
 
 #define  BIT_SLOT_DOUBLE_PERIOD 0u
@@ -68,7 +51,7 @@
 #define MEASURE_ILUMINATION_TIME_CNT_BASE (45u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
 #endif
 
-
+#define BAT_IS_TOO_LOW_THRESHOLD 71
 
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
@@ -86,6 +69,8 @@ struct udt_m{
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
+
+#if 0
 const uint8_t shifts_8bit[8] = {
 	
 	(1U << 0), (1U << 1), (1U << 2), (1U << 3), 
@@ -94,6 +79,7 @@ const uint8_t shifts_8bit[8] = {
 	
 }; 
 
+#endif
 
 
 
@@ -115,11 +101,12 @@ uint8_t baterie_mV;
 
 // static uint8_t gVoltajeBateriaTrasTransmision = 0;
 
+#if USE_OLD_CFG_SETTER
 uint8_t FTW0[4];
 uint8_t FTW1[4];
 uint8_t FTW2[4];
 uint8_t FTW3[4];
-
+#endif
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
 static void measure_ilumination(void);
@@ -199,7 +186,8 @@ void init_detector_config(void){
   UART_CRLF;
   
 #endif
-  
+
+#if USE_OLD_CFG_SETTER  
   for ( i = 0; i < 4; i++ )
   {
     FTW0[i] = LeerEeprom ( 0x22u + (uint8_t)i );
@@ -207,7 +195,7 @@ void init_detector_config(void){
     FTW2[i] = LeerEeprom ( 0x2Cu + (uint8_t)i );
     FTW3[i] = LeerEeprom ( 0x31u + (uint8_t)i );
   }
-  
+#endif  
   
   pwm_luz.pwm_value = LeerEeprom ( 0x44u );
   
@@ -404,10 +392,15 @@ void LeerValorBateria(void){
   if((BAT_IS_LOW_FLG == true) && (adcvalue >= gd.vbat_high))
   {
     BAT_IS_LOW_FLG = FALSE;
+    BAT_IS_TOO_LOW = false;
   }
   else if((BAT_IS_LOW_FLG == false) && (adcvalue  <= gd.vbat_low))
   {
     BAT_IS_LOW_FLG = true;
+    if(adcvalue <= BAT_IS_TOO_LOW_THRESHOLD)
+    {
+      BAT_IS_TOO_LOW = true; 
+    }
   }
   
 }

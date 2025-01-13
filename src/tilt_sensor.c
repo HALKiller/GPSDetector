@@ -236,8 +236,7 @@ void update_tilt_sensor_state(void){
 	if(read_state == SENSOR_IS_TOP_MOUNTED)
 	{
 
-    if(tilt_sensor.detector_is_on != 
-    )
+    if(tilt_sensor.detector_is_on != TS_ON_STATE)
     {
       tilt_sensor.on_cnt++;
       tilt_sensor.off_cnt = (uint8_t)0u;

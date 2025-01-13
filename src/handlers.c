@@ -504,13 +504,20 @@ static void rtc_alarm_handler(void){
   switch(gd_states_get_state())
   {
     case E_SLEEP_BEFORE_SEARCH_STATE:
+#if DB_CLOCKSWITCH    
+DB_PRINT("\r\nCLCK_1\r\n");
+      SWITCH_CLOCK = true;
+#else
       handlers_generic_set_handler_FLG(e_switch_clock_handler);
+#endif
       gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
     break;
     case E_SEARCH_POSITION_STATE:
     
       // well, we did not find a position in time it seems --> we are transmitting now what??
       // retransmit last position and all the other thigns from here...
+      // when we get here the tx_moment is still GPS_OFF_TIME_SAFE_SYNC seconds away -->
+      // becasue of that we are adding here the next rtc_alarm because that has to be the correct time for tx
       // messages_before_transmission();
       // TODO: we still would need to switch off all the stuff we dont need...
 
@@ -553,7 +560,33 @@ static void rtc_alarm_handler(void){
 
     break;
     case E_SLEEP_BEFORE_TRANSMISSION_STATE:
+    // when we get here there can be two states be happening:
+    // the clock can be slow or fast
+    // if fast --> times up actually and we are going to transmission state
+    // if slow --> we set the clock switcher and the alarm gets set again for beeping in the 
+    // define Threshold time
+    
+#if DB_CLOCKSWITCH    
+      if(FAST_CLOCK == true)
+      {
+        gd_states_switch_to_next_state(E_TRANSMISSION_STATE); 
+      }
+      else
+      {
+        DB_PRINT("\r\nCLCK_2\r\n");
+        SWITCH_CLOCK = true;
+        gd.rtc_alarm = SLEEP_BEFORE_TX_SWAP_BACK_TIME;;
+        RTC_ALARM_ON = true;
+      }
+      
+#else
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
+#endif    
+    
+    
+    
+    
+      
     break;
     default:
       assert(false);
@@ -789,13 +822,33 @@ static void f_gps_has_position(void){
   {
     copy_position_from_to(SAVEPOSITION);
     
+#if DB_CLOCKSWITCH 
+   
+    if(gd.seconds_until_next_tx >= (2u * SLEEP_BEFORE_TX_SWAP_BACK_TIME))
+    {
+      gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
+      DB_PRINT("\r\nCLCK_3\r\n");
+      SWITCH_CLOCK = true;
+    }
+    else
+    {
+      gd.rtc_alarm = gd.seconds_until_next_tx;
+    }
+    
+    RTC_ALARM_ON = true;
+    set_message_for_tx(e_send_position);
+    gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+    
+#else
+
     gd.rtc_alarm = gd.seconds_until_next_tx;
     RTC_ALARM_ON = true;
     set_message_for_tx(e_send_position);
     gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
     
+#endif     
+
   }
-  
   
 }
 
@@ -852,13 +905,16 @@ static void f_prepare_msg(void){
     // TODO: that might be different if we did not get a valid lock on the position the last time!
     // calculate the sleep before search time depending on alöl the possible things and then set it up
   }
-  
+
+#if DEBUGGING_BB_IS_ON 
+
   ertc_convert_to_real_time(eRTC_get_second_cnt());
   ertc_convert_to_str();
   
   // and on return we should look if we can go to sleep or if we are going to search position
   DB_PRINT("\r\nTx_done\r\n");
 
+#endif
   
 }
 
@@ -1200,6 +1256,7 @@ static void fn_clock_switching(void){
     set_slow_clock();
     configure_tmr4();
     
+    
   }
   else
   {
@@ -1228,9 +1285,7 @@ static void fn_clock_switching(void){
 
 // the sleep before search state
 static void f_setup_sleep_before_search(void){
-  
 
-  
   uint16_t locker = gps_get_average_lock_time();
 
   locker = locker * (10u + GPS_LOCK_TIME_DECIMO_PERCENTAGER) / 10u;
@@ -1255,14 +1310,23 @@ static void f_setup_sleep_before_search(void){
     DB_PRINT("\r\nLow Bat\r\n");
   }
   
+  if(BAT_IS_TOO_LOW == true)
+  {
+    gd.seconds_until_next_tx = SECONDS_PER_HOUR - (2u * locker);
+  }
+  
   if(gd.seconds_until_next_tx > locker)
   {
     
     gd.rtc_alarm = gd.seconds_until_next_tx - locker; 
-  
-    gd_states_set_next_state(E_SEARCH_POSITION_STATE);
-  
+#if DB_CLOCKSWITCH    
+    DB_PRINT("\r\nCLCK_4\r\n");
+    SWITCH_CLOCK = true;
+#else  
     handlers_generic_set_handler_FLG(e_switch_clock_handler);
+#endif  
+    
+    gd_states_set_next_state(E_SEARCH_POSITION_STATE);
 
   }
   else
@@ -1270,7 +1334,9 @@ static void f_setup_sleep_before_search(void){
     gd.rtc_alarm = gd.seconds_until_next_tx;
     gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
   }
-  
+
+#if DEBUGGING_BB_IS_ON  
+
   DB_PRINT("S_2_tx: ");
   UART_int(gd.seconds_until_next_tx);
   UART_CRLF;
@@ -1281,7 +1347,7 @@ static void f_setup_sleep_before_search(void){
   UART_int(gd.rtc_alarm);
   UART_CRLF;
   
-  
+#endif  
   
   RTC_ALARM_ON = true;
   
@@ -1308,9 +1374,11 @@ static void f_setup_sleep_before_search(void){
   RTC_ALARM_ON = true;
   
   gd_states_set_next_state(E_SEARCH_POSITION_STATE);
-  
+#if DB_CLOCKSWITCH    
+  SWITCH_CLOCK = true;
+#else  
   handlers_generic_set_handler_FLG(e_switch_clock_handler);
-
+#endif
 }
 
 #endif

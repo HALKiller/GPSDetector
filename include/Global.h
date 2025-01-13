@@ -29,6 +29,12 @@
 
 #define PCB_VERSION 68  // 
 
+#define USE_OLD_CFG_SETTER 0
+
+// debugging an incoherence in the clock switching -->
+// that should get eliminated n the long run
+#define DB_CLOCKSWITCH 1
+
 #if COMPILE_FOR_RELEASE
 
 
@@ -374,7 +380,7 @@ error again --> that MIPS is not standard so far --> write it extra out
 // give that time before transmission
 #define GPS_OFF_BEFORE_TX 1
 #define GPS_OFF_TIME_SAFE_SYNC 3u // these are three seconds safe time
-
+#define SLEEP_BEFORE_TX_SWAP_BACK_TIME 3u
 
 // becaseu we want an hysteresis for the Vbat low signal we use a 500mV  
 // --> but the whole thing is basd on 1/100 therefore we delta = 5
