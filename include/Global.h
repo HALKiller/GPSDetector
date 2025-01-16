@@ -35,6 +35,12 @@
 // that should get eliminated n the long run
 #define DB_CLOCKSWITCH 1
 
+// testing setups to reduce the consumption when
+// sleep before  TX/Search mode
+#define DB_L_POWER 1
+
+
+
 #if COMPILE_FOR_RELEASE
 
 
@@ -49,7 +55,7 @@
 
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
-#define USE_PWM_LED 0
+#define USE_PWM_LED 1
 
 //********************
 // so that the tilt sensor is not 
@@ -66,7 +72,7 @@
 #define DEBUGGING_IS_ON 0
 #define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
-#define COMPILE_WITH_RX_LUZ 1
+#define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 1
 
 #define DO_TRANSMIT_RF 0  // when reset(0) we do not transmit over radio
@@ -92,12 +98,6 @@
 #define SEND_ERROR_CODES_IN_SECONDS_SLOT 1
 
 
-
-#if PCB_VERSION==67
-#define USE_SPI_TILT 0
-#else
-#define USE_SPI_TILT 0
-#endif
 
 
 
@@ -142,13 +142,16 @@
 
 
 
-#if PCB_VERSION == 68
-#define INVERTED_LDR_SENSOR 1 
-#elif PCB_VERSION == 67
+#if PCB_VERSION==68
+#define INVERTED_LDR_SENSOR 1
+#define USE_SPI_TILT 0
+#elif PCB_VERSION==67
 #define INVERTED_LDR_SENSOR 0
+#define USE_SPI_TILT 0
 #else
 wat?  
 #endif
+
 
 #define HW_GPS_DETECTOR 1
 
@@ -156,9 +159,6 @@ wat?
 #if HW_VERSION_V10+HW_VERSION_V20+GdL_V30+GdL_V20_1+HW_GPS_DETECTOR != 1
 wat
 #endif
-
-
-
 
 
 
@@ -209,7 +209,7 @@ extern const uint16_t shifts[16];
 //  * * * * * * * * * * * * *  D E B U G G I N G related    * * * * * * * * * * * * *  //
 #if DEBUGGING_IS_ON
 
-#define LANGUAGE_SPANISH 0
+
 
 #define DB_SWAP DB_LED=!DB_LED;
 
@@ -255,7 +255,7 @@ extern const uint16_t shifts[16];
 
 #endif
 
-#define LANGUAGE_SPANISH 1
+
 #define DB_SWAP
 
 

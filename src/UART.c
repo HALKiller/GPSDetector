@@ -294,6 +294,8 @@ void UART_on(void){
   
 	TXSTAbits.TXEN = TRUE;
   
+  
+  
 }
 
 void UART_off(void){
@@ -303,6 +305,8 @@ void UART_off(void){
 	RCSTAbits.CREN = FALSE;
   
 	TXSTAbits.TXEN = FALSE;
+  
+  
   
 }
 

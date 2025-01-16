@@ -32,8 +32,6 @@
 
 
 
-
-
 // --------- EDGE DETECTION BIT -----------
 #define IOC_IE	INTCONbits.IOCIE
 #define IOC_IF	INTCONbits.IOCIF
@@ -276,8 +274,28 @@
 
 
 
+#if COMPILE_FOR_RELEASE&&0
 
+#define STATUS_LED_RED_ON() STATUS_LED_RED=true;
+#define STATUS_LED_GREEN_ON() STATUS_LED_GREEN=true;
+#define STATUS_LED_RED_OFF() STATUS_LED_RED=false;
+#define STATUS_LED_GREEN_OFF() STATUS_LED_GREEN=false;
 
+#elif 1
+
+#define STATUS_LED_RED_ON()   
+#define STATUS_LED_GREEN_ON() 
+#define STATUS_LED_RED_OFF()  
+#define STATUS_LED_GREEN_OFF()
+
+#else
+  
+#define STATUS_LED_RED_ON() DB_PRINT("\r\nRED_ON\r\n");
+#define STATUS_LED_GREEN_ON() DB_PRINT("\r\nGREEN_ON\r\n");
+#define STATUS_LED_RED_OFF() DB_PRINT("\r\nRED_OFF\r\n");
+#define STATUS_LED_GREEN_OFF() DB_PRINT("\r\nRED_OFF\r\n");
+
+#endif
 
 
 

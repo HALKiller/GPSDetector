@@ -20,9 +20,11 @@
 
 #include "handlers.h"
 
+#include "io_port_sfr_names.h"
+
 #include "my_assert.h"
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
 #include "UART.h"
 #endif
 
@@ -34,14 +36,16 @@
  
 #define TMR1_2_SECOND_OF_CNT 30u  // (uint8_t)MIPS*4u	
 #define TMR1_4_SECOND_OF_CNT 60u  // (uint8_t)MIPS*8u	
+#define TMR1_10_SECOND_OF_CNT 150u  // (uint8_t)MIPS*8u	
 
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
 
-static const uint8_t timeout_setter[2] = {
+static const uint8_t timeout_setter[3] = {
   
   TMR1_2_SECOND_OF_CNT,
   TMR1_4_SECOND_OF_CNT,
+  TMR1_10_SECOND_OF_CNT,
   
 };
 
@@ -74,17 +78,23 @@ static void tmr1_timeout_handler(void);
 
 void timers_set_tmr1_id(tmr1_id_t t_id){
 
-#if DEBUGGING_IS_ON&&0
-  DB_PRINT("TMR1: ");
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
+  DB_PRINT("\r\nTMR1: ");
   UART_int(t_id);
   UART_CRLF;
 #endif  
 
+
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
+
   if(TMR1_ON == TRUE)
   {
-    DB_PRINT("ERR_tmr1");
+    DB_PRINT("\r\nERR_tmr1. activ t_id: ");
+    UART_int(t_id);
   }
-  
+
+#endif
+
   tmr1_id = t_id;
   timeout_cnt_setter = timeout_setter[tmr1_id];
   
@@ -279,6 +289,15 @@ static void tmr1_timeout_handler(void){
       handlers_generic_set_handler_FLG(e_gps_test_reception);
       
     break;
+    
+    case STATUS_LED_TIMEOUT:
+    
+      STATUS_LED_GREEN_OFF();
+      STATUS_LED_RED_OFF();
+      
+    break;
+    
+    
     
     default:
 #if DEBUGGING_IS_ON&&G_ENABLE_ASSERT

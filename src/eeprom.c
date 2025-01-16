@@ -91,7 +91,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
   
   'D', 'C', 'T', 'C', /* Cabecera: DCTC  ¡                                    */
   '9', '9', '9', '8', /* Número de cliente, gIdentificadorCliente             */
-  '0', '0', '5',      /* Número de baliza,  gNumeroDeBaliza                   */
+  '0', '0', '1',      /* Número de baliza,  gNumeroDeBaliza                   */
   
   0x00, /* T_ERROR_GPS. No se usa                                             */
   0x0A, /* gTiempoDuracionTransmision: tiempo de transmisión  0A=10sg         */

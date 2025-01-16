@@ -336,6 +336,34 @@ static void f_E_SLEEP_BEFORE_TRANSMISSION_STATE_handler(void){
   // TODO:
   // get into LP Mode and set flag indicating where to go from there
   handlers_generic_set_handler_FLG(e_ertc_handler_start);
+
+#if DB_L_POWER
+    
+  DB_PRINT("\r\nL_Power_1\r\n");
+    
+#if PCB_VERSION == 67
+  LATA = 0x40;
+  LATB = 0x00;
+  LATC = 0x00;
+#elif PCB_VERSION == 68
+// TODO: CS line needs to stay high!!
+  LATA = 0x00;
+#if DEBUGGING_BB_IS_ON  
+  LATB &= 0b01000000; // 100011;
+#else  
+  LATB = 0x00;
+#endif  
+  LATC = 0x00; 
+#else  
+  LATC &= 0b11011011;
+  LATB &= 0b00100011;
+  LATA |= 0b01000000;
+  LATA &= 0b11101000;
+#endif    
+
+#endif
+  
+  
 }
 
 

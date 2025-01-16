@@ -126,24 +126,20 @@ void init_all(void){
 	
 	init_IO_PORTS();
  
-   // hunting reset states...
-  // DB_LED1_SWAP;
- 
   configure_tmr4();
   
   tilt_sensor_init();
   
 	init_wdt();
 
-
-
-  // TODO:
-  //04122024 --> init the gps speed straight away --> perhaps that gives a beeter result...
-
-  
   gps_first_run();
+  
   startup();
-
+  
+#if 0
+// for testing consumptioon in LPM tilt sensor setup
+  SWITCH_CLOCK = true;
+#endif
 	
 }
 
@@ -361,12 +357,12 @@ static void init_IO_PORTS(void){
 	LATC = 0x04;
 
 	TRISA = 0x28; // 40u;  // 0x1F;
-	TRISB = 0x01; // 0x00;
-	TRISC = 0x80; // 0x80;
+  TRISB = 0x00; // 0x00;  // 	TRISB = 0x01; // 0x00; becasue that is now Valim_Tilt...
+	TRISC = 0x90; // 0x80;
 
 	WPUB = 0b00000000;
 
-
+  DB_PRINT("\r\nSPI_TILT_PREP\r\n");
 
 
 #elif 0
@@ -391,9 +387,6 @@ static void init_IO_PORTS(void){
 	TRISC = 0x80; // 128u; // 0x80;
 
 	WPUB = 0x00;  // 0b00000000;
-
-
-
 
 
 

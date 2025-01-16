@@ -38,9 +38,6 @@
 
 #define USE_FUNC_PNT_HANDLER 1
 
-#if !USE_DIRECT_CALL 
-static void f_tilt_sensor_to_check(void);
-#endif
 
 
 
@@ -94,9 +91,7 @@ static const HandlersHandlerType Handler_arr[] =
   { e_200ms_h,                          rtc_200ms_handler },  
   { e_gps_has_full_position_h,          f_gps_has_position },  
 	{ e_ring_buffer_handler,              process_next_char_from_input },
-#if !USE_DIRECT_CALL  
-	{ e_tilt_sensor_h,	                  f_tilt_sensor_to_check },	
-#endif	
+
   { e_gps_on_h,                         f_gps_on },
   { e_prepare_msg_h,                    f_prepare_msg },
   
@@ -196,8 +191,7 @@ void get_the_next_handler(void){
     {
       
       CLRWDT();
-      // DB_LED1_SWAP;
-      // LED_SIMUL = LED;
+  
     }
 
     temp_handler_FLGS = Handler_FLGS;
@@ -604,12 +598,7 @@ DB_PRINT("\r\nCLCK_1\r\n");
 #if 0
 
 
-static void rtc_200ms_handler(void){
 
-
-  handlers_generic_set_handler_FLG(e_tilt_sensor_h);
- 
-}
 
 #elif USE_FULL_SECONDS_FOR_RTC
 
@@ -618,6 +607,7 @@ static void rtc_200ms_handler(void){
 
 static void rtc_200ms_handler(void){
 
+  static uint8_t db_cnt = 0;
 
 #if COMPILE_WITH_PWM_LUZ
   if(LUZ_ENABLED == TRUE)
@@ -626,17 +616,17 @@ static void rtc_200ms_handler(void){
   }
 #endif
 
-
-#if USE_DIRECT_CALL  
-  
+#if 0
+  db_cnt++;
+  if(db_cnt == 5)
+  {
+    db_cnt = 0;
+    update_tilt_sensor_state();
+  }
+#else
   update_tilt_sensor_state();
-  
-#else  
-  
-// measure the setting time...
-  handlers_generic_set_handler_FLG(e_tilt_sensor_h);
-  
-#endif 
+#endif
+
  
 }
 
@@ -699,13 +689,7 @@ static void process_next_char_from_input(void){
 #if 1
 
 
-#if !USE_DIRECT_CALL 
-static void f_tilt_sensor_to_check(void){
-  
-  update_tilt_sensor_state();
 
-}
-#endif
 
 
 #if GPS_OFF_BEFORE_TX
@@ -788,13 +772,21 @@ static void f_gps_test_rx(void){
     if(gps_state == GPS_SENTENCE_RECEIVING)
     {
       set_message_for_tx(e_Activation);
-      // messages_before_transmission(e_Activation);
+      
+      STATUS_LED_GREEN_ON();
+      
     }
     else
     {
       set_message_for_tx(e_No_gps);
-      // messages_before_transmission(e_No_gps);
+      STATUS_LED_RED_ON();
+      
     }
+    
+    timers_set_tmr1_id(STATUS_LED_TIMEOUT);
+    reset_timeout_timer();
+    TMR1_IE = TRUE;
+    TMR1_ON = TRUE;
     
     // gd_states_set_next_state(E_SEARCH_POSITION_STATE);
     gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
@@ -902,6 +894,43 @@ static void f_prepare_msg(void){
   else
   {
     gd_states_switch_to_next_state(E_SLEEP_BEFORE_SEARCH_STATE);
+
+#if DB_L_POWER
+
+  DB_PRINT("\r\nL_Power_2\r\n");
+  
+#if 0
+// that is not working of course... 
+  PERIPHERIC_IE = FALSE;
+	GLOBAL_IE = FALSE;
+  TMR4_IE = FALSE;
+  TMR4_ON = FALSE;
+#endif
+  
+  // PERIPHERIC_IE = FALSE;  
+#if PCB_VERSION == 67
+  LATA = 0x40;
+  LATB = 0x00;
+  LATC = 0x00;
+#elif PCB_VERSION == 68
+// TODO: CS line needs to stay high!!
+  LATA = 0x00;
+#if DEBUGGING_BB_IS_ON  
+  LATB &= 0b01000000; // 100011;
+#else  
+  LATB = 0x00;
+#endif  
+  LATC = 0x00; 
+#else  
+  LATC &= 0b11011011;
+  LATB &= 0b00100011;
+  LATA |= 0b01000000;
+  LATA &= 0b11101000;
+#endif    
+  // while(1);
+#endif
+
+    
     // TODO: that might be different if we did not get a valid lock on the position the last time!
     // calculate the sleep before search time depending on alöl the possible things and then set it up
   }
@@ -992,7 +1021,7 @@ static void f_gd_on(void){
   
 #elif DEBUGGING_BB_IS_ON
 
-  init_TMR_bitbang_uart(NORMAL_CLOCK);  
+  // init_TMR_bitbang_uart(NORMAL_CLOCK);  
     
 #endif     
   
@@ -1007,6 +1036,7 @@ static void f_gd_on(void){
 
 
 #if USE_SPI_TILT
+ // looking how low the consumption would be with low clck...
 
 static void f_gd_off(void){
   
@@ -1014,15 +1044,12 @@ static void f_gd_off(void){
   // because the WDT clock is so unreliable that we are not further bothered...
   // --> that is going to be taken care of by the watch dog timer and sleep instruction...
 
-  if(FAST_CLOCK == false)
-  {
-    
-    init_clock();
-    configure_tmr4();
-    
-  }
-
   DB_PRINT("GD OFF\r\n");
+
+  if(FAST_CLOCK == true)
+  {
+    fn_clock_switching();
+  }
 
 #if DEBUGGING_IS_ON
   
@@ -1032,17 +1059,31 @@ static void f_gd_off(void){
   }
   
 #elif DEBUGGING_BB_IS_ON
-
-  init_TMR_bitbang_uart(NORMAL_CLOCK); 
-  
+  if(FAST_CLOCK == false)
+  {
+    // init_TMR_bitbang_uart(SLOW_CLOCK); 
+  }
+  else
+  {
+    // init_TMR_bitbang_uart(NORMAL_CLOCK); 
+  }
 #endif  
-  
+ 
+
+#if 1
+ 
   gps_stop();
   
   PERIPHERIC_IE = FALSE;
 	GLOBAL_IE = FALSE;
   TMR4_IE = FALSE;
   TMR4_ON = FALSE;
+  TMR2_ON = FALSE;
+  TMR6_ON = FALSE;
+  TMR1_ON = FALSE;
+  
+#endif
+
   
 #if PCB_VERSION == 67
   LATA = 0x40;
@@ -1069,45 +1110,38 @@ static void f_gd_off(void){
   // TODO: a direct call on wake up to the inclination sensor and afterwards test the state --> 
   // if the state changed to activation we exit and start that 
   
-  
-  WDTCONbits.WDTPS = WDT_TIMEOUT_512ms_timeout;
-  
-  WDTCONbits.SWDTEN = 0x01u;  // wdton = true
-  
+  while(update_tilt_sensor_state() == false)
+  {
+    
+    WDTCONbits.WDTPS =  WDT_TIMEOUT_001s_timeout;  // WDT_TIMEOUT_512ms_timeout; //
 
-  SLEEP();
+    WDTCONbits.SWDTEN = 0x01u;  // wdton = true
 
-  // and now we need to check on the tilt sensor
+    SLEEP();
+  
+  }
 
   init_wdt();
-  
 
-  
-  
-  
-#if DEBUGGING_IS_ON
-// becasue in debugging we are sending ,sg and for that we will need speed in the clock
+
+// startup state and for that we will need speed in the clock
+// but we do not need to consider the time keeping becaue we
+// are not having a valid rtc here
   if(FAST_CLOCK == FALSE)
   {
+    
     init_clock();
     configure_tmr4();
     
-// #elif DEBUGGING_BB_IS_ON
-
-  // init_TMR_bitbang_uart(NORMAL_CLOCK);      
-    // __delay_ms(5);
-    // DB_PRINT("DETECTOR IS ON\r\n"); 
   }
-#endif
-
-  // TODO: 
-  // wait for clck to stailize before tx_DP_PRINT info...
   
   gd_states_switch_to_next_state(E_STARTUP_STATE);
   
   DB_PRINT("SUP\r\n");
 
 }
+
+
 
 #else
   
@@ -1136,7 +1170,7 @@ static void f_gd_off(void){
   }  
 #elif DEBUGGING_BB_IS_ON
 
-  init_TMR_bitbang_uart(NORMAL_CLOCK); 
+  // init_TMR_bitbang_uart(NORMAL_CLOCK); 
   
 #endif  
   
@@ -1197,7 +1231,7 @@ static void f_gd_off(void){
     
 // #elif DEBUGGING_BB_IS_ON
 
-  // init_TMR_bitbang_uart(NORMAL_CLOCK);      
+  // // init_TMR_bitbang_uart(NORMAL_CLOCK);      
     // __delay_ms(5);
     // DB_PRINT("DETECTOR IS ON\r\n"); 
   }
@@ -1218,6 +1252,7 @@ static void f_gd_off(void){
 }
 
 #endif
+
 
 static void f_always_transmit(void){
   
@@ -1250,7 +1285,7 @@ static void fn_clock_switching(void){
     
 #elif DEBUGGING_BB_IS_ON
     DB_PRINT("\r\nCLCK_L\r\n");
-    init_TMR_bitbang_uart(SLOW_CLOCK);  
+    // init_TMR_bitbang_uart(SLOW_CLOCK);  
     
 #endif       
     set_slow_clock();
@@ -1267,7 +1302,7 @@ static void fn_clock_switching(void){
 #if DEBUGGING_IS_ON
     uart_init_cfg(DEBUG_BAUDRATE);
 #elif DEBUGGING_BB_IS_ON
-    init_TMR_bitbang_uart(NORMAL_CLOCK);  
+    // init_TMR_bitbang_uart(NORMAL_CLOCK);  
     DB_PRINT("\r\nCLCK_H\r\n");
 #endif    
 

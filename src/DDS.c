@@ -167,7 +167,7 @@ void Transmite(bool TransmiteRadiogonio){
   DB_PRINT(sentence_buffer.gps_buffer); 
   UART_CRLF;
   
-#if DB_67  
+#if DB_67&&0
   SET_START_STOP = true;
 #endif  
 
@@ -207,7 +207,7 @@ void Transmite(bool TransmiteRadiogonio){
   
   // APAGA_TRANSMISOR();
   // DB_PRINT("E\r\n");
-#if DB_67  
+#if DB_67&&0
   SET_START_STOP = false;
 #endif  
 
@@ -675,7 +675,7 @@ static uint8_t SpiReceive(void){
     while ( TMR2ON );
     if(SDIO_AD9954 == true)
     { 
-  DB_PRINT("Set\r\n");
+      DB_PRINT("Set\r\n");
       received |= (shifts_8bit[hlooper - 1]); 
     }
     

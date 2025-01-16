@@ -433,6 +433,7 @@ typedef enum tmr1_id_e{
   
   RX_LUZ_TIME_OUT,
   GPS_UART_TIMEOUT,
+  STATUS_LED_TIMEOUT,
   NUM_TMR1_ID,
   
 }tmr1_id_t;

@@ -348,7 +348,7 @@ void check_on_rx_luz(void){
 	
 #if USE_BIT_BANGED_UART
 
-  // Using TMR4 for that now...
+  // Using TMR6 for that now...
   init_TMR_bitbang_uart(NORMAL_CLOCK);
   
 #endif  

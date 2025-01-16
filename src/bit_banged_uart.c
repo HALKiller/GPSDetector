@@ -163,7 +163,16 @@ void send_bb_string(const unsigned char *str_pnt){
 	
   uint8_t lencnt = 0;
 	
-  
+#if 1  
+  if(FAST_CLOCK == FALSE)
+  {
+    PR6 = BB_SLOW;
+  }
+  else
+  {
+    PR6 = BB_PR;
+  }
+#endif  
   
 	while((*str_pnt != NULL_TERMINATOR) && (const_max_str_length > lencnt))
 	{

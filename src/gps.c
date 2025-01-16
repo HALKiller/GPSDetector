@@ -333,10 +333,6 @@ void gps_startup_initializer(void){
   
   UART_on();
   
-  // RCSTAbits.SPEN = TRUE;
-	// RCSTAbits.CREN = TRUE;
-	// TXSTAbits.TXEN = TRUE;
-  
   gps_module.baudslot = 0u;
   
   gps_reinit();
@@ -513,7 +509,7 @@ gps_state_t gps_check_gps_error_status(void){
     DB_PRINT("\r\nGPS F ERR\r\n");
  #endif       
     try_reconfigure_gps();
-gps_reinit();
+    gps_reinit();
   }
   else if(UART_GPS_FLG.valid_header_received == FALSE)
   {
@@ -523,7 +519,7 @@ gps_reinit();
     DB_PRINT("\r\nGPS B ERR\r\n");
  #endif          
     try_reconfigure_gps();
-gps_reinit();
+    gps_reinit();
   }
   else
   {
@@ -532,6 +528,7 @@ gps_reinit();
     DB_PRINT("\r\nGPS O.K.\r\n");
  #endif          
   }
+  
   return gps_module.state;
 
 }

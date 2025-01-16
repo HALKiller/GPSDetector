@@ -17,12 +17,16 @@ typedef enum tilt_sensor_states_type{
 
 void tilt_sensor_init(void);
 
-// we can just read it 
-// void tilt_sensor_get_state(void);
+uint8_t update_tilt_sensor_state(void);
 
-void update_tilt_sensor_state(void);
 
-// tilt_sensor_states_t tilt_sensor_get_detector_state(void);
+
+
+
+
+
+
+
 
 
 
