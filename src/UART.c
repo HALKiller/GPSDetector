@@ -734,7 +734,45 @@ char *temp_strpnt = &temp_string[10];
 
 #endif
 
+#if 1
 
+static char nibbleToHexChar(unsigned char nibble) {
+  if (nibble < 10)
+  {
+    return '0' + nibble;
+  } 
+  else 
+  {
+    return 'A' + (nibble - 10);
+  }
+}
+
+// Function to convert a byte to a hexadecimal string
+static void byteToHexString(unsigned char byte, char *hexString) {
+  // Extract the high nibble and convert it to a hex character
+  hexString[0] = nibbleToHexChar((byte >> 4) & 0x0F);
+  // Extract the low nibble and convert it to a hex character
+  hexString[1] = nibbleToHexChar(byte & 0x0F);
+  // Null-terminate the string
+  hexString[2] = '\0';
+}
+
+
+void uart_hex(uint8_t hvar){
+  
+  unsigned char str[5];
+
+  str[0] = '0';
+  str[1] = 'x';
+  
+  byteToHexString(hvar, &str[2]);
+
+  DB_PRINT(str);
+
+
+
+}
+#endif
 
 
 

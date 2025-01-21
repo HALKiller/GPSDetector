@@ -85,7 +85,8 @@ __eeprom unsigned char gContenidoEeprom[] = {
   0x0B, /* No se usa */ 0x15, 0x39, 0x2B, 0x7F, /* FTW0 - Normal 0     */
   0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW1 - Normal 1     */
   0x0B, /* No se usa */ 0x15, 0x39, 0x2B, 0x7F, /* FTW2 - Radiogonio 0 */
-  0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW3 - Radiogonio 1 */
+  0x0B, /* No se usa */ 0xAB, 0xCD, 0xEF, 0x05, /* FTW3 - Radiogonio 1 */
+  // 0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW3 - Radiogonio 1 */
   
   0xFF, /* No se usa */
   
@@ -102,9 +103,9 @@ __eeprom unsigned char gContenidoEeprom[] = {
         /* número de segundos con luz nocturna encendida.                     */
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */
-  0x90, // 0x92, /* Tipo de configuración de la baliza   90=150bps   80=300bps         */
+  0x90, // 0x90, if b0==false --> Double Period on low bat, if b1==true-->always_transmit, if b4==true TX_150 BPS, if b5==false-->LUZ_ENABLED 
   0x0C, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
-  0xD7, /* Valor de batería para transmisión cada 2 ciclos  CF=10.8  D7=11.2  */
+  0xCF, /* Valor de batería para transmisión cada 2 ciclos  CF=10.8  D7=11.2  */
   0xFC, /* Segunda palabra de configuración de la baliza                      */
   0x02, /* Número de satélites a la vista antes de apagar el GPS (no usado)   */
   

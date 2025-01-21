@@ -161,6 +161,9 @@ void UART_ui2s(void* hvar, size_t size);
 #else
 void UART_int(uint16_t hvar);
 #endif
+
+void uart_hex(uint8_t hvar);
+
 void UART_32_int(uint32_t hvar);
 
 

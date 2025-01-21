@@ -1260,10 +1260,14 @@ static void f_always_transmit(void){
   {
     
     set_message_for_tx(e_Activation);
+    
     messages_before_transmission();
 
     Transmite(false);
-    __delay_ms(1000);
+    
+    CLRWDT();
+    
+    __delay_ms(10000);
     
   }
   

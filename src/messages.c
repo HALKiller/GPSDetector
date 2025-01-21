@@ -30,7 +30,7 @@
 
 #include "generic_union_flgs.h" // for the BAT_LOW_FLG
 
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON || DEBUGGING_BB_IS_ON
 #include "UART.h"
 #endif
 
@@ -210,6 +210,12 @@ static void msg_activation(void)
   
   strcpy ( (char*)(sentence_buffer.gps_buffer + 23), gMensajeActivandose );
   
+  
+  
+#if DB_NEW_SPI  
+  version_nr++;
+#endif  
+
 #if USE_NEW_VERSION_ID||OV_VERSION_ID
 
   strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion_H );
@@ -310,6 +316,15 @@ int get_day_of_month(void){
 
 #else
 
+#if REDUCE_ROM_ON_VERSION_CREATION
+void calculate_version_number(void) {
+  
+  version_nr = 325;
+  
+  
+}
+
+#else
 
 void calculate_version_number(void) {
   
@@ -347,6 +362,10 @@ void calculate_version_number(void) {
       
       day_of_year = day_of_year + day_of_month;
 
+#if DEBUGGING_BB_IS_ON&&0
+      DB_PRINT("V: ");
+      UART_int(day_of_year);
+#endif
       
       compiled_week = day_of_year / 7u;
       
@@ -360,9 +379,11 @@ void calculate_version_number(void) {
    
   }
   
+  
+  
 }
 
-
+#endif
 #endif
 
 // e_send_position
@@ -609,6 +630,9 @@ static void insert_time(uint8_t pos)
 }
 
 #endif
+
+
+
 
 static void insert_version(uint8_t * buf){
   
