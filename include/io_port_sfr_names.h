@@ -255,7 +255,7 @@
 #elif USE_BB_LED_OUTPUT
 
 #define DB_LED_1 ICSPDAT 
-#define DB_LED_2 ICSPCLCK 
+#define DB_LED_2 ICSPCLCK // BB_UART
 
 #else
   

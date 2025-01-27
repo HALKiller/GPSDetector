@@ -44,6 +44,9 @@ static uint8_t FTW_TX[5];
 #define SDIO_TRIS TRISAbits.TRISA1
 #define PIN_INPUT 1u
 #define PIN_OUTPUT 0u
+#define AD9954_SDI PORTAbits.RA1
+#define FTW_CHANNELS_IN_USE 2
+#define TRANSMIT_TWICE 0
 
 #define AD9954_TRANSMITE_CARACTER_ASCII(X) \
 AD9954TransmiteByte((uint8_t)(gTablaAsciiABaudot[ (int)X ]))
@@ -72,8 +75,6 @@ const uint8_t FTWInfo[]   = { 0x0B };
 // this is with the default values which are not getting changed from the DDS
 // first byte is the address and then from MSB to LSB
 const uint8_t CFR1Info[]  = { 0x00, 0x80, 0x00, 0x00, 0x40 };
-
-const uint8_t CFR1Info_r[]  = { 0x00, 0x80, 0x00, 0x00, 0x40 };
 
 const uint8_t CFR2Info[]  = { 0x01, 0x18, 0x08, 0x24 }; // <-- here ...  aaaa nd...
 
@@ -120,6 +121,7 @@ const uint8_t RSCW3Info[] = { 0x0A, 0x00, 0x00, 0x03, 0x0C, 0x00 };
 const uint8_t FTWInfo[]   = { 0x0B };
 
 // these are EEPROM directions
+// const uint8_t c_base_address[4] = { 0x27u, 0x22u, 0x31u, 0x2Cu };
 const uint8_t c_base_address[4] = { 0x22u, 0x27u, 0x2Cu, 0x31u };
 
 
@@ -160,21 +162,18 @@ static void AD9954Enciende(void);
 static void AD9954Apaga(void);
 static void SpiTransmite(uint8_t Dato);
 static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos);
-#if USE_OLD_CFG_SETTER
-static void AD9954EscribeRegistro( uint8_t *DireccionRegistro, uint16_t NumDatos, uint8_t *DatosAEnviar);
-#else
   
 static void AD9954EscribeRegistro( uint8_t *DireccionRegistro, uint8_t NumDatos);
 static void get_next_frequ_from_EEPROM(uint8_t base_address_indexer);
 static uint8_t SpiReceive(void);
 
-#endif
+
 static void AD9954TransmiteByte(uint8_t ByteBaudot);
 static void AD9954PulsoUpdate(void);
-static void AD9954PulsoIoSync(void);
+// static void AD9954PulsoIoSync(void);
 static void select_bank(uint8_t bankbits);
 
-static void dds_read_all(void);
+static uint8_t dds_read_all(void);
 static uint8_t dds_read_register(uint8_t *DireccionRegistro, uint8_t NumDatos);
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
@@ -192,62 +191,218 @@ void Transmite(bool TransmiteRadiogonio){
 
 }
 
+#elif TRANSMIT_TWICE
+
+  
+void Transmite(bool TransmiteRadiogonio){
+
+  uint8_t sync_time = get_sync_time();
+
+  uint8_t re_cfg_cnt = 0;
+  
+
+
+#if CREATE_TX_MESSAGE_AFTER_DDS_CFG&&0    
+  messages_before_transmission();
+#endif
+
+
+  // ENCIENDE_TRANSMISOR();  // That does not exist anymore...
+  AD9954Enciende();
+
+
+
+#if READBACK_DDS
+
+  AD9954Configura();
+
+  if(dds_read_all() == false)
+  {
+
+    DDS_CFG_ERR = true;
+    // todo: set err flag for txing...
+  }
+ 
+#else
+  
+  AD9954Configura();  
+  
+#endif  
+  
+  
+#if CREATE_TX_MESSAGE_AFTER_DDS_CFG&&1   
+  messages_before_transmission();
+#endif
+
+  
+  // Transmisión de sincronismo
+  PS1_AD9954 = false; // TransmiteRadiogonio;
+
+  PS0_AD9954 = 1;
+  
+  // we can set up here the tmr1 overflower...
+  for ( uint8_t i = 0; i < sync_time; i++ )
+  {
+    __delay_ms(1000);
+  }
+
+  AD9954TransmiteMensaje();
+
+  PS0_AD9954 = 1;
+ 
+#if READBACK_DDS
+
+  if(DDS_CFG_ERR == true)
+  {
+
+    while(re_cfg_cnt < 5)
+    {
+      AD9954Configura();
+    
+      if(dds_read_all() == true)
+      {
+        re_cfg_cnt = 5;
+      }
+      else
+      {
+        re_cfg_cnt++;
+        DDS_CFG_ERR = true;
+        // todo: set err flag for txing...
+      }
+      
+    }
+
+#if CREATE_TX_MESSAGE_AFTER_DDS_CFG&&1   
+    messages_before_transmission();
+#endif
+
+    // Transmisión de sincronismo
+    PS1_AD9954 = false; // TransmiteRadiogonio;
+
+    PS0_AD9954 = 1;
+    
+   
+    // we can set up here the tmr1 overflower...
+    for ( uint8_t i = 0; i < sync_time; i++ )
+    {
+      __delay_ms(1000);
+    }
+
+    AD9954TransmiteMensaje();
+
+    PS0_AD9954 = 1;
+
+    DDS_CFG_ERR = false;
+    
+  }
+ 
+  
+#endif 
+
+
+
+ 
+  AD9954Apaga();
+  
+#if DEBUGGING_BB_IS_ON
+  UART_CRLF;
+  DB_PRINT(sentence_buffer.gps_buffer); 
+  UART_CRLF;
+#endif  
+  
+  DDS_flush_buffer();
+
+#if DB_67&&0
+  SET_START_STOP = false;
+#endif  
+
+}
+
+
 #else
   
 void Transmite(bool TransmiteRadiogonio){
 
   uint8_t sync_time = get_sync_time();
 
-#if DEBUGGING_BB_IS_ON
+  uint8_t re_cfg_cnt = 0;
+  
+#if DEBUGGING_BB_IS_ON&&0
   UART_CRLF;
   DB_PRINT(sentence_buffer.gps_buffer); 
   UART_CRLF;
-#endif  
+#endif
+  
 #if DB_67&&0
   SET_START_STOP = true;
 #endif  
 
+  DDS_CFG_ERR = false;
+  
+#if CREATE_TX_MESSAGE_AFTER_DDS_CFG&&0    
+  messages_before_transmission();
+#endif
+
 
   // ENCIENDE_TRANSMISOR();  // That does not exist anymore...
   AD9954Enciende();
-  // DB_PRINT("A1\r\n");
-  AD9954Configura();
 
-#if READBACK_DDS  
-  dds_read_all();
+
+
+#if READBACK_DDS
+  while(re_cfg_cnt < 5)
+  {
+    AD9954Configura();
+  
+    if(dds_read_all() == true)
+    {
+      re_cfg_cnt = 5;
+    }
+    else
+    {
+      re_cfg_cnt++;
+      DDS_CFG_ERR = true;
+      // todo: set err flag for txing...
+    }
+    
+  }
+#else
+  
+  AD9954Configura();  
+  
 #endif  
   
   
-  
-#if 0  
-  select_bank(0);
-  AD9954PulsoUpdate();
-  AD9954EscribeRegistro((uint8_t *)CFR1Info_r, 5);
-  
-  AD9954PulsoUpdate();
-#endif  
+#if CREATE_TX_MESSAGE_AFTER_DDS_CFG&&1   
+  messages_before_transmission();
+#endif
   
   
-
+  
   // Transmisión de sincronismo
-  PS1_AD9954 = TransmiteRadiogonio;
-  // DB_PRINT("A3\r\n");
+  PS1_AD9954 = false; // TransmiteRadiogonio;
+
   PS0_AD9954 = 1;
   
-  // DB_PRINT("B\r\n");
+ 
   // we can set up here the tmr1 overflower...
   for ( uint8_t i = 0; i < sync_time; i++ )
   {
-    
     __delay_ms(1000);
- 
   }
   
 
   AD9954TransmiteMensaje();
 
   PS0_AD9954 = 1;
+  
   AD9954Apaga();
+  
+#if DEBUGGING_BB_IS_ON
+  UART_CRLF;
+  DB_PRINT(sentence_buffer.gps_buffer); 
+  UART_CRLF;
+#endif  
   
   DDS_flush_buffer();
 
@@ -261,86 +416,6 @@ void Transmite(bool TransmiteRadiogonio){
 
 
 
-#if USE_OLD_CFG_SETTER
-
-
-// POSRED: it would be possible to reduce the ROM footprint if we create a 
-// typedef structure and loop over the setting
-// 
-void AD9954Configura(void){
-  
- 
-  
-  // Cuidado con las variables const.
-  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
-  AD9954PulsoUpdate();
-  
-  select_bank(0u);
-
-  AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)CFR1Info, 4, (uint8_t *)CFR1);
-  
-  AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)CFR2Info, 3, (uint8_t *)CFR2);
-  
-  AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)RSCW0Info, 5, (uint8_t *)RSCW0);
-  
-  AD9954PulsoUpdate();
-  select_bank(1u);
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW1Info, 5, (uint8_t *)RSCW1);
-  
-  AD9954PulsoUpdate();
-  select_bank(2u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW2Info, 5, (uint8_t *)RSCW2);
-  
-  AD9954PulsoUpdate();
-  select_bank(3u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW3Info, 5, (uint8_t *)RSCW3);
-  
-  AD9954PulsoUpdate();
-  select_bank(0);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW0);
-  AD9954PulsoUpdate();
-  select_bank(1);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW1);
-  AD9954PulsoUpdate();
-  select_bank(2u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW2);
-  AD9954PulsoUpdate();
-  select_bank(3u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW3);
-  AD9954PulsoIoSync();
-  
-}
-
-
-#else
 
 // POSRED: it would be possible to reduce the ROM footprint if we create a 
 // typedef structure and loop over the setting
@@ -351,6 +426,7 @@ static void get_next_frequ_from_EEPROM(uint8_t base_address_indexer){
   
   uint8_t base_address = c_base_address[base_address_indexer];
   uint8_t hlooper = 0;
+  
   FTW_TX[0] = 0x0B;
   
   for ( hlooper = 0; hlooper < 4; hlooper++ )
@@ -364,15 +440,11 @@ static void get_next_frequ_from_EEPROM(uint8_t base_address_indexer){
   
 }
 
-#if USE_NEW_SPI
+
 
 void AD9954Configura(void){
   
   uint8_t hlooper = 0;
-  // Cuidado con las variables const.
-  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
-  
-  
   
   select_bank(0u);
 
@@ -380,14 +452,10 @@ void AD9954Configura(void){
   
   AD9954EscribeRegistro((uint8_t *)CFR1Info, 5);
   
-  AD9954PulsoUpdate();
-  
   AD9954EscribeRegistro((uint8_t *)CFR2Info, 4);
   
-  AD9954PulsoUpdate();
 
-
-  for(hlooper = 0; hlooper < 4; hlooper++)
+  for(hlooper = 0; hlooper < FTW_CHANNELS_IN_USE; hlooper++)
   {
     
     select_bank(hlooper);
@@ -395,253 +463,17 @@ void AD9954Configura(void){
     AD9954PulsoUpdate();
     
     AD9954EscribeRegistro(reg_pnt[hlooper], 6);
-
-    AD9954PulsoUpdate();
     
     get_next_frequ_from_EEPROM(hlooper);
 
     AD9954EscribeRegistro(FTW_TX, 5);
 
-    AD9954PulsoUpdate();
-    
   }
   
 }
 
 
 
-
-#elif 1
-
-void AD9954Configura(void){
-  
-uint8_t hlooper = 0;
-  // Cuidado con las variables const.
-  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
-  
-  
-  AD9954PulsoUpdate();
-  
-  select_bank(0u);
-
-  // AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)CFR1Info, 5);
-  
-  AD9954PulsoUpdate();
-  
-  // AD9954PulsoIoSync();
-  
-#if READBACK_DDS&&0
-  dds_read_register((uint8_t *)CFR1Info, 5);
-#endif  
-  
-  
-  AD9954EscribeRegistro((uint8_t *)CFR2Info, 4);
-  
-  AD9954PulsoUpdate();
-  // AD9954PulsoIoSync();
-  
-
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    AD9954PulsoUpdate();
-    select_bank(hlooper);
-    // AD9954PulsoIoSync();
-
-    AD9954EscribeRegistro(reg_pnt[hlooper], 6);
-
-  }
-  
-
-  
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    AD9954PulsoUpdate();
-    select_bank(hlooper);
-    // AD9954PulsoIoSync();
-
-    get_next_frequ_from_EEPROM(hlooper);
-
-    AD9954EscribeRegistro(FTW_TX, 5);
-
-  }
-  
-
-  
-  // AD9954PulsoIoSync();
-  
-}
-
-
-
-
-#elif 1
-void AD9954Configura(void){
-  
-uint8_t hlooper = 0;
-  // Cuidado con las variables const.
-  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
-  AD9954PulsoUpdate();
-  
-  select_bank(0u);
-
-  AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)CFR1Info, 5);
-  
-  AD9954PulsoUpdate();
-  
-  AD9954PulsoIoSync();
-  
-#if READBACK_DDS&&0
-  dds_read_register((uint8_t *)CFR1Info, 5);
-#endif  
-  
-  
-  AD9954EscribeRegistro((uint8_t *)CFR2Info, 4);
-  
-  AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
-  
-
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    AD9954PulsoUpdate();
-    select_bank(hlooper);
-    AD9954PulsoIoSync();
-
-    AD9954EscribeRegistro(reg_pnt[hlooper], 6);
-
-  }
-  
-
-  
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    AD9954PulsoUpdate();
-    select_bank(hlooper);
-    AD9954PulsoIoSync();
-
-    get_next_frequ_from_EEPROM(hlooper);
-
-    AD9954EscribeRegistro(FTW_TX, 5);
-
-  }
-  
-
-  
-  AD9954PulsoIoSync();
-  
-}
-
-
-
-#else
-
-
-
-void AD9954Configura(void){
-  
-uint8_t hlooper = 0;
-  // Cuidado con las variables const.
-  // usar el define AD9954_SPI_MACRO 1 si no envía las palabras correctas
-  AD9954PulsoUpdate();
-  
-  select_bank(0u);
-
-  AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)CFR1Info, 4);
-  
-  AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)CFR2Info, 3);
-  
-  AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
-  
-  AD9954EscribeRegistro((uint8_t *)RSCW0Info, 5);
-  
-  AD9954PulsoUpdate();
-  select_bank(1u);
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW1Info, 5);
-  
-  AD9954PulsoUpdate();
-  select_bank(2u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW2Info, 5);
-  
-  AD9954PulsoUpdate();
-  select_bank(3u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)RSCW3Info, 5);
-  
-  
-  for(hlooper = 0; hlooper < 4; hlooper++){
-    
-    AD9954PulsoUpdate();
-    select_bank(hlooper);
-    AD9954PulsoIoSync();
-
-    get_next_frequ_from_EEPROM(hlooper);
-
-    AD9954EscribeRegistro(FTW_TX, 4);
-
-  }
-  
-  
-#if 0  
-
-  AD9954PulsoUpdate();
-  select_bank(0u);
-  AD9954PulsoIoSync();
-  
-
-  
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW0);
-  
-  AD9954PulsoUpdate(); 
-  select_bank(1u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW1);
-  
-  AD9954PulsoUpdate();
-  select_bank(2u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW2);
-  
-  AD9954PulsoUpdate();
-  select_bank(3u);
-  
-  
-  AD9954PulsoIoSync();
-  AD9954EscribeRegistro((uint8_t *)FTWInfo, 4, FTW3);
-  
-  #endif
-  
-  AD9954PulsoIoSync();
-  
-}
-
-#endif
-
-#endif
 
 
 #if 1
@@ -693,10 +525,10 @@ void AD9954TransmiteMensaje(void){
   
 }
 
-#elif 1
 
 
 
+#else
 void AD9954TransmiteMensaje(void){
   // Actualiza el tamaño del búfer para saber cuántos bits ha de transmitir
   // sentence_buffer.position = strlen(sentence_buffer.gps_buffer);
@@ -716,23 +548,7 @@ void AD9954TransmiteMensaje(void){
 }
 
 
-#else
-  
 
-void AD9954TransmiteMensaje(void){
-  // Actualiza el tamaño del búfer para saber cuántos bits ha de transmitir
-  sentence_buffer.position = strlen(gEntradaDeTrama.BuferDeEntrada);
-  AD9954_TRANSMITE_CARACTER_ASCII('<');   // Originalmente se incluyen 8 caracteres de cambio a letras
-  AD9954_TRANSMITE_CARACTER_ASCII('<');   // Con 2 también se puede transmitir el mensaje sin problemas
-  AD9954_TRANSMITE_CARACTER_ASCII('\n');  // Nueva línea
-  AD9954_TRANSMITE_CARACTER_ASCII('\r');
-  AD9954TransmiteString( gEntradaDeTrama.BuferDeEntrada, gEntradaDeTrama.PosicionDelBufer);
-  // AD9954TransmiteString(gEntradaDeTrama.PosicionDelBufer, gEntradaDeTrama.BuferDeEntrada);
-  AD9954_TRANSMITE_CARACTER_ASCII('X');  // Carácter de fin de trama
-  AD9954_TRANSMITE_CARACTER_ASCII('\n'); // Otra nueva línea, para que se pueda detectar en el programa receptor
-  AD9954_TRANSMITE_CARACTER_ASCII('\r');
-  DDS_flush_buffer();
-}
 
 
 #endif
@@ -744,27 +560,20 @@ void AD9954TransmiteMensaje(void){
 
 
 
-#if 1
-
 // this got tested and worked
+// AD9954 accepts data change on falling clock edge
+// AD9954 shifts data in at rising clock edge
 static void SpiTransmite(uint8_t Dato)
 {
 
   uint8_t hlooper = 0;
+  uint8_t shifter = 0x80;
 
-  uint8_t shifter = 128;
-
-  TMR2 = 0;
-  TMR2IF = 0;
-  TMR2IE = 1;
-
-
-  // for(hlooper = 0; hlooper < 8; hlooper++)
-  for(hlooper = 8; hlooper > 0; hlooper--)
+  for(hlooper = 0; hlooper < 8; hlooper++)
   {
 
     SCLK_AD9954 = 0;
-    
+    // data changes...
     if(Dato & shifter)
     {
       SDIO_AD9954 = true;
@@ -774,107 +583,28 @@ static void SpiTransmite(uint8_t Dato)
       SDIO_AD9954 = false;
     }
 
-    
-#if 1
     asm("nop");
     asm("nop");
-#else
-    TMR2ON = 1;
-    while ( TMR2ON );
-#endif    
-    SCLK_AD9954 = 1;  // shifted data in
-#if 1
+    // data moves into AD9954
+    SCLK_AD9954 = 1;
+
     asm("nop");
     asm("nop");
-#else
-    TMR2ON = 1;
-    while ( TMR2ON );
-#endif    
-    
+
     shifter = shifter >> 1;
-    
-    
+  
   }
-  
-  // SCLK_AD9954 = 0;
-  // SDIO_AD9954 = 0;
-  
-  
-  
+
 }
 
 
 
-#else
-
-// this got tested and worked
-static void SpiTransmite(uint8_t Dato)
-{
-
-  uint8_t hlooper = 0;
-
-  TMR2 = 0;
-  TMR2IF = 0;
-  TMR2IE = 1;
 
 
-  // for(hlooper = 0; hlooper < 8; hlooper++)
-  for(hlooper = 8; hlooper > 0; hlooper--)
-  {
-    
-    
-    
-    
-    SCLK_AD9954 = 0;
-    
-    SDIO_AD9954 = (Dato >> (hlooper - 1)) & 0x01;  // Dato & shifts[7 - hlooper];
-    
-  
-    TMR2ON = 1;
-    while ( TMR2ON );
-    SCLK_AD9954 = 1;  // shifted data in
-    TMR2ON = 1;
-    while ( TMR2ON );
-    
-  }
-  
-  SCLK_AD9954 = 0;
-  SDIO_AD9954 = 0;
-  
-  
-  
-}
-
-#endif
-
-#if USE_OLD_CFG_SETTER
-
-static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint16_t NumDatos, uint8_t *DatosAEnviar){
-  
-  
-  
-  SpiTransmite(DireccionRegistro[0]);
-  
-  for (uint16_t i = 0; i < NumDatos; i++)
-  {
-    SpiTransmite(DatosAEnviar[i]);
-  }
-}
-
-#else
-
-
-
-#if USE_NEW_SPI
 
 
 
 static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint8_t NumDatos){
-  
-  
-  // TODO:
-  // if this should work we can streamline that from the calling funciton in future
-  // NumDatos++;
   
 #if DEBUGGING_BB_IS_ON&&0
 
@@ -887,8 +617,6 @@ static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint8_t NumDatos){
   }
   UART_CRLF;
 #endif  
-  
-  // SCLK_AD9954 = 1;
   
   SYNC_AD9954 = 0;
   
@@ -899,40 +627,10 @@ static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint8_t NumDatos){
   
   SYNC_AD9954 = 1;
   
-  
+  AD9954PulsoUpdate();
   
 }
 
-
-
-#else
-
-static void AD9954EscribeRegistro(uint8_t *DireccionRegistro, uint8_t NumDatos){
-  
-  
-  // TODO:
-  // if this should work we can streamline that from the calling funciton in future
-  // NumDatos++;
-  
-#if DEBUGGING_BB_IS_ON&&0
-
-  DB_PRINT("R_write: ");
-
-  for (int8_t i = 0; i < NumDatos; i++)
-  {
-    uart_hex(DireccionRegistro[i]);
-    DB_PRINT(" ");
-  }
-  UART_CRLF;
-#endif  
-  
-  for (int8_t i = 0; i < NumDatos; i++)
-  {
-    SpiTransmite(DireccionRegistro[i]);
-  }
-}
-
-#endif
 
 
 static uint8_t SpiReceive(void){
@@ -940,338 +638,127 @@ static uint8_t SpiReceive(void){
   uint8_t hlooper = 0;
   uint8_t received = 0;
   uint8_t r_shifter = 0x80;
-  
-  TMR2 = 0;
-  TMR2IF = 0;
-  TMR2IE = 1;
 
-  for(hlooper = 8; hlooper > 0; hlooper--)
+  for(hlooper = 0; hlooper < 8; hlooper++)
   {
     
     SCLK_AD9954 = 0;
-  
-#if 1
+ 
     asm("nop");
     asm("nop");
-#else
-    TMR2ON = 1;
-    while ( TMR2ON );
-#endif    
-
+ 
     SCLK_AD9954 = 1;  // shifted data out
-    
-#if 1
+
     asm("nop");
     asm("nop");
-#else
-    TMR2ON = 1;
-    while ( TMR2ON );
-#endif    
-    
-    if(PORTAbits.RA1 == true)
+
+    if(AD9954_SDI == true)
     { 
       received |= r_shifter;
     }
     
     r_shifter = r_shifter >> 1;
-    
-    
-    
-    
-    
+ 
   }
-  
-  // SCLK_AD9954 = 0;
 
-  
   return received;
   
 }
 
 
 
-
-
-#endif
-
 #if READBACK_DDS
 
 
 #if USE_NEW_SPI
 
-static void dds_read_all(void){
+// cfg for 2 frequencies and also readback only for 2 therefore...
+static uint8_t dds_read_all(void){
   
   uint8_t hlooper = 0;
-
-  // AD9954PulsoUpdate();
+  uint8_t ret_value = true;
   
   select_bank(0u);
 
   AD9954PulsoUpdate();
-  
-  // AD9954PulsoIoSync();
-  
-  dds_read_register((uint8_t *)CFR1Info, 5);
-  
-  AD9954PulsoUpdate();
-  
-  // AD9954PulsoIoSync();
-  
-  dds_read_register((uint8_t *)CFR2Info, 4);
+    
+  if(dds_read_register((uint8_t *)CFR1Info, 5) == false)
+  {
+    ret_value = false;
+  }
   
   AD9954PulsoUpdate();
+    
+  if(dds_read_register((uint8_t *)CFR2Info, 4) == false)
+  {
+    ret_value = false;
+  }
+  AD9954PulsoUpdate();
   
-  // AD9954PulsoIoSync();
-  
-
-  for(hlooper = 0; hlooper < 4; hlooper++)
+  for(hlooper = 0; hlooper < FTW_CHANNELS_IN_USE; hlooper++)
   {
     
     select_bank(hlooper);
     
     AD9954PulsoUpdate();
-    
-    // AD9954PulsoIoSync();
 
-    dds_read_register(reg_pnt[hlooper], 6);
-
+    if(dds_read_register(reg_pnt[hlooper], 6) == false)
+    {
+      ret_value = false;
+    }
     get_next_frequ_from_EEPROM(hlooper);
 
-    dds_read_register(FTW_TX, 5);
+    if(dds_read_register(FTW_TX, 5) == false)
+    {
+      ret_value = false;
+    }      
   }
   
-
-#if 0  
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    select_bank(hlooper);
-    
-    AD9954PulsoUpdate();
-    
-    // AD9954PulsoIoSync();
-
-    get_next_frequ_from_EEPROM(hlooper);
-
-    dds_read_register(FTW_TX, 5);
-
-  }
- 
-#endif 
-
-  
-  // AD9954PulsoIoSync();
-  
-  
-  
-  
+  return ret_value;
   
 }
-
-
-
-
-
-#elif 1
-
-static void dds_read_all(void){
-  
-  uint8_t hlooper = 0;
-
-  // AD9954PulsoUpdate();
-  
-  select_bank(0u);
-
-  AD9954PulsoUpdate();
-  
-  // AD9954PulsoIoSync();
-  
-  dds_read_register((uint8_t *)CFR1Info, 5);
-  
-  AD9954PulsoUpdate();
-  
-  // AD9954PulsoIoSync();
-  
-  dds_read_register((uint8_t *)CFR2Info, 4);
-  
-  AD9954PulsoUpdate();
-  
-  // AD9954PulsoIoSync();
-  
-
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    select_bank(hlooper);
-    
-    AD9954PulsoUpdate();
-    
-    // AD9954PulsoIoSync();
-
-    dds_read_register(reg_pnt[hlooper], 6);
-
-  }
-  
-
-  
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    select_bank(hlooper);
-    
-    AD9954PulsoUpdate();
-    
-    // AD9954PulsoIoSync();
-
-    get_next_frequ_from_EEPROM(hlooper);
-
-    dds_read_register(FTW_TX, 5);
-
-  }
-  
-
-  
-  // AD9954PulsoIoSync();
-  
-  
-  
-  
-  
-}
-
-
-
-
-#elif 1
-
-static void dds_read_all(void){
-  
-  uint8_t hlooper = 0;
-
-  // AD9954PulsoUpdate();
-  
-  select_bank(0u);
-
-  AD9954PulsoUpdate();
-  
-  AD9954PulsoIoSync();
-  
-  dds_read_register((uint8_t *)CFR1Info, 5);
-  
-  AD9954PulsoUpdate();
-  
-  AD9954PulsoIoSync();
-  
-  dds_read_register((uint8_t *)CFR2Info, 4);
-  
-  AD9954PulsoUpdate();
-  
-  AD9954PulsoIoSync();
-  
-
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    select_bank(hlooper);
-    
-    AD9954PulsoUpdate();
-    
-    AD9954PulsoIoSync();
-
-    dds_read_register(reg_pnt[hlooper], 6);
-
-  }
-  
-
-  
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    select_bank(hlooper);
-    
-    AD9954PulsoUpdate();
-    
-    AD9954PulsoIoSync();
-
-    get_next_frequ_from_EEPROM(hlooper);
-
-    dds_read_register(FTW_TX, 5);
-
-  }
-  
-
-  
-  AD9954PulsoIoSync();
-  
-  
-  
-  
-  
-}
-
 
 
 #else
-  
+ 
 
-static void dds_read_all(void){
+// cfg for 2 frequencies and also readback only for 2 therefore...
+// thsi works but above is the version where we give a return value...
+static uint8_t dds_read_all(void){
   
   uint8_t hlooper = 0;
-
-  // AD9954PulsoUpdate();
+  uint8_t ret_value = true;
   
   select_bank(0u);
 
-  AD9954PulsoIoSync();
-  
-  dds_read_register((uint8_t *)CFR1Info, 5);
-  
   AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
-  
+    
+  dds_read_register((uint8_t *)CFR1Info, 5);
+
+  AD9954PulsoUpdate();
+    
   dds_read_register((uint8_t *)CFR2Info, 4);
   
   AD9954PulsoUpdate();
-  AD9954PulsoIoSync();
   
-
-  for(hlooper = 0; hlooper < 4; hlooper++)
+  for(hlooper = 0; hlooper < FTW_CHANNELS_IN_USE; hlooper++)
   {
     
-    AD9954PulsoUpdate();
     select_bank(hlooper);
-    AD9954PulsoIoSync();
+    
+    AD9954PulsoUpdate();
 
     dds_read_register(reg_pnt[hlooper], 6);
-
-  }
-  
-
-  
-  for(hlooper = 0; hlooper < 4; hlooper++)
-  {
-    
-    AD9954PulsoUpdate();
-    
-    select_bank(hlooper);
-    
-    AD9954PulsoIoSync();
 
     get_next_frequ_from_EEPROM(hlooper);
 
     dds_read_register(FTW_TX, 5);
-
   }
   
-
-  
-  AD9954PulsoIoSync();
-  
-  
-  
-  
+  return ret_value;
   
 }
+
 
 #endif
 
@@ -1282,64 +769,57 @@ static uint8_t dds_read_register(uint8_t *DireccionRegistro, uint8_t NumDatos){
   
   // set highest bit of the address....
   uint8_t rx_tx_byte = DireccionRegistro[0] | 0x80;
+  uint8_t hlooper = 0;
   uint8_t ret_value = 1u;
   
 #if 0
+
   DB_PRINT("Reg_address: ");
   uart_hex(rx_tx_byte);
   DB_PRINT(" ");
-  // UART_CRLF;
+ 
 #endif  
   
   SYNC_AD9954 = 0;
   
   SpiTransmite(rx_tx_byte);
   
-  SDIO_TRIS = 1;  // PIN_INPUT;
-  // TRISA = 0x2A;
-  
-  // now we need to change to receive information...
   // therefore invert the TRIS register for the SDIO PIN
-  // DB_PRINT("RB: ");
-  for (uint8_t i = 1; i < NumDatos; i++)
+  SDIO_TRIS = PIN_INPUT;
+
+  // now we need to change to receive information...
+  for (hlooper = 1; hlooper < NumDatos; hlooper++)
   {
     rx_tx_byte = SpiReceive();
     
 #if DEBUGGING_BB_IS_ON&&0
-
      uart_hex(rx_tx_byte);
-
-     
 #endif
     
-    if(rx_tx_byte != DireccionRegistro[i])
+    if(rx_tx_byte != DireccionRegistro[hlooper])
     {
       
 #if DEBUGGING_BB_IS_ON
       DB_PRINT("\r\nB:");
       uart_hex(DireccionRegistro[0] | 0x80);
       uart_hex(rx_tx_byte);
- 
-     
-#endif      
-      
-      
-      
       ret_value = false;
+#else
+      // in release we abort instantly
+    
+      SYNC_AD9954 = 1;
+      SDIO_TRIS = PIN_OUTPUT;
+      return false;
+      
+#endif      
+
     }
-    // else
-    // {
-      // DB_PRINT(" G ");
-    // }
+
   }
   
   SYNC_AD9954 = 1;
   
- 
-  SDIO_TRIS = 0;  // PIN_OUTPUT;
-  // TRISA = 0x28;
-  
-  
+  SDIO_TRIS = PIN_OUTPUT;
   
   return ret_value;
   
@@ -1350,7 +830,6 @@ static uint8_t dds_read_register(uint8_t *DireccionRegistro, uint8_t NumDatos){
 #endif
 
 
-#if 1
 
 
 // This is used D. 02062021
@@ -1359,7 +838,7 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
 	uint8_t hlooper = 0;
   
   uint8_t shifter = 0x80;
-  // t_byte datoconvertido;
+  
   union8_t datoconvertido;
   
   datoconvertido.reg = ByteBaudot;
@@ -1367,13 +846,9 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
 #if 1	// it is easy to change the lookup table so that this instruction would not be necessay --> Speed...
   datoconvertido.reg ^= 0xFF;	// inverting the byte because...? the lookup table is not prepared...weak!
 #endif
-  /****************************************************************************/
-  /*                      NUEVO ENFOQUE: USAR TIMER 2                         */
-  /****************************************************************************/
-  // Se utilizará el timer 2 en la transmisión de los bits individuales de cada
-  //carácter por el AD9954
-  // Los 7 primeros bits tienen igual ancho temporal
-  // if ( !gTrueSi150FalseSi300 )
+
+
+
 #if 1
   if ( !TX_150BPS )    
   {
@@ -1385,9 +860,7 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
     T2_POSTSCALER = TMR2_300BAUD_POST;
    
     PR2 = TMR2_300BAUD_PR;  // 216;
-    
-    
-    
+ 
   }
   else
   {
@@ -1404,20 +877,13 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
 #endif	
 
   TMR2 = 0;
-  // Se ajustan los flags de interrupción y activación
   TMR2IF = 0;
   TMR2IE = 1;
-  // La solución consiste en encender el timer 2 e ir leyendo el estado de
-  // encendido del timer 2 hasta comprobar que se ha apagado. Una vez se ha
-  // apagado, quiere decir que el timer 2
-	
-	
+
 
 	for(hlooper = 0; hlooper < 8; hlooper++)
 	{
-#if 0    
-		PS0_AD9954 = (datoconvertido.reg >> (hlooper - 1)) & 0x01;	// datoconvertido.b7;
-#else
+
     if(datoconvertido.reg & shifter)
     {
       PS0_AD9954 = true;
@@ -1428,119 +894,14 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
     }
     
     shifter = shifter >> 1;
-    
-#endif    
+  
 		TMR2ON = 1; 
+    
 		while ( TMR2ON );	
     
 	}
-
-	
 }
 
-
-
-#else
-  
-
-// This is used D. 02062021
-static void AD9954TransmiteByte(uint8_t ByteBaudot){
-	
-	uint8_t hlooper = 0;
-  
-  // t_byte datoconvertido;
-  union8_t datoconvertido;
-  datoconvertido.reg = ByteBaudot;
-	
-#if 1	// it is easy to change the lookup table so that this instruction would not be necessay --> Speed...
-  datoconvertido.reg ^= 0xFF;	// inverting the byte because...? the lookup table is not prepared...weak!
-#endif
-  /****************************************************************************/
-  /*                      NUEVO ENFOQUE: USAR TIMER 2                         */
-  /****************************************************************************/
-  // Se utilizará el timer 2 en la transmisión de los bits individuales de cada
-  //carácter por el AD9954
-  // Los 7 primeros bits tienen igual ancho temporal
-  // if ( !gTrueSi150FalseSi300 )
-#if 1
-  if ( !TX_150BPS )    
-  {
-    
-    // 300 bps
-    // that creates 3332us --> 1000/300 = 3.333ms
-    T2_PRESCALER = TMR2_300BAUD_PRE;
-    
-    T2_POSTSCALER = TMR2_300BAUD_POST;
-   
-    PR2 = TMR2_300BAUD_PR;  // 216;
-    
-    
-    
-  }
-  else
-  {
-    // 6,56ms --> wtf...
-    // 150 bps
-    // Ajuste del PostScaler
-    T2_POSTSCALER = TMR2_150BAUD_POST;
-    // Ajuste del PreScaler
-    T2_PRESCALER = TMR2_150BAUD_PRE; 
-    
-    PR2 = TMR2_150BAUD_PR;
-  }
-
-#else
-  
-  if ( !TX_150BPS )    
-  {
-    // 300 bps
-    // that creates only 3,24ms --> that could get better...
-    // Ajuste del PostScaler
-    // T2CONbits.T2OUTPS = 0b1110; // PostScaler 15     T2CONbits.TOUTPS = 0b1110; // PostScaler 15
-    T2_POSTSCALER = 0b1110;	// 0x0E
-    // Ajuste del PreScaler
-    T2CONbits.T2CKPS = 0b00; // Preescaler 1
-    PR2 = 216;
-    
-    
-    
-  }
-  else
-  {
-    // 6,56ms --> wtf...
-    // 150 bps
-    // Ajuste del PostScaler
-    T2_POSTSCALER = 0b0111;	// T2CONbits.T2OUTPS = 0b0111; // PostScaler 7  T2CONbits.TOUTPS = 0b0111; // PostScaler 7
-    // Ajuste del PreScaler
-    T2CONbits.T2CKPS = 0b01; // Preescaler 4
-    PR2 = 205;
-  }
-
-#endif	
-  TMR2 = 0;
-  // Se ajustan los flags de interrupción y activación
-  TMR2IF = 0;
-  TMR2IE = 1;
-  // La solución consiste en encender el timer 2 e ir leyendo el estado de
-  // encendido del timer 2 hasta comprobar que se ha apagado. Una vez se ha
-  // apagado, quiere decir que el timer 2
-	
-	
-
-	for(hlooper = 8; hlooper > 0; hlooper--)
-	{
-    
-		PS0_AD9954 = (datoconvertido.reg >> (hlooper - 1)) & 0x01;	// datoconvertido.b7;
-    
-		TMR2ON = 1; 
-		while ( TMR2ON );	
-	}
-
-	
-}
-
-
-#endif
 
 // trying a few tweaks to make it work...
 #if DEBUG_16F1936_PITADA && 0
@@ -1693,16 +1054,19 @@ static void AD9954Apaga(void)
 
 
 static void select_bank(uint8_t bankbits){
-  
+
+#if DEBUGGING_BB_IS_ON  
   if(bankbits > 3)
   {
     DB_PRINT("BANKING ERROR!");
   }
+#endif
   
   PS1_AD9954 = (bankbits>>1) & 0x01u;
   PS0_AD9954 = bankbits & 0x01u;
   
 }
+
 
 
 static void AD9954PulsoUpdate(void){
@@ -1717,6 +1081,16 @@ static void AD9954PulsoUpdate(void){
   
 }
 
+
+
+
+
+
+
+// OBSOLETE-----------------------------
+
+
+#if 0
 static void AD9954PulsoIoSync(void){
   
   TMR2ON = true;
@@ -1725,13 +1099,6 @@ static void AD9954PulsoIoSync(void){
   SYNC_AD9954 = 0;
   
 }
-
-
-// OBSOLETE-----------------------------
-
-
-#if 0
-
 
 
 

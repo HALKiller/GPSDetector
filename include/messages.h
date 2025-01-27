@@ -6,6 +6,7 @@
 #define USE_NEW_VERSION_ID 1
 #define OV_VERSION_ID 1
 
+
 #if USE_NEW_VERSION_ID&&0
 
 #define PARSE_MONTH(m) ( \
@@ -36,9 +37,6 @@
 
 
 
-
-
-
 void calculate_version_number(void);
 
 int get_month_index(void);
@@ -54,10 +52,11 @@ typedef enum message_type{
   e_send_position,          // msg_position   --> position got locked            // PreparaMensajePosicion
   e_resend_position,        // msg_position   --> position not found resend last one            // PreparaMensajePosicion  
   e_No_gps,                 // msg_no_gps     --> not receiving nothing            // PreparaMensajeNoHayGps
-  e_No_position_no_time,    // msg_no_position_no_time --> only on startup! because of that there is always the "activation" after allready working for a while    //PreparaMensajeNoHayPosNiHora
-  e_No_gps_reception,       // msg_no_gps_reception       // PreparaMensajeFueraDeCobertura
-  e_Gps_searches_position,  // msg_gps_searches_position  // PreparaMensajeBuscandoGps
-  e_Low_baterie,            // msg_low_baterie            // PreparaMensajeBateriaBaja
+  e_NUM_MSG,
+  // e_No_position_no_time,    // msg_no_position_no_time --> only on startup! because of that there is always the "activation" after allready working for a while    //PreparaMensajeNoHayPosNiHora
+  // e_No_gps_reception,       // msg_no_gps_reception       // PreparaMensajeFueraDeCobertura
+  // e_Gps_searches_position,  // msg_gps_searches_position  // PreparaMensajeBuscandoGps
+  // e_Low_baterie,            // msg_low_baterie            // PreparaMensajeBateriaBaja
   
   
 }msg_t;

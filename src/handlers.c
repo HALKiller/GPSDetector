@@ -852,7 +852,7 @@ static void f_prepare_msg(void){
 #if SEND_ALL_MESSAGES_FOR_TESTING   
   uint8_t hlooper = 0;
   
-  for(hlooper = 0; hlooper < 3; hlooper++)
+  for(hlooper = 0; hlooper < e_NUM_MSG; hlooper++)
   {
     
     set_message_for_tx(hlooper);
@@ -861,7 +861,9 @@ static void f_prepare_msg(void){
     
       // well, what are the possibilitys here actually --> 
   // we would need to know what message and that would depend on where we are coming from
+#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
     messages_before_transmission();
+#endif
     
     Transmite(false);
     
@@ -873,7 +875,9 @@ static void f_prepare_msg(void){
   
   // well, what are the possibilitys here actually --> 
   // we would need to know what message and that would depend on where we are coming from
-  messages_before_transmission();
+#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
+    messages_before_transmission();
+#endif
   
 
 #if 1 
@@ -955,7 +959,9 @@ static void f_prepare_msg(void){
   
   // well, what are the possibilitys here actually --> 
   // we would need to know what message and that would depend on where we are coming from
-  messages_before_transmission();
+#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
+    messages_before_transmission();
+#endif
   
   Transmite(false);
   
@@ -1260,9 +1266,9 @@ static void f_always_transmit(void){
   {
     
     set_message_for_tx(e_Activation);
-    
+#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
     messages_before_transmission();
-
+#endif
     Transmite(false);
     
     CLRWDT();

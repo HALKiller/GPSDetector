@@ -32,6 +32,7 @@
 
 #if DEBUGGING_IS_ON || DEBUGGING_BB_IS_ON
 #include "UART.h"
+#include "io_port_sfr_names.h"
 #endif
 
 #include <string.h>
@@ -75,7 +76,8 @@ struct MonthDay months[] = {
 
 const char gMensajeActivandose  [] = "ACTIVANDOSE ";
 
-const char msg_gps_error        [] = "FALLO MODULO GPS >-< ERROR ";
+const char msg_gps_error        [] = "FALLO MODULO GPS >-< ERROR  ";
+const char msg_gps_dds_error    [] = "FALLO MOD DDS GPS >-< ERROR ";
 
 const char gMensajeGuion        [] = ">-< ";
 const char gMensajeHora         [] = "HORA ";
@@ -158,6 +160,8 @@ void set_message_for_tx(msg_t next_msg){
 void messages_before_transmission(void){
 // void messages_before_transmission(msg_t msg_id){
   
+  // DB_LED_1 = true;
+  
   DDS_flush_buffer();
   
   switch(msg_id)
@@ -196,6 +200,8 @@ void messages_before_transmission(void){
     break;
   }
 
+  // DB_LED_1 = false;
+
 }
 
 
@@ -206,6 +212,8 @@ void messages_before_transmission(void){
 static void msg_activation(void)
 {
 
+  uint16_t temp_v = version_nr;
+
   insert_msg_header();
   
   strcpy ( (char*)(sentence_buffer.gps_buffer + 23), gMensajeActivandose );
@@ -214,6 +222,14 @@ static void msg_activation(void)
   
 #if DB_NEW_SPI  
   version_nr++;
+  if(DDS_CFG_ERR == true)
+  {
+    version_nr = version_nr + 999;
+  }
+  if(version_nr > 9999)
+  {
+    version_nr = version_nr - 10000;
+  }
 #endif  
 
 #if USE_NEW_VERSION_ID||OV_VERSION_ID
@@ -467,7 +483,11 @@ static void msg_position(uint8_t resend)
     sentence_buffer.gps_buffer[59] = '5';
   }
   
-
+  if(DDS_CFG_ERR == true)
+  {
+    sentence_buffer.gps_buffer[59]++;
+    
+  }
  
  #else
   
@@ -492,14 +512,33 @@ static void msg_no_gps(void){
 
   insert_msg_header();
   
-  strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_error);
+  if(DDS_CFG_ERR == true)
+  {
+    strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_dds_error);
+  }
+  else
+  {
+    strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_error);
+  }
+  
+  
+  
+  
+  
 
   
-#if USE_NEW_VERSION_ID
+#if USE_NEW_VERSION_ID && 0
+
+  strcat ( (char*)(sentence_buffer.gps_buffer), gMensajeVersion_H );
+  insert_version((char*)(sentence_buffer.gps_buffer + 53));
+  strcpy ( (char*)(sentence_buffer.gps_buffer + 57), gMensajeVersion_T );
+
+#elif 1
 
   strcpy ( (char*)(sentence_buffer.gps_buffer + 51), gMensajeVersion_H );
   insert_version((char*)(sentence_buffer.gps_buffer + 53));
   strcpy ( (char*)(sentence_buffer.gps_buffer + 57), gMensajeVersion_T );
+  
   
  
 #else  

@@ -27,6 +27,19 @@
 #define BAT_IS_LOW_FLG      gd_flags.b6 // when the bat is under the threshhold
 #define BAT_IS_TOO_LOW      gd_flags.b7 // once we reach that we swoff off for one hour
 
+
+
+#define DDS_CFG_ERR         err_flags.b7
+#define FREE_ERRFLG6        err_flags.b6
+#define FREE_ERRFLG5        err_flags.b5
+#define FREE_ERRFLG4        err_flags.b4
+#define FREE_ERRFLG3        err_flags.b3
+#define FREE_ERRFLG2        err_flags.b2
+#define FREE_ERRFLG1        err_flags.b1
+#define FREE_ERRFLG0        err_flags.b0
+
+
+
 #else
  
 // that does not compile...
@@ -73,6 +86,7 @@ typedef union udt_generic_8bit_union{
 
 extern union8_t gFLAGS;
 extern union8_t gd_flags;
+extern union8_t err_flags;
 
 
 

@@ -44,7 +44,7 @@
 #define USE_NEW_SPI 1
 #define DB_NEW_SPI 1
 
-
+#define CREATE_TX_MESSAGE_AFTER_DDS_CFG 1
 
 #if COMPILE_FOR_RELEASE
 
@@ -67,9 +67,12 @@
 // activating/deactivating the detector but is always on
 #define TILT_IS_ALWAYS_ON 0
 
-#define READBACK_DDS 0
+#define READBACK_DDS 1
 #define DB_LUZ 0
 
+// in DEBUGGING we are getting low on TOM and therefore I just write a 
+// Version number and do not calculate it
+#define REDUCE_ROM_ON_VERSION_CREATION 0
 
 #else // COMPILE_FOR_RELEASE
 
@@ -156,7 +159,7 @@
 
 #if PCB_VERSION==68
 #define INVERTED_LDR_SENSOR 1
-#define USE_SPI_TILT 1
+#define USE_SPI_TILT 0
 #elif PCB_VERSION==67
 #define INVERTED_LDR_SENSOR 0
 #define USE_SPI_TILT 0

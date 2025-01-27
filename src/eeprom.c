@@ -85,14 +85,14 @@ __eeprom unsigned char gContenidoEeprom[] = {
   0x0B, /* No se usa */ 0x15, 0x39, 0x2B, 0x7F, /* FTW0 - Normal 0     */
   0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW1 - Normal 1     */
   0x0B, /* No se usa */ 0x15, 0x39, 0x2B, 0x7F, /* FTW2 - Radiogonio 0 */
-  0x0B, /* No se usa */ 0xAB, 0xCD, 0xEF, 0x05, /* FTW3 - Radiogonio 1 */
+  0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW3 - Radiogonio 1 */
   // 0x0B, /* No se usa */ 0x15, 0x39, 0x45, 0xB6, /* FTW3 - Radiogonio 1 */
   
   0xFF, /* No se usa */
   
   'D', 'C', 'T', 'C', /* Cabecera: DCTC  ¡                                    */
   '9', '9', '9', '8', /* Número de cliente, gIdentificadorCliente             */
-  '0', '0', '1',      /* Número de baliza,  gNumeroDeBaliza                   */
+  '0', '0', '2',      /* Número de baliza,  gNumeroDeBaliza                   */
   
   0x00, /* T_ERROR_GPS. No se usa                                             */
   0x0A, /* gTiempoDuracionTransmision: tiempo de transmisión  0A=10sg         */

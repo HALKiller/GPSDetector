@@ -61,6 +61,7 @@
 /******************************************************************************/
 
 union8_t gFLAGS;
+union8_t err_flags;
 
 
 // TODO before rc --> Watch Dog timer !

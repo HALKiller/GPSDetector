@@ -101,7 +101,7 @@ const uint8_t gTablaAsciiABaudot[] = {
 0b00100111, // )
 0b00000000, // 
 0b00000000, // 
-0b00011011, // ,
+0b00011011, // ,  // this one here is strangely enough actually working...
 0b01100011, // ?
 0b00011111, // .
 0b01011111, // /

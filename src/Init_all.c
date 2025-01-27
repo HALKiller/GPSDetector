@@ -248,6 +248,8 @@ void init_all(void){
 // we set here all the timers and handlers and stuff
 void startup(void){
   
+  err_flags.reg = 0u;
+  
   tilt_sensor_init();
   
   gps_init();
