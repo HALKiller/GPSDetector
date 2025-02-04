@@ -49,7 +49,7 @@
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
-#define GPS_PRINT 1 
+#define GPS_PRINT 0
  
 #define LOCK_TIME_COUNTER 6u
 

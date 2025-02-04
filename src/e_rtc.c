@@ -216,19 +216,16 @@ void eRTC_calculate_time_until_tx(void)
   {
     gd.next_time_tx = gd.next_time_tx - SECONDS_PER_DAY;
   }
-  
+ 
+#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)&&0 
   ertc_convert_to_real_time(gd.next_time_tx);
   DB_PRINT("N_tx: ");
   ertc_convert_to_str();
-  
+#endif  
   
 #endif
   
-#if DEBUGGING_IS_ON&&0
-  DB_PRINT("Wait: ");
-  UART_int(gd.seconds_until_next_tx);
-  UART_CRLF;
-#endif
+
 
 }
 

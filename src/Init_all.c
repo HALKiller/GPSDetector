@@ -78,8 +78,9 @@ void init_all(void){
   init_TMR_bitbang_uart(NORMAL_CLOCK);
 #endif
   
+#if USE_NEW_VERSION_ID&&0  
 	calculate_version_number();
-
+#endif
 	
 	init_tmr1();
 	

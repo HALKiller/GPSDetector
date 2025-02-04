@@ -123,13 +123,13 @@ void main(void)
   // and therefore there should not be any 
 // Isr be active allready except perhaps the UART during debugging!!!
   
-#if DEBUGGING_IS_ON
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
 
   const unsigned char SW_version[] = "GPSD_v.1.0_db\r\n";
   
 #else
   
-  const unsigned char SW_version[] = "GPSD_v.1.0_rc\r\n";
+  const unsigned char SW_version[] = "G\r\n";
   
 #endif
 

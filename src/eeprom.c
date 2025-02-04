@@ -103,7 +103,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
         /* número de segundos con luz nocturna encendida.                     */
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */
-  0x90, // 0x90, if b0==false --> Double Period on low bat, if b1==true-->always_transmit, if b4==true TX_150 BPS, if b5==false-->LUZ_ENABLED 
+  0x92, // 0x90, if b0==false --> Double Period on low bat, if b1==true-->always_transmit, if b4==true TX_150 BPS, if b5==false-->LUZ_ENABLED 
   0x0C, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
   0xCF, /* Valor de batería para transmisión cada 2 ciclos  CF=10.8  D7=11.2  */
   0xFC, /* Segunda palabra de configuración de la baliza                      */

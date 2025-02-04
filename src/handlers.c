@@ -778,9 +778,9 @@ static void f_gps_test_rx(void){
     }
     else
     {
+      
       set_message_for_tx(e_No_gps);
       STATUS_LED_RED_ON();
-      
     }
     
     timers_set_tmr1_id(STATUS_LED_TIMEOUT);
@@ -1273,7 +1273,20 @@ static void f_always_transmit(void){
     
     CLRWDT();
     
-    __delay_ms(10000);
+    __delay_ms(2000);
+    
+    
+     set_message_for_tx(e_No_gps);
+#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
+    messages_before_transmission();
+#endif
+    Transmite(false);
+    
+    CLRWDT();
+    
+    __delay_ms(2000);
+    
+    
     
   }
   

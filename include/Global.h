@@ -44,7 +44,14 @@
 #define USE_NEW_SPI 1
 #define DB_NEW_SPI 1
 
+// because than it is possible to reflect that into the message
+// if the DDS got reconfigured because the readback went bad...
 #define CREATE_TX_MESSAGE_AFTER_DDS_CFG 1
+
+#define TRY_HEX_IN_VERSION_DIGITS 1
+
+#define USE_ERR_MSG_IN_GOOD_POS 0
+#define USE_ERR_MSG_IN_BAD_POS 1
 
 #if COMPILE_FOR_RELEASE
 
@@ -57,7 +64,7 @@
 
 #define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
 #define DB_67 0
-
+#define LETTER_REPLACER "R"
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
 #define USE_PWM_LED 1
@@ -74,6 +81,10 @@
 // Version number and do not calculate it
 #define REDUCE_ROM_ON_VERSION_CREATION 0
 
+
+
+#define TEST_LETTERS_IN_VERSION_INCREMENT 1
+
 #else // COMPILE_FOR_RELEASE
 
 
@@ -85,7 +96,7 @@
 
 #define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
 #define DB_67 0
-
+#define LETTER_REPLACER "D"
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
 #define USE_PWM_LED 1
@@ -101,14 +112,18 @@
 
 // in DEBUGGING we are getting low on TOM and therefore I just write a 
 // Version number and do not calculate it
-#define REDUCE_ROM_ON_VERSION_CREATION 1
+#define REDUCE_ROM_ON_VERSION_CREATION 0
+
+// when set we send the amount of recharged times baterie on activation...
 
 
+#define TEST_LETTERS_IN_VERSION_INCREMENT 1
 
 #endif  // COMPILE_FOR_RELEASE
 
 
-// when set we replace the seconds in the messages with an err code --> therefore 
+// when set we replace the seconds in the messages with an err code 
+// --> therefore we can add several states into that
 
 #define SEND_ERROR_CODES_IN_SECONDS_SLOT 1
 

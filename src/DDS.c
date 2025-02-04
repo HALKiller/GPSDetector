@@ -1055,12 +1055,7 @@ static void AD9954Apaga(void)
 
 static void select_bank(uint8_t bankbits){
 
-#if DEBUGGING_BB_IS_ON  
-  if(bankbits > 3)
-  {
-    DB_PRINT("BANKING ERROR!");
-  }
-#endif
+
   
   PS1_AD9954 = (bankbits>>1) & 0x01u;
   PS0_AD9954 = bankbits & 0x01u;

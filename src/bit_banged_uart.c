@@ -28,7 +28,7 @@
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
 
-static const uint8_t const_max_str_length = 64;
+static const uint8_t const_max_str_length = 96;
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  

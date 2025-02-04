@@ -51,7 +51,7 @@
 #define MEASURE_ILUMINATION_TIME_CNT_BASE (45u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
 #endif
 
-#define BAT_IS_TOO_LOW_THRESHOLD 71
+#define BAT_IS_TOO_LOW_THRESHOLD 80
 
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
@@ -210,73 +210,25 @@ void init_detector_config(void){
   ee_retval = LeerEeprom ( 0x46u );
  
 
-#if 1
-
-
   if((ee_retval & 0x01) == false)
   {
-    
     DOUBLE_PERIOD = true;
-    
   }
 
   if((ee_retval & 0x02) != false)
   {
-    
     ALWAYS_TRANSMIT = true;
-    
   }
   
   if((ee_retval & 0x10) != false)
   {
-    
     TX_150BPS = true;
-    
   }
   
   if((ee_retval & 0x20) == false)
   {
-    
     LUZ_ENABLED = true;
-    
   }
-  
-#elif 1
-  
-  DOUBLE_PERIOD  = !(ee_retval & 0x01);
-  
-  ALWAYS_TRANSMIT = (ee_retval & 0x02);
-  
-  TX_150BPS = (ee_retval & 0x10);      
-  
-  LUZ_ENABLED = !(ee_retval & 0x20);   
-  
-
-#elif 1
-
-  DOUBLE_PERIOD  = !(ee_retval & 0x01); // shifts_8bit[BIT_SLOT_DOUBLE_PERIOD]);
-  
-  ALWAYS_TRANSMIT = (ee_retval & 0x02); // shifts_8bit[BIT_SLOT_ALWAYS_TRANSMIT]);
-  
-  TX_150BPS = (ee_retval & 0x10); // shifts_8bit[BIT_SLOT_TX_150BPS]);
-  
-  LUZ_ENABLED = !(ee_retval & 0x20);  // shifts_8bit[BIT_SLOT_LUZ_ENABLED]);
-  
- 
-  
-  
-  
-#else
-    
-  DOUBLE_PERIOD  = !(ee_retval & shifts_8bit[BIT_SLOT_DOUBLE_PERIOD]);
-
-  LUZ_ENABLED = !(ee_retval & shifts_8bit[BIT_SLOT_LUZ_ENABLED]);
-  
-  TX_150BPS = (ee_retval & shifts_8bit[BIT_SLOT_TX_150BPS]);
-  
-  ALWAYS_TRANSMIT = (ee_retval & shifts_8bit[BIT_SLOT_ALWAYS_TRANSMIT]);
-  
-#endif  
 
   if(ALWAYS_TRANSMIT == true)
   {
@@ -327,7 +279,6 @@ uint8_t get_detector_number(void){
 }
 
 uint8_t get_sync_time(void){
-  
   
   return gd.syncro_time;
   
@@ -405,7 +356,33 @@ void LeerValorBateria(void){
   
 }
 
-#if 1
+#if 0
+
+// 16 words longer!! incredible but yes
+static uint16_t calculate_voltage_from_input_value(uint16_t value){
+  
+  uint16_t val_1 = 0;
+  uint16_t val_2 = 0;
+  uint16_t ret_value = 0u;
+  
+  val_1 = (5 * value / 9) + 2;
+  
+  val_2 = (17 * value + 49) >> 4;
+  
+  val_2 = val_2 / 3u;
+  
+  // val_2 = (17 * value + 49 ) / 48;
+  
+  ret_value = (val_1 + val_2) / 7;
+  
+  // ret_value = ( ( ( value * 5 + 9 ) / 2 ) + ( ( value * 17 + 49 ) / 48 ) ) / 7;
+  
+  return ret_value;
+
+}  
+#elif 1
+
+
 // 4 words shorter
 static uint16_t calculate_voltage_from_input_value(uint16_t value){
   
@@ -413,7 +390,7 @@ static uint16_t calculate_voltage_from_input_value(uint16_t value){
   uint16_t val_2 = 0;
   uint16_t ret_value = 0u;
   
-  val_1 = 5 * value / 9 + 2 ;
+  val_1 = (5 * value / 9) + 2;
   val_2 = (17 * value + 49 ) / 48;
   ret_value = (val_1 + val_2) / 7;
   
