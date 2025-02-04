@@ -39,7 +39,7 @@
 
 #if DEBUGGING_IS_ON||1
 
-#include "pwm_luz.h"
+#include "detector.h"
 
 #endif
 

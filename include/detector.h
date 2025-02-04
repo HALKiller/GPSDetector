@@ -1,5 +1,5 @@
-#ifndef PWM_LUZ_H
-#define PWM_LUZ_H
+#ifndef DETECTOR_H
+#define DETECTOR_H
 
 
 

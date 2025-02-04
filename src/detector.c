@@ -9,7 +9,7 @@
 
 
 //   * * * * * *      I N C L U D E S   B L O C K     * * * * * * * * * * * * * * * * * * * * *  //
-#include "pwm_luz.h"
+#include "detector.h"
 
 #include "Global.h"
 
@@ -246,19 +246,19 @@ void init_detector_config(void){
   
   DB_PRINT("\r\n");
   
-  DB_PRINT("DOUBLE_PERIOD: ");  //   = !(ee_retval & shifts_8bit[BIT_SLOT_DOUBLE_PERIOD]);
+  DB_PRINT("DOUBLE_PERIOD: ");
   
   db_printing_bits(DOUBLE_PERIOD);
 
-  DB_PRINT("LUZ_ENABLED: "); // LUZ_ENABLED = !(ee_retval & shifts_8bit[BIT_SLOT_LUZ_ENABLED]);
+  DB_PRINT("LUZ_ENABLED: ");
   
   db_printing_bits(LUZ_ENABLED);
   
-  DB_PRINT("TX_150BPS: "); // TX_150BPS = (ee_retval & shifts_8bit[BIT_SLOT_TX_150BPS]);
+  DB_PRINT("TX_150BPS: ");
   
   db_printing_bits(TX_150BPS);
   
-  DB_PRINT("ALWAYS_TRANSMIT: "); // ALWAYS_TRANSMIT = (ee_retval & shifts_8bit[BIT_SLOT_ALWAYS_TRANSMIT]);
+  DB_PRINT("ALWAYS_TRANSMIT: "); 
 
   db_printing_bits(ALWAYS_TRANSMIT);
 

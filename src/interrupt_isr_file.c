@@ -14,7 +14,7 @@
 #include "generic_union_flgs.h"
 #include "timers.h"
 #include "e_rtc.h"
-#include "pwm_luz.h"
+#include "detector.h"
 
 #include "ring_buffer.h"
 

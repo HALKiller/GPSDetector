@@ -26,11 +26,11 @@
       <itemPath>include/gps_extensions.h</itemPath>
       <itemPath>include/extension_strings.h</itemPath>
       <itemPath>include/e_rtc.h</itemPath>
-      <itemPath>include/pwm_luz.h</itemPath>
       <itemPath>include/eeprom.h</itemPath>
       <itemPath>include/DDS.h</itemPath>
       <itemPath>include/messages.h</itemPath>
       <itemPath>include/bit_banged_uart.h</itemPath>
+      <itemPath>include/detector.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -61,11 +61,11 @@
       <itemPath>src/gps.c</itemPath>
       <itemPath>src/extension_strings.c</itemPath>
       <itemPath>src/e_rtc.c</itemPath>
-      <itemPath>src/pwm_luz.c</itemPath>
       <itemPath>src/eeprom.c</itemPath>
       <itemPath>src/DDS.c</itemPath>
       <itemPath>src/messages.c</itemPath>
       <itemPath>src/bit_banged_uart.c</itemPath>
+      <itemPath>src/detector.c</itemPath>
     </logicalFolder>
     <itemPath>getting_started.txt</itemPath>
     <itemPath>legal_disclaimer.txt</itemPath>
@@ -1318,16 +1318,6 @@
         <XC8-config-global>
         </XC8-config-global>
       </item>
-      <item path="include/pwm_luz.h" ex="false" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
       <item path="include/rx_luz.h" ex="false" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
@@ -1409,16 +1399,6 @@
         </XC8-config-global>
       </item>
       <item path="src/my_assert.c" ex="false" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
-      <item path="src/pwm_luz.c" ex="false" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
         <HI-TECH-LINK>
@@ -2641,16 +2621,6 @@
         <XC8-config-global>
         </XC8-config-global>
       </item>
-      <item path="include/pwm_luz.h" ex="false" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
       <item path="include/rx_luz.h" ex="false" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
@@ -2732,16 +2702,6 @@
         </XC8-config-global>
       </item>
       <item path="src/my_assert.c" ex="false" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
-      <item path="src/pwm_luz.c" ex="false" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
         <HI-TECH-LINK>

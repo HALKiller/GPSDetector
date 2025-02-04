@@ -23,7 +23,7 @@
 #include "eeprom.h"
 #include "Global.h"
 #include "timers.h"
-#include "pwm_luz.h"  // for the sensor ilum
+#include "detector.h"  // for the sensor ilum
 #include "gps_extensions.h" // for the buffer
 #include "io_port_sfr_names.h"
 #include "generic_union_flgs.h"

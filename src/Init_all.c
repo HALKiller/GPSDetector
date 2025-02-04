@@ -15,7 +15,7 @@
 
 #include "UART.h"
 
-#include "pwm_luz.h"
+#include "detector.h"
 
 #include "timers.h"
 

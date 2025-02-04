@@ -29,7 +29,7 @@
 #include "Init_all.h"
 #include "gps.h"
 #include "e_rtc.h"
-#include "pwm_luz.h"
+#include "detector.h"
 #include "DDS.h"
 #include "messages.h"
 

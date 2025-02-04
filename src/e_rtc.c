@@ -18,7 +18,7 @@
 
 #include "UART.h"
 
-#include "pwm_luz.h"
+#include "detector.h"
 
 #include "io_port_sfr_names.h"
 

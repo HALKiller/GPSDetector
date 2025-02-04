@@ -20,7 +20,7 @@
 
 #include "extension_strings.h"
 
-#include "pwm_luz.h"  // for the baterie adc measurement
+#include "detector.h"  // for the baterie adc measurement
 
 #include "DDS.h"
 

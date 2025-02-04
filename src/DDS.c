@@ -21,7 +21,7 @@
 
 #include "gps.h"
 
-#include "pwm_luz.h"
+#include "detector.h"
 
 #include "eeprom.h"
 
