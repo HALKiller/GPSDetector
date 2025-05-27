@@ -37,35 +37,40 @@
 
 #include "generic_union_flgs.h"
 
-#if DEBUGGING_IS_ON||1
-
 #include "detector.h"
 
-#endif
 
 
 #include <string.h>
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_GPS_DB_ENABLED
+#define FILE_GPS_DB_ENABLED 0
+#endif
+#if FILE_GPS_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
-#define GPS_PRINT 0
+#define GPS_PRINT 1
  
 #define LOCK_TIME_COUNTER 6u
 
 #define MAX_DATA_LENGTH_GPS_SENTENCE 82
 
-
 #define MAXIMUM_RECONFIGURATIONS_PER_ACTIVATION 4
-
 
 #define const_STARTWORDCOUNT_LEN 6
 
-#if DEBUGGING_IS_ON
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
-#else
-#define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION  
-#endif
+
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -104,6 +109,7 @@ typedef struct udt_gps_type{
   uint32_t lock_time_end;
   uint16_t lock_times[LOCK_TIME_COUNTER];
   uint16_t average_lock_time;
+  uint16_t last_lock_time;  // this is only used for testing transmissions
   union udt_UART_GPS_FLGS UART_GPS_FLG;
   gps_state_t state;
   uint8_t baudslot;
@@ -140,7 +146,7 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
  
 
  
-#if DEBUGGING_IS_ON
+#if 0
  
 
 static const char *sentences[] = {
@@ -204,9 +210,9 @@ static uint8_t temp_buff_pnt_cnt = MAX_DATA_LENGTH_GPS_SENTENCE;  // cMax_Senten
 
 static uint8_t endbyte_cnt = 2;
 
-static uint32_t gps_lock_timer_start = 0u;
+// static uint32_t gps_lock_timer_start = 0u;
 
-static uint32_t gps_lock_timer_end = 0u;
+// static uint32_t gps_lock_timer_end = 0u;
 
 
 
@@ -296,8 +302,8 @@ void gps_init(void){
 
 void gps_first_run(void){
   
-  UART_on();
-  GPS_VALIM = TRUE;
+  UART_on();  // the Peripheric UART
+  GPS_VALIM = TRUE; // gps gest energy
   try_reconfigure_gps();
   GPS_VALIM = FALSE;
   UART_off;
@@ -325,6 +331,11 @@ uint16_t gps_get_average_lock_time(void){
   
 }
 
+uint16_t gps_get_last_lock_time(void){
+  
+  return gps_module.last_lock_time;
+  
+}
 
 
 void gps_startup_initializer(void){
@@ -362,10 +373,7 @@ void gps_reinit(void){
   // switch on the gps valim pin
   GPS_VALIM = TRUE;
 
-#if DEBUGGING_IS_ON
-  FAKE_GPS_VALIM = true;
-  // uart_init_cfg(B9600);
-#endif  
+
 #endif  
   
   
@@ -397,27 +405,15 @@ void gps_reinit(void){
 void gps_stop(void){
  
 #if DEBUGGING_IS_ON  
-  // stop everything --> therefore : switch off  the uart
-  // deinit_uart(GPS_UART);  
-  // gps_uart_stop();
 
-  // //DB_PRINT("G: \r\n");
-    // switch on the gps valim pin
   GPS_VALIM = FALSE;
 
-#if DEBUGGING_IS_ON
-  FAKE_GPS_VALIM = false;
-  
-  // uart_init_cfg(B57600);
-  
-#endif
   // and switch off the valim_pin for the UART_CRLF
   UART_GPS_FLG.gps_stop_debug_flg = true;
+  
 #else
   
-  // TMR1_ON = FALSE;
-  
-  // UART_GPS_FLG.timeout_tmr_is_running = FALSE;
+
 
   GPS_VALIM = FALSE;
 
@@ -425,11 +421,7 @@ void gps_stop(void){
   
   UART_off();
   
-  // RCSTAbits.SPEN = FALSE;
-	
-	// RCSTAbits.CREN = FALSE;
-  
-	// TXSTAbits.TXEN = FALSE;
+
 
 #endif  
   
@@ -454,7 +446,7 @@ void gps_calculate_lock_time(void){
   
   gps_module.lock_times[gps_module.lock_indexer] = gps_module.lock_time_end - gps_module.lock_time_start;
   
-  
+  gps_module.last_lock_time = gps_module.lock_times[gps_module.lock_indexer];
 #if DEBUGGING_BB_IS_ON
 
   DB_PRINT("\r\nLock_time: ");
@@ -482,7 +474,6 @@ void gps_calculate_lock_time(void){
 }
 
 
-#if 1 // DEBUGGING_IS_ON
 // because during the development its interesting to see where it fails, in the release it makes no difference, it works or it does not
 // we are checking here to find out:
 // receiving all good? best!
@@ -514,7 +505,7 @@ gps_state_t gps_check_gps_error_status(void){
   else if(UART_GPS_FLG.valid_header_received == FALSE)
   {
     
-    gps_module.state = RECEIVING_NOT_CORRECTLY;
+    gps_module.state = NOT_RECEIVING_CORRECTLY;
 #if GPS_PRINT           
     DB_PRINT("\r\nGPS B ERR\r\n");
  #endif          
@@ -533,33 +524,11 @@ gps_state_t gps_check_gps_error_status(void){
 
 }
 
-
-
-#else
-
-// we are checking here to find out:
-// receiving all good? best!
-// receiving something but not reading quite --> reconfigure UART_CRLF// receive nothing --> fatal!
-gps_state_t gps_check_gps_error_status(void){
-  
-  TMR1_ON = FALSE;
-  
-  gps_module.state = GPS_ALL_GOOD;
-  
-  UART_GPS_FLG.timeout_tmr_is_running = FALSE;
-  
-  if(UART_GPS_FLG.gps_sentence_is_good == false)
-  {
-    try_reconfigure_gps();
-    gps_module.state = RECEIVING_NOT_CORRECTLY;
-  }
+gps_state_t gps_get_gps_state(void){
   
   return gps_module.state;
   
 }
-
-#endif
-
 
 RMC_sentence_t *get_pointer_to_rmc(void){
   
@@ -728,12 +697,7 @@ static void try_reconfigure_gps(void){
 
 static void send_recfg_gps_sentences(void){
   
-
-  
   DB_PRINT("\r\nSent cfg\r\n");
-  
-  
-  
   
 }
 
@@ -884,15 +848,18 @@ void values_to_gps_rx_buffer(uint8_t n_char){
         
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
         // we have now the full string in memory--> therefore we should be able to extract the different sub strings into the GPS_struct...
-
+#if DEBUGGING_BB_IS_ON        
+        *temp_buff_pnt = NULL_TERMINATOR;
+#endif 
         sentence_handler(gps_module.sentence_id);
         
-        
+       
         
       }
 #if DEBUGGING_IS_ON      
       else
       {
+        
         if(gps_module.sentence_id > 3)
         {
           
@@ -1384,6 +1351,25 @@ static void process_gsa_sentence(void){
   
   uint8_t *search_pnt;
 
+#if DB_V69_PCB
+  static uint8_t r_cnt = 0;
+  
+  r_cnt++;
+  
+#if 0
+  DB_PRINT("\r\nGSA: ");
+  UART_int(r_cnt);
+#else  
+  if(r_cnt >= 40)
+  {
+    r_cnt = 0;
+    UART_CRLF;
+    DB_PRINT(sentence_buffer.gps_buffer);
+    UART_CRLF;
+  }
+#endif  
+#endif  
+
     UART_GPS_FLG.gsa_position_is_good = false;
     
     search_pnt = Uint8_tStrchr( sentence_buffer.gps_buffer, ',' ) + 1;
@@ -1525,12 +1511,160 @@ static void convert_utc_to_gps_rtc_time(void){
 
 #if 1
 
+
 // optimizing...
 static void process_rmc_sentence(void){
   
   uint8_t *search_pnt;
   
   uint8_t* comma_pnt;
+  
+  
+#if DB_V69_PCB
+  static uint8_t r_cnt = 10;
+  
+  // r_cnt++;
+  
+  // if( r_cnt >= 10)
+  // {
+    // r_cnt = 0;
+    // UART_CRLF;
+    // DB_PRINT(sentence_buffer.gps_buffer);
+    // UART_CRLF;
+  // }
+#endif  
+  // $GPRMC,102736.420,A,4245.033333,N,02045.033333,W,1.62,125,211124,1,E,A*23
+  
+  // selectortrama = 0x10; // 0b0001 0000
+  search_pnt = Uint8_tStrchr( sentence_buffer.gps_buffer, ',' ) + 1;
+  // opimising...
+  UART_GPS_FLG.rmc_time_is_good = false;
+  rmc_sentence.HayLatitud = false;
+  rmc_sentence.HayLongitud = false;
+  
+ // El primer valor que se encuentra es la hora UTC, que siempre aparece en todo tipo de tramas RMC
+  rmc_sentence.UtcOfPosition.Horas    = AToUint8_t( search_pnt, 2 );
+  rmc_sentence.UtcOfPosition.Minutos  = AToUint8_t( search_pnt + 2, 2 );
+  rmc_sentence.UtcOfPosition.Segundos = AToUint8_t( search_pnt + 4, 2 );
+
+  // Haya o no haya posición, siempre estará un indicador sobre el estado:
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] == 'V' )
+  {
+    rmc_sentence.Status = SV;
+  }
+  else if ( search_pnt[0] == 'A' )
+  {
+    rmc_sentence.Status = SA;
+    UART_GPS_FLG.rmc_time_is_good = true;
+  }
+  
+ // $GPRMC,102736.420,A,4245.033333,N,02045.033333,W,1.62,125,211124,1,E,A*23
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  // Si lo siguiente que se encuentra es con un carácter `,`, quiere decir que no hay valor de latitud válido
+  
+  if ( search_pnt[0] != ',' )
+  {
+
+    rmc_sentence.HayLatitud = true;
+    rmc_sentence.Latitude.Grados  = AToUint8_t( search_pnt, 2 );
+    rmc_sentence.Latitude.Minutos = AToUint8_t( search_pnt + 2, 2 );
+    rmc_sentence.Latitude.Decimas = AToUint8_t( search_pnt + 5, 2 ) * 0x0064 + AToUint8_t( search_pnt + 7, 2 );
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( true == rmc_sentence.HayLatitud )
+  {
+
+    if ( search_pnt[0] == 'N' )
+    {
+      rmc_sentence.LatiDirection = eNORTH;
+    }
+    else if ( search_pnt[0] == 'S' )
+    {
+      rmc_sentence.LatiDirection = eSOUTH;
+    }
+  }
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( search_pnt[0] != ',' )
+  {
+
+    rmc_sentence.HayLongitud = true;
+    rmc_sentence.Longitude.Grados  = AToUint8_t( search_pnt, 3);
+    rmc_sentence.Longitude.Minutos = AToUint8_t( search_pnt + 3, 2);
+    rmc_sentence.Longitude.Decimas = AToUint8_t( search_pnt + 6, 2 ) * 0x0064 + AToUint8_t( search_pnt + 8, 2 );
+  }
+ // $GPRMC,102736.420,A,4245.033333,N,02045.033333,W,1.62,125,211124,1,E,A*23
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  if ( true == rmc_sentence.HayLongitud )
+  {
+
+    if ( search_pnt[0] == 'W' )
+    {
+      rmc_sentence.LongDirection = eWEST;
+    }
+    else if ( search_pnt[0] == 'E' )
+    {
+      rmc_sentence.LongDirection = eEAST;
+    }
+  }
+
+// $GPRMC,102736.420,A,4245.033333,N,02045.033333,W, 1.62 ,125,211124,1,E,A*23
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+
+  // La fecha
+  search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
+  rmc_sentence.Date.Dia  = AToUint8_t( search_pnt, 2 );
+  rmc_sentence.Date.Mes  = AToUint8_t( search_pnt + 2, 2 );
+  rmc_sentence.Date.Anyo = AToUint8_t( search_pnt + 4, 2 );
+
+
+
+  if(UART_GPS_FLG.rmc_time_is_good == TRUE)
+  {
+    convert_utc_to_gps_rtc_time();
+#if DB_V69_PCB    
+UART_CRLF;
+    DB_PRINT(sentence_buffer.gps_buffer);
+    UART_CRLF;
+    r_cnt = 0;
+#endif    
+  }
+  
+#if DB_V69_PCB
+  
+  r_cnt++;
+  
+  if( r_cnt >= 10)
+  {
+    r_cnt = 0;
+    UART_CRLF;
+    DB_PRINT(sentence_buffer.gps_buffer);
+    UART_CRLF;
+  }
+  
+#endif    
+
+  
+  
+}
+
+
+
+
+
+
+#elif 1
+// optimizing...
+static void process_rmc_sentence(void){
+  
+  uint8_t *search_pnt;
+  
+  uint8_t* comma_pnt;
+  
   
   // $GPRMC,102736.420,A,4245.033333,N,02045.033333,W,1.62,125,211124,1,E,A*23
   

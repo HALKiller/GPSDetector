@@ -9,6 +9,14 @@
 
 #if 1
 
+#if COMPILE_FOR_INTERNAL_TEST  
+ 
+ uint16_t get_txcnt(void);
+ 
+#endif  
+
+
+
 void Transmite(bool TransmiteRadiogonio);
 
 void AD9954Configura(void);

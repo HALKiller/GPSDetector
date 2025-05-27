@@ -14,16 +14,28 @@
 
 #include "io_port_sfr_names.h"
 
-// #include "xc.h"
-// #include <stdint.h>
-
 #include "UART.h"
+
+
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_ADC_DB_ENABLED
+#define FILE_ADC_DB_ENABLED 0
+#endif
+#if FILE_ADC_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
 
 #define USE_OLD_ADC_IMPLEMENTATION 1
 
 #define ADC_CHANNEL ADCON0bits.CHS
 
-#define ADC_SAMPLES	32
+#define ADC_SAMPLES	4
 
 #define START_CONVERSION	ADCON0bits.GO
 
@@ -33,6 +45,217 @@
 #if USE_OLD_ADC_IMPLEMENTATION
 
 
+// lets try oversampling...
+#if USE_ADC_OVERSAMPLING
+
+static uint16_t ADC_Vref = 0;
+#if DEBUG_ADC_RESULTS
+uint16_t adc_res[8];
+#endif
+
+#if 1
+
+// this version should be fine now for both chips...
+uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
+{
+	
+  uint8_t hlooper = 0;
+  uint8_t samples_setter = 1;
+  uint16_t adc_sum = 0; 
+  uint16_t ret_value = 0;
+  
+  
+  ADCON1bits.ADCS = 0b001;  // Fosc/8 --> because Errata in this Chip!    0b11; // Reloj RC
+	 // Se selecciona la referencia de voltaje
+  ADCON1bits.ADPREF = 0; // Se selecciona AVDD = VDD
+  ADCON1bits.ADNREF = 0; // Se selecciona AVSS = VSS
+	
+  // Se selecciona el canal a convertir
+  ADCON0bits.CHS = canal;
+
+  ADCON1bits.ADFM = JustificacionOrdenBits;
+  
+  // ADC On
+  ADCON0bits.ADON = 1;
+	
+	__delay_us( 250 );
+
+
+	if((canal == BATERIA_ADC_CHANNEL)||(canal == VREF_ADC_CHANNEL))
+	{
+		__delay_us( 750 );
+    samples_setter = ADC_SAMPLES;
+	}
+
+
+  for(hlooper = 0; hlooper < samples_setter; hlooper++)
+  {
+    
+    ADCON0bits.GO_nDONE = 1;
+
+    NOP();
+    while(ADCON0bits.GO_nDONE == true)
+    {
+      // loop until flag is set
+    }
+#if DEBUG_ADC_RESULTS    
+    adc_res[hlooper] = 256 * ADRESH + ADRESL;
+#endif    
+    adc_sum = adc_sum + (256 * ADRESH + ADRESL);
+   
+  }
+  
+  ADCON0bits.ADON = 0;
+  
+  ret_value = adc_sum / samples_setter;
+
+  return ret_value;
+
+}
+
+#else
+  
+// this is just a temporary testing not for releases!
+uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
+{
+	
+  uint8_t hlooper = 0;
+  uint8_t samples_setter = 1;
+  uint16_t adc_sum = 0; 
+  uint16_t ret_value = 0;
+  uint16_t s_looper = 500u;
+  uint16_t min = 65535;
+  uint16_t max = 0;
+  uint8_t show = false;
+  
+  ADCON1bits.ADCS = 0b001;  // Fosc/8 --> because Errata in this Chip!    0b11; // Reloj RC
+	 // Se selecciona la referencia de voltaje
+  ADCON1bits.ADPREF = 0; // Se selecciona AVDD = VDD
+  ADCON1bits.ADNREF = 0; // Se selecciona AVSS = VSS
+	
+  // Se selecciona el canal a convertir
+  ADCON0bits.CHS = canal;
+
+  ADCON1bits.ADFM = JustificacionOrdenBits;
+  
+  // ADC On
+  ADCON0bits.ADON = 1;
+	
+	__delay_us( 250 );
+
+
+	if((canal == BATERIA_ADC_CHANNEL)||(canal == VREF_ADC_CHANNEL))
+	{
+		// __delay_us( 750 );
+    samples_setter = ADC_SAMPLES;
+	}
+
+
+while(s_looper > 0)
+{
+  
+  show = false;
+  adc_sum = 0;
+  for(hlooper = 0; hlooper < samples_setter; hlooper++)
+  {
+    
+    ADCON0bits.GO_nDONE = 1;
+
+    NOP();
+    while(ADCON0bits.GO_nDONE == true)
+    {
+      // loop until flag is set
+    }
+#if DEBUG_ADC_RESULTS    
+    adc_res[hlooper] = 256 * ADRESH + ADRESL;
+#endif    
+    adc_sum = adc_sum + (256 * ADRESH + ADRESL);
+   
+  }
+  
+  ret_value = adc_sum / samples_setter;
+  
+  
+  if(ret_value > max)
+  {
+    max = ret_value;
+    show = true;
+  }
+  if(ret_value < min)
+  {
+    min = ret_value;
+    show = true;
+  }
+  if(show == true)
+  {
+    if(canal==VREF_ADC_CHANNEL)
+    {
+        DB_PRINT("\r\nVref: ");
+    }
+    else if(canal == BATERIA_ADC_CHANNEL)
+    {
+      DB_PRINT("\r\nBAT: ");
+    }
+    
+    UART_int(ret_value);
+  }
+  
+  s_looper--;
+  
+  
+} 
+  ADCON0bits.ADON = 0;
+  
+  ret_value = adc_sum / samples_setter;
+
+  return ret_value;
+
+}
+
+
+
+#endif
+uint16_t calculate_mV_from_ADC(uint16_t ADC_value){
+const uint16_t const_Vref_value = 8204; // 2048;
+uint32_t temp_ADC_value = ADC_value;
+uint16_t ret_value = 0;
+
+	if(ADC_Vref != 0)
+	{
+		ret_value = (temp_ADC_value * const_Vref_value) /  ADC_Vref;
+	}
+
+	return ret_value;
+	
+}
+
+// Setting the value means of course to take an adc read of the Vref 
+// i will use the 2048mV Vref and calculate against that than...
+void adc_set_vref_adc_value(void){
+  
+  // switch on the Vref capabilitys and configure it,wat for staiblization anddd
+  // ADC_Vref
+  FVRCON = 0x82;  // 10000010
+  while(FVRCONbits.FVRRDY == false)
+  {
+    // wait to stabilize...
+  }
+  
+  ADC_Vref = ConversionAdc(RIGHT_JUSTIFIED, VREF_ADC_CHANNEL);
+  
+  FVRCONbits.FVREN = false;
+  
+  
+}
+
+// void adc_getvref_adc_value(void){
+  
+  // return ADC_Vref;
+  
+// }
+
+#else
+  
 // this version should be fine now for both chips...
 void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
 {
@@ -43,24 +266,12 @@ void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
   ADCON1bits.ADPREF = 0; // Se selecciona AVDD = VDD
   ADCON1bits.ADNREF = 0; // Se selecciona AVSS = VSS
 	
-
-
-
   // Se selecciona el canal a convertir
   ADCON0bits.CHS = canal;
-  // Se selecciona el formato del resultado
-  // 0 - Justificación a la izquierda, 1 - Justificación a la derecha
-  // Ejemplo de valor de adc de 10 bits obtenido : 0b1100111001
-  /* ADFM = 0 para 0b1100111001
-   *   ADRESH   |  ADRESL
-   * 0b11001110 | 0b01xxxxxx (las x serán 0)
-   */
-  /* ADFM = 1 para 0b1100111001
-   *   ADRESH   |  ADRESL
-   * 0bxxxxxx11 | 0b00111001 (las x serán 0)
-   */
+
   ADCON1bits.ADFM = JustificacionOrdenBits;
-  // Se enciende el módulo ADC
+  
+  // ADC On
   ADCON0bits.ADON = 1;
 	
 	__delay_us( 250 );
@@ -76,20 +287,8 @@ void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
   //ADCON0bits.GO_DONE = 1;
   // TODO: check on GIE = false
   // Apaga todas las interrupciones y espera a salir por la conversión ADC
-#if 0
 
-#if REDUCE_ROM_USAGE
-	GIE = false;
-#else	
-  RCIE   = false;
-  TMR1IE = false;
-  TMR2IE = false;
-  T0IE   = false;
-#endif	
-#endif
 
-//  ACTIVAR_WATCHDOG_TIMER();
-#if 1
 
 	NOP();
 	while(ADCON0bits.GO_nDONE == true)
@@ -97,41 +296,22 @@ void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
     // loop until flag is set
   }
 
-#else
 
-  do
-  {
-    NOP();
-  } while ( ADCON0bits.GO_nDONE );
-	
-	
-#endif	
-	
-#if 0
-#if REDUCE_ROM_USAGE
-	GIE = true;
-#else		
-	
-  // Tras la conversión, que vuelva a encender el resto de interrupciones
-  RCIE   = true;
-  TMR1IE = true;
-  TMR1IE = true;
-  T0IE   = true;
 
-#endif
-
-#endif
-
- 
   ADCON0bits.ADON = 0;
 
 	
 
 }
 
+#endif
 
 
-#else
+
+#else // USE_OLD_ADC_IMPLEMENTATION
+
+static uint16_t ADC_Vref = 0;
+
 
 void init_ADC(void){
 	
@@ -182,6 +362,66 @@ uint8_t adc_samples_channel(uint8_t channel_to_sample){
 	
 	
 }
+
+
+// Setting the value means of course to take an adc read of the Vref 
+// i will use the 2048mV Vref and calculate against that than...
+void adc_set_vref_adc_value(void){
+  
+  // switch on the Vref capabilitys and configure it,wat for staiblization anddd
+  // ADC_Vref
+  FVRCON = 0x82;  // 10000010
+  while(FVRCONbits.FVRRDY == false)
+  {
+    // wait to stabilize...
+  }
+  
+  ADC_Vref = ConversionAdc(RIGHT_JUSTIFIED, VREF_ADC_CHANNEL,);
+  
+  FVRCONbits.FVREN = false;
+  
+  
+}
+
+void adc_getvref_adc_value(void){
+  
+  return ADC_Vref;
+  
+}
+
+
+
+uint16_t calculate_mV_from_ADC(uint16_t ADC_value){
+const uint16_t const_Vref_value = 8204; // 2048;
+uint32_t temp_ADC_value = ADC_value;
+uint16_t ret_value = 0;
+
+	if(ADC_Vref != 0)
+	{
+		ret_value = (temp_ADC_value * const_Vref_value) /  ADC_Vref;
+	}
+
+	return ret_value;
+	
+}
+
+
+
+void set_ADC_Vref(uint16_t adc_result){
+	
+	ADC_Vref = adc_result;
+	
+}
+
+
+
+
+
+
+
+
+
+
 
 #endif
 

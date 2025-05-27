@@ -35,6 +35,19 @@
 
 #include <stdint.h>
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_HANDLERS_DB_ENABLED
+#define FILE_HANDLERS_DB_ENABLED 0
+#endif
+#if FILE_HANDLERS_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
 
 #define USE_FUNC_PNT_HANDLER 1
 
@@ -450,26 +463,28 @@ static void rtc_1000ms_handler(void){
 #if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON      
   static uint8_t sec_cnt = 10u;
 #endif  
-  // TODO: a flag which indicates if we are at the moment with some kind of doncnt timer
+
   
   if(RTC_ALARM_ON == true)
   {
     
-    gd.rtc_alarm--; // seconds_until_next_tx--;
-#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON      
+    gd.rtc_alarm--;
+    
+#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON    
+  
     DB_PRINT(".");
     sec_cnt--;
     if(sec_cnt == 0u)
     {
       UART_CRLF;
       sec_cnt = 10;
-      // UART_CRLF;
+
       UART_int(gd.rtc_alarm);
     }
-    // UART_int(gd.rtc_alarm);
-    // UART_CRLF;
+
 #endif  
-    if(gd.rtc_alarm == 0u)  // seconds_until_next_tx == 0)
+
+    if(gd.rtc_alarm == 0u)
     {
       
       RTC_ALARM_ON = false;
@@ -478,6 +493,20 @@ static void rtc_1000ms_handler(void){
     }
   }
   
+  
+  if(STATUS_LED_ON == true)
+  {
+    detector_status_led_handler();
+  }
+  
+#if OV_PWM_LUZ
+#if COMPILE_WITH_PWM_LUZ
+  if(LUZ_ENABLED == TRUE)
+  {
+    pwm_luz_time_update();
+  }
+#endif
+#endif  
 #if DEBUGGING_IS_ON      
   if(DEBUG_FLG_PRINT_TIME == TRUE)
   {
@@ -498,13 +527,12 @@ static void rtc_alarm_handler(void){
   switch(gd_states_get_state())
   {
     case E_SLEEP_BEFORE_SEARCH_STATE:
-#if DB_CLOCKSWITCH    
-DB_PRINT("\r\nCLCK_1\r\n");
+ 
+      DB_PRINT("\r\nCLCK_1\r\n");
       SWITCH_CLOCK = true;
-#else
-      handlers_generic_set_handler_FLG(e_switch_clock_handler);
-#endif
+
       gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
+      
     break;
     case E_SEARCH_POSITION_STATE:
     
@@ -560,7 +588,6 @@ DB_PRINT("\r\nCLCK_1\r\n");
     // if slow --> we set the clock switcher and the alarm gets set again for beeping in the 
     // define Threshold time
     
-#if DB_CLOCKSWITCH    
       if(FAST_CLOCK == true)
       {
         gd_states_switch_to_next_state(E_TRANSMISSION_STATE); 
@@ -569,17 +596,9 @@ DB_PRINT("\r\nCLCK_1\r\n");
       {
         DB_PRINT("\r\nCLCK_2\r\n");
         SWITCH_CLOCK = true;
-        gd.rtc_alarm = SLEEP_BEFORE_TX_SWAP_BACK_TIME;;
+        gd.rtc_alarm = SLEEP_BEFORE_TX_SWAP_BACK_TIME;
         RTC_ALARM_ON = true;
       }
-      
-#else
-      gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
-#endif    
-    
-    
-    
-    
       
     break;
     default:
@@ -595,25 +614,17 @@ DB_PRINT("\r\nCLCK_1\r\n");
 
 
 
-#if 0
-
-
-
-
-#elif USE_FULL_SECONDS_FOR_RTC
-
-
-
-
 static void rtc_200ms_handler(void){
 
   static uint8_t db_cnt = 0;
 
+#if !OV_PWM_LUZ
 #if COMPILE_WITH_PWM_LUZ
   if(LUZ_ENABLED == TRUE)
   {
     pwm_luz_time_update();
   }
+#endif
 #endif
 
 #if 0
@@ -624,51 +635,13 @@ static void rtc_200ms_handler(void){
     update_tilt_sensor_state();
   }
 #else
+  
   update_tilt_sensor_state();
+  
 #endif
 
  
 }
-
-
-#else
-  
-
-static void rtc_200ms_handler(void){
-
-#if TEST_ERTC_SLOW_CLOCK
-	
-  static uint16_t s_cnt = 0;
-  
-  s_cnt++;
-  
-#endif
-  
-  // DB_PRINT("JA\r\n");
-  if(s_cnt >= 5)
-  {
-    if(FAST_CLOCK == TRUE)
-    {
-     
-      ertc_convert_to_real_time();
-      ertc_convert_to_str();
-    }
-    else
-    {
-      uart_init_cfg(B9600_low_clk);
-      // uart_init_slow_clock();
-    }
-    
-    s_cnt = 0;
-    SWITCH_CLOCK = TRUE;
-  }
-	
-	handlers_generic_set_handler_FLG(e_tilt_sensor_h);
-  
-}
-
-
-#endif
 
 
 
@@ -688,13 +661,6 @@ static void process_next_char_from_input(void){
 
 #if 1
 
-
-
-
-
-#if GPS_OFF_BEFORE_TX
-// GPS_OFF_TIME_SAFE_SYNC
-
 // E_SEARCH_POSITION_STATE handler here
 static void f_gps_on(void){
   
@@ -708,56 +674,26 @@ static void f_gps_on(void){
     {
       gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     }
-    
+    // TODO: we need to set here somthing...
     RTC_ALARM_ON = true;
   }
   else
   {
-   
+#if DB_V69_PCB
+    gd.seconds_until_next_tx = 240u;  //gd.time_between_tx;
+    gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
+    RTC_ALARM_ON = true;
+#else   
     gd.seconds_until_next_tx = 600u;  //gd.time_between_tx;
     gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
+#endif    
   }
   
   gps_startup_initializer();
-  
-  
-  // set up the GPS for reception --> bla bla, timeout timer, etc...
-  // TODO:
-  // UART_on
-  // TIMEout timer on
 
 }
 
-#else
-  
-// E_SEARCH_POSITION_STATE handler here
-static void f_gps_on(void){
-  
-  DB_PRINT("GPS_ON\r\n");
-  
-  if(RTC_TIME_IS_GOOD == true)
-  {
-    eRTC_calculate_time_until_tx();
-    gd.rtc_alarm = gd.seconds_until_next_tx;
-    RTC_ALARM_ON = true;
-  }
-  else
-  {
-    // TODO: setup a starting rtc time...
-  }
-  
-  gps_startup_initializer();
-  
-  
-  // set up the GPS for reception --> bla bla, timeout timer, etc...
-  // TODO:
-  // UART_on
-  // TIMEout timer on
-
-}
-
-#endif
 
 
 static void f_gps_test_rx(void){
@@ -772,28 +708,40 @@ static void f_gps_test_rx(void){
     if(gps_state == GPS_SENTENCE_RECEIVING)
     {
       set_message_for_tx(e_Activation);
+#if 1
+      if(TILT_SENSOR_ERR == true)
+      {
+        detector_status_led_cnt_on(LED_RED_BLINKS);
+      }
+      else
+      {
+        detector_status_led_cnt_on(LED_GREEN_ON);
+      }
       
+#else      
+  
       STATUS_LED_GREEN_ON();
-      
+#endif    
     }
     else
     {
-      
       set_message_for_tx(e_No_gps);
+#if 1
+      detector_status_led_cnt_on(LED_RED_BLINKS); // LED_RED_ON
+#else      
       STATUS_LED_RED_ON();
+#endif
     }
-    
+
+#if 0    
     timers_set_tmr1_id(STATUS_LED_TIMEOUT);
     reset_timeout_timer();
     TMR1_IE = TRUE;
     TMR1_ON = TRUE;
-    
-    // gd_states_set_next_state(E_SEARCH_POSITION_STATE);
+#endif    
     gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
 
   }
-  
-
   
 }
 
@@ -812,9 +760,8 @@ static void f_gps_has_position(void){
   
   if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
   {
-    copy_position_from_to(SAVEPOSITION);
     
-#if DB_CLOCKSWITCH 
+    copy_position_from_to(SAVEPOSITION);
    
     if(gd.seconds_until_next_tx >= (2u * SLEEP_BEFORE_TX_SWAP_BACK_TIME))
     {
@@ -830,21 +777,12 @@ static void f_gps_has_position(void){
     RTC_ALARM_ON = true;
     set_message_for_tx(e_send_position);
     gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
-    
-#else
-
-    gd.rtc_alarm = gd.seconds_until_next_tx;
-    RTC_ALARM_ON = true;
-    set_message_for_tx(e_send_position);
-    gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
-    
-#endif     
 
   }
   
 }
 
-#if 1 
+
 
 // transmit state
 static void f_prepare_msg(void){
@@ -864,7 +802,8 @@ static void f_prepare_msg(void){
 #if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
     messages_before_transmission();
 #endif
-    
+
+
     Transmite(false);
     
     
@@ -879,17 +818,19 @@ static void f_prepare_msg(void){
     messages_before_transmission();
 #endif
   
-
-#if 1 
-  
   WDTCONbits.SWDTEN = FALSE;
 
   Transmite(false);
+ 
+#if DEBUGGING_BB_IS_ON&&0  
+  DB_PRINT("Bat_ADC: ");
+  UART_int(gd.db_adc_value);
+#endif  
+
+  measure_bat_for_batcnt(E_TRANSMISSION_STATE);
   
   WDTCONbits.SWDTEN = TRUE;
   
-#endif  
-
   if(gd_states_get_last_state() == E_GPS_CHECK_ON_ACTIVATION)
   {
     // TODO --> at some stage we would need to transmit something...
@@ -899,40 +840,8 @@ static void f_prepare_msg(void){
   {
     gd_states_switch_to_next_state(E_SLEEP_BEFORE_SEARCH_STATE);
 
-#if DB_L_POWER
+    set_lpm_ioports();
 
-  DB_PRINT("\r\nL_Power_2\r\n");
-  
-#if 0
-// that is not working of course... 
-  PERIPHERIC_IE = FALSE;
-	GLOBAL_IE = FALSE;
-  TMR4_IE = FALSE;
-  TMR4_ON = FALSE;
-#endif
-  
-  // PERIPHERIC_IE = FALSE;  
-#if PCB_VERSION == 67
-  LATA = 0x40;
-  LATB = 0x00;
-  LATC = 0x00;
-#elif PCB_VERSION == 68
-// TODO: CS line needs to stay high!!
-  LATA = 0x00;
-#if DEBUGGING_BB_IS_ON  
-  LATB &= 0b01000000; // 100011;
-#else  
-  LATB = 0x00;
-#endif  
-  LATC = 0x00; 
-#else  
-  LATC &= 0b11011011;
-  LATB &= 0b00100011;
-  LATA |= 0b01000000;
-  LATA &= 0b11101000;
-#endif    
-  // while(1);
-#endif
 
     
     // TODO: that might be different if we did not get a valid lock on the position the last time!
@@ -952,42 +861,110 @@ static void f_prepare_msg(void){
 }
 
 
-#else
+#if COMPILE_SINGLE_FUNCTION_FOR_TESTING
 
-// transmit state
-static void f_prepare_msg(void){
+static void f_rx_luz_com_handler(void){
+ 
+
+#if 1
+  // testing all IO_PORTS and its related functions on single
+  // activation --> Debugging RF Transmission
   
-  // well, what are the possibilitys here actually --> 
-  // we would need to know what message and that would depend on where we are coming from
-#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
-    messages_before_transmission();
+  uint8_t port_setter = 0u;
+  uint8_t pin_setter = 0u;
+  uint8_t setting = 0;
+  while(1)
+  {
+    
+    while(MCLR == 1)
+    {
+      CLRWDT();
+      // DB_PRINT("High\r\n");
+      // __delay_ms(1000);
+    }
+    DB_PRINT("LOW\r\n");
+    __delay_ms(2000);
+    
+    
+    
+    if(pin_setter >= 8)
+    {
+      pin_setter = 0;
+      port_setter++;
+      if(port_setter > 2)
+      {
+        port_setter = 0;
+      }
+    }
+    switch(port_setter)
+    {
+      case 0:
+      
+        LATA = 1 << pin_setter;
+        DB_PRINT("PORT A: PIN: ");
+        uart_hex(LATA);
+      break;
+      case 1:
+      
+        setting = 1 << pin_setter;
+        setting = setting | 0x40;
+        LATB = setting;
+        DB_PRINT("PORT B: PIN: ");
+        uart_hex(LATB);      
+      break;
+      case 2:
+        LATC = 1 << pin_setter;
+        DB_PRINT("PORT C: PIN: ");
+        uart_hex(LATC);      
+      break;
+      
+
+    }
+    UART_CRLF;
+    
+    pin_setter++;
+    
+    
+    
+    
+  }
+
+
+
+
+
+
+
+
+#elif 0 
+// testing the Green and red led
+  while(1)
+  {
+    
+    detector_status_led_cnt_on(LED_RED_ON);
+    CLRWDT();
+    __delay_ms(1000);
+    
+    
+    detector_status_led_cnt_on(LED_GREEN_ON);
+    CLRWDT();
+    __delay_ms(1000);
+    
+      detector_status_led_cnt_on(ALL_LED_OFF);
+    CLRWDT();
+    __delay_ms(1000);
+
+  }
 #endif
-  
-  Transmite(false);
-  
-  if(gd_states_get_last_state() == E_GPS_CHECK_ON_ACTIVATION)
-  {
-    gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
-  }
-  else
-  {
-    gd_states_switch_to_next_state(E_SLEEP_BEFORE_SEARCH_STATE);
-    // TODO: that might be different if we did not get a valid lock on the position the last time!
-    // calculate the sleep before search time depending on alöl the possible things and then set it up
-  }
-  ertc_convert_to_real_time(eRTC_get_second_cnt());
-  ertc_convert_to_str();
-  // and on return we should look if we can go to sleep or if we are going to search position
-  DB_PRINT("\r\nTx_done\r\n");
+
 
   
 }
 
-#endif
 
 
-
-
+#else
+  
 static void f_rx_luz_com_handler(void){
   
 #if COMPILE_WITH_RX_LUZ  
@@ -1000,6 +977,7 @@ static void f_rx_luz_com_handler(void){
   
 }
 
+#endif
 
 // this only happens when exiting sleep mode,
 // therefore we just need the most basic things to start up, namely tmr4
@@ -1017,31 +995,17 @@ static void f_gd_on(void){
   }
   
   startup();
-  
-#if DEBUGGING_IS_ON  
 
-  uart_init_cfg(DEBUG_BAUDRATE);
-  
-  RX_IF = FALSE;
-	RX_IE = TRUE;
-  
-#elif DEBUGGING_BB_IS_ON
-
-  // init_TMR_bitbang_uart(NORMAL_CLOCK);  
-    
-#endif     
-  
-  
-  
   DB_PRINT("GD_startup");
   
-  
+
 }
 
 
 
 
 #if USE_SPI_TILT
+
  // looking how low the consumption would be with low clck...
 
 static void f_gd_off(void){
@@ -1057,24 +1021,6 @@ static void f_gd_off(void){
     fn_clock_switching();
   }
 
-#if DEBUGGING_IS_ON
-  
-  while(TXSTAbits.TRMT == FALSE)
-  {
-    // waiting loop for finisheg the transmission
-  }
-  
-#elif DEBUGGING_BB_IS_ON
-  if(FAST_CLOCK == false)
-  {
-    // init_TMR_bitbang_uart(SLOW_CLOCK); 
-  }
-  else
-  {
-    // init_TMR_bitbang_uart(NORMAL_CLOCK); 
-  }
-#endif  
- 
 
 #if 1
  
@@ -1090,25 +1036,10 @@ static void f_gd_off(void){
   
 #endif
 
-  
-#if PCB_VERSION == 67
-  LATA = 0x40;
-  LATB = 0x00;
-  LATC = 0x00;
-#elif PCB_VERSION == 68
-// TODO: CS line needs to stay high!!
-  LATA = 0x00;
-  LATB = 0x00;
-  LATC = 0x00; 
-#else  
-  LATC &= 0b11011011;
-  LATB &= 0b00100011;
-  LATA |= 0b01000000;
-  LATA &= 0b11101000;
-#endif
+
+  set_lpm_ioports();
   
 
-  
   // and now set all the super low power things so that there is almost no consumption...
   // and jsut checking the Input pin for activation
   
@@ -1148,7 +1079,6 @@ static void f_gd_off(void){
 }
 
 
-
 #else
   
 
@@ -1168,18 +1098,6 @@ static void f_gd_off(void){
 
   DB_PRINT("GD OFF\r\n");
 
-#if DEBUGGING_IS_ON
-  
-  while(TXSTAbits.TRMT == FALSE)
-  {
-    // waiting loop for finisheg the transmission
-  }  
-#elif DEBUGGING_BB_IS_ON
-
-  // init_TMR_bitbang_uart(NORMAL_CLOCK); 
-  
-#endif  
-  
   gps_stop();
   
   PERIPHERIC_IE = FALSE;
@@ -1187,21 +1105,8 @@ static void f_gd_off(void){
   TMR4_IE = FALSE;
   TMR4_ON = FALSE;
   
-  
-#if PCB_VERSION == 67
-  LATA = 0x40;
-  LATB = 0x00;
-  LATC = 0x00;
-#elif PCB_VERSION == 68
-  LATA = 0x00;
-  LATB = 0x00;
-  LATC = 0x00; 
-#else  
-  LATC &= 0b11011011;
-  LATB &= 0b00100011;
-  LATA |= 0b01000000;
-  LATA &= 0b11101000;
-#endif
+  set_lpm_ioports();
+
   // And we need to swoff all the periferic ISR IE
   OPTION_REGbits.INTEDG = TRUE;
   INTCONbits.INTE = TRUE;
@@ -1214,43 +1119,15 @@ static void f_gd_off(void){
   
   WDTCONbits.SWDTEN = 0x01u;  // wdton = true
   
-
   while(INTCONbits.INTF == 0u)
   { 
-
     SLEEP();
-
   }
   
   init_wdt();
   
-
-  
-  
-  
-#if DEBUGGING_IS_ON
-// becasue in debugging we are sending ,sg and for that we will need speed in the clock
-  if(FAST_CLOCK == FALSE)
-  {
-    init_clock();
-    configure_tmr4();
-    
-// #elif DEBUGGING_BB_IS_ON
-
-  // // init_TMR_bitbang_uart(NORMAL_CLOCK);      
-    // __delay_ms(5);
-    // DB_PRINT("DETECTOR IS ON\r\n"); 
-  }
-#endif
-
-
-
- 
   INTCONbits.INTE = FALSE;
 
-  // TODO: 
-  // wait for clck to stailize before tx_DP_PRINT info...
-  
   gd_states_switch_to_next_state(E_STARTUP_STATE);
   
   DB_PRINT("SUP\r\n");
@@ -1260,32 +1137,23 @@ static void f_gd_off(void){
 #endif
 
 
+
+#if COMPILE_FOR_RELEASE
+
 static void f_always_transmit(void){
   
   while(1)
   {
     
     set_message_for_tx(e_Activation);
+    
 #if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
     messages_before_transmission();
 #endif
+
     Transmite(false);
     
     CLRWDT();
-    
-    __delay_ms(2000);
-    
-    
-     set_message_for_tx(e_No_gps);
-#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
-    messages_before_transmission();
-#endif
-    Transmite(false);
-    
-    CLRWDT();
-    
-    __delay_ms(2000);
-    
     
     
   }
@@ -1293,27 +1161,84 @@ static void f_always_transmit(void){
 }
 
 
+#elif SEND_ONLY_ADC_VALUE
+
+static void f_always_transmit(void){
+  
+  while(1)
+  {
+    
+
+    
+    measure_bat_for_batcnt(E_TRANSMISSION_STATE);
+   
+    CLRWDT();
+    __delay_ms(100);
+    
+    measure_bat_for_batcnt(E_STARTUP_STATE);
+    
+  }
+  
+}
+
+#else
+
+static void f_always_transmit(void){
+  
+  while(1)
+  {
+    
+    set_message_for_tx(e_Activation);
+    
+#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
+    messages_before_transmission();
+#endif
+
+    Transmite(false);
+    
+    CLRWDT();
+    
+    __delay_ms(1000);
+    
+    measure_bat_for_batcnt(E_TRANSMISSION_STATE);
+    
+    
+    set_message_for_tx(e_No_gps);
+    
+#if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
+    messages_before_transmission();
+#endif
+
+    Transmite(false);
+    
+    CLRWDT();
+    
+    __delay_ms(1000);
+    
+    measure_bat_for_batcnt(E_STARTUP_STATE);
+    
+  }
+  
+}
+
+  
+#endif
+
+
 static void fn_clock_switching(void){
   
-  
+
   // once we enter here we are actually switching the clock
   // therefore the eRTC TMR stopped allready
   if(FAST_CLOCK == true)
   {
-    
-#if DEBUGGING_IS_ON    
-    // uart_init_slow_clock();
-
-    uart_init_cfg(B9600_low_clk);
-    
-#elif DEBUGGING_BB_IS_ON
+  
+#if DEBUGGING_BB_IS_ON
     DB_PRINT("\r\nCLCK_L\r\n");
-    // init_TMR_bitbang_uart(SLOW_CLOCK);  
-    
 #endif       
+
     set_slow_clock();
     configure_tmr4();
-    
     
   }
   else
@@ -1321,14 +1246,7 @@ static void fn_clock_switching(void){
     
     init_clock ();
     configure_tmr4();
-    // init_UART();
-#if DEBUGGING_IS_ON
-    uart_init_cfg(DEBUG_BAUDRATE);
-#elif DEBUGGING_BB_IS_ON
-    // init_TMR_bitbang_uart(NORMAL_CLOCK);  
-    DB_PRINT("\r\nCLCK_H\r\n");
-#endif    
-
+ 
   }
   
   TMR4_ON = true;
@@ -1339,7 +1257,6 @@ static void fn_clock_switching(void){
 #endif
 
 
-#if 1 // DEBUGGING_IS_ON
 
 // the sleep before search state
 static void f_setup_sleep_before_search(void){
@@ -1349,40 +1266,37 @@ static void f_setup_sleep_before_search(void){
   locker = locker * (10u + GPS_LOCK_TIME_DECIMO_PERCENTAGER) / 10u;
   
   // to avoid that the gps_on before transmission gets to low we check if it smaller than the
-  // minimum time we have set in the config....
-  
+  // minimum time we have set in the config.... 
   if(locker < MINIMUM_GPS_ON_BEFORE_TRANSMISSION)
   {
     locker = MINIMUM_GPS_ON_BEFORE_TRANSMISSION;
   }
   
   // well --> lets calculate the time for sleep, 
-  // set it up and clock down the baby...
+  // set it up and clock down...
   eRTC_calculate_time_until_tx();
   
   
-  // because on low bat we wait longer...
-  if(BAT_IS_LOW_FLG == true)
+  // because on low bat we wait longer, and if it is not set for Tfijo
+  if((BAT_IS_LOW_FLG == true) && (DOUBLE_PERIOD == true))
   {
     gd.seconds_until_next_tx = gd.seconds_until_next_tx + gd.time_between_tx;
-    DB_PRINT("\r\nLow Bat\r\n");
   }
   
+ 
   if(BAT_IS_TOO_LOW == true)
   {
     gd.seconds_until_next_tx = SECONDS_PER_HOUR - (2u * locker);
   }
   
+   
   if(gd.seconds_until_next_tx > locker)
   {
     
     gd.rtc_alarm = gd.seconds_until_next_tx - locker; 
-#if DB_CLOCKSWITCH    
+
     DB_PRINT("\r\nCLCK_4\r\n");
     SWITCH_CLOCK = true;
-#else  
-    handlers_generic_set_handler_FLG(e_switch_clock_handler);
-#endif  
     
     gd_states_set_next_state(E_SEARCH_POSITION_STATE);
 
@@ -1412,34 +1326,6 @@ static void f_setup_sleep_before_search(void){
 
 
 }
-
-#else
-  
-  // the sleep before search state
-static void f_setup_sleep_before_search(void){
-  
-  // well --> lets calculate the time for sleep, 
-  // set it up and clock down the baby...
-  eRTC_calculate_time_until_tx();
-
-  
-  // TODO: this is just some value at the moment for debugging
-  if(gd.seconds_until_next_tx > 20)
-  {
-    gd.rtc_alarm = gd.seconds_until_next_tx - 20;  
-  }
-  
-  RTC_ALARM_ON = true;
-  
-  gd_states_set_next_state(E_SEARCH_POSITION_STATE);
-#if DB_CLOCKSWITCH    
-  SWITCH_CLOCK = true;
-#else  
-  handlers_generic_set_handler_FLG(e_switch_clock_handler);
-#endif
-}
-
-#endif
 
 
 

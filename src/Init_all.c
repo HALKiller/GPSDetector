@@ -38,6 +38,22 @@
 #include "xc.h"
 
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //
+#ifndef FILE_INIT_ALL_DB_ENABLED
+#define FILE_INIT_ALL_DB_ENABLED 0
+#endif
+#if FILE_INIT_ALL_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
+
+
+
 #define DEBUG_FOTOTRANSISTOR 0
 
 #define DEBUG_DEVICE_DRIVER_CONFIG 0
@@ -56,7 +72,7 @@ static void init_IO_PORTS(void);
 // this is the keeper of the reset output...
 static uint8_t t_status __at(0x16F); // (0xA0);
 
-#if 1
+
 
 void init_all(void){
 
@@ -74,50 +90,29 @@ void init_all(void){
 // datasheet --> switching to the PLL can take +- 2ms --> 
 	__delay_ms(5u);
 
-#if DEBUGGING_BB_IS_ON
+
+// that needs to run always becasue 
+// we are using this timer also with SPI_TILT_SENSOR
   init_TMR_bitbang_uart(NORMAL_CLOCK);
-#endif
+
   
-#if USE_NEW_VERSION_ID&&0  
-	calculate_version_number();
-#endif
+
 	
 	init_tmr1();
 	
-	
-	
-  // TODO:
-  // gFLGS reset ons startup
-#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)&&1
-#if DEBUGGING_IS_ON
-  uart_init_cfg(DEBUG_BAUDRATE);
-#endif
-	DB_PRINT("BUILD: ");
+
+#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)||1
+
+	DB_PRINT("\r\nBUILD: ");
 	DB_PRINT(__DATE__);
 	DB_PRINT("  ");
 	DB_PRINT(__TIME__);
-	DB_PRINT("\r\n");
-	DB_PRINT("MIPS: ");
-	UART_int(t_var);
-  // DB_PRINT("\r\n");
-  
-
-#if USE_NEW_VERSION_ID&&0
-  
-  DB_PRINT("Week: ");
-  t_var = (uint8_t)WEEK_OF_YEAR;
-  UART_int(t_var);
-  
-  DB_PRINT("Version: ");
-  t_var = (uint8_t)COMBINED_CODE;
-  UART_int(t_var);
-  
-#endif
-  
+	// DB_PRINT("\r\n");
+	DB_PRINT("\r\nMIPS: ");
   UART_CRLF;
   
-  
 #endif
+
 
   gd_states_initialize();
   
@@ -145,111 +140,12 @@ void init_all(void){
 }
 
 
-#else
 
-
-
-void init_all(void){
-
-
-#if DEBUGGING_IS_ON
-  uint8_t t_var = MIPS;
-#endif
-
-  CLRWDT();
-
-	
-  init_clock();
-
-// datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5);
-
-  
-	
-	// init_tmr0();
-	
-	// init_tmr1();
-	
-	
-	
-  // TODO:
-  //04122024 --> init the gps speed straight away --> perhaps that gives a beeter result...
-  // gFLGS reset ons startup
-  
-
-		
-	// init_uart_flags();
-	
-	init_UART();
-	
-	init_IO_PORTS();
-  
-#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
-	DB_PRINT("BUILD: ");
-	DB_PRINT(__DATE__);
-	DB_PRINT("  ");
-	DB_PRINT(__TIME__);
-	DB_PRINT("\r\n");
-	DB_PRINT("MIPS: ");
-	UART_int(t_var);
-	UART_CRLF;
-#endif
-  
-  
-  configure_tmr4();
-  
-  
-  
-  gd_states_initialize();
-  
-  
-  
-  // tilt_sensor_init();
-
-  init_detector_config();
-
-
-	init_handler_flg();
-
-
-
-	RX_IF = FALSE;
-	RX_IE = TRUE;
-  
-	TMR0_IF = FALSE;
-	TMR0_IE = FALSE;
-
-
-	PERIPHERIC_IE = TRUE;
-	GLOBAL_IE = TRUE;
-
-
-  TMR4_IF = FALSE;
-  
-  TMR4_IE = TRUE;
-  
-  TMR4_ON = TRUE;
-  
-  TIMEOUT_FLG = false;
-
-// for reference...
-  // TMR4ON = true;   // bad
-  // TMR4_ON = TRUE;  // good
-  // TMR4ON = TRUE;   // bad
-  // TMR4_ON = true;  // bad
-  
-
-
-
-	
-}
-
-#endif
 
 // we set here all the timers and handlers and stuff
 void startup(void){
   
-  err_flags.reg = 0u;
+  dFLAGS.reg = 0u;
   
   tilt_sensor_init();
   
@@ -263,6 +159,11 @@ void startup(void){
   // TODO:  we should reset the time also ...
   gd.no_position_cnt = 0u;
   
+  // setting up the initial state 
+  detector_init_ilumination_handling();
+  
+  
+  
   
 	TMR0_IF = FALSE;
 	TMR0_IE = FALSE;
@@ -273,13 +174,25 @@ void startup(void){
   TMR4_IE = TRUE;
   TMR4_ON = TRUE;
   
+
+  measure_bat_for_batcnt(E_STARTUP_STATE);
+
+
   
 }
 
 
 
+void set_lpm_ioports(void){
+  
+  LATA = L_POWER_LATA;
+  LATB = L_POWER_LATB;
+  LATC = L_POWER_LATC;
+  
+  
+}
 
-
+#if 1
 
 
 static void init_IO_PORTS(void){
@@ -291,56 +204,74 @@ static void init_IO_PORTS(void){
 
 	IO_Init();
 
+#else
+ 
+	ANSELA = INIT_ANSELA;
+	ANSELB = INIT_ANSELB;
 
-// 10072023 --> real PCB
+  set_lpm_ioports();
 
-#elif 0
+  TRISA = INIT_TRISA;
+  TRISB = INIT_TRISB;
+  TRISC = INIT_TRISC;
+  
+  WPUB = 0b00000000;
 
-	
-	LCDCONbits.LCDEN = 0;	// that should be false anyway after reset but well...
+  WPUE = 0x08;
+  
+  
+  
+#endif
 
-	LATA = 0x40;
+
+
+}
+
+
+
+#else
+
+static void init_IO_PORTS(void){
+
+
+
+
+#if USE_DEVICE_DRIVER
+
+	IO_Init();
+
+
+
+
+#elif PCB_VERSION==69
+
+	ANSELA = 0x00;
+	ANSELB = 0x09;
+
+
+#if USE_SINGLE_LPM_SETTER  
+  
+  set_lpm_ioports();
+  
+#else  
+	LATA = 0x40;  // GPS_Reset needs to stay high
+#if DEBUGGING_BB_IS_ON
+  LATB = 0x40;  // Bit banged Tx pin RB6
+#else  
 	LATB = 0x00;
-	LATC = 0x04;
-
-  /* TODO Initialize User Ports/Peripherals/Project here */
-
-  /* Iniciar configuración de puertos */
-//  TRISAbits.TRISA0 = 0; // A0 - Salida: Conectado a IOSYNC del AD9954
-//  TRISAbits.TRISA1 = 0; // A1 - Salida: Conectado a SDIO del AD9954
-//  TRISAbits.TRISA2 = 0; // A2 - Salida: Conectado a SCLK del AD9954
-//  TRISAbits.TRISA3 = 1; // A3 - Entrada analógica: LDR para luces nocturnas
-//  TRISAbits.TRISA4 = 0; // A4 - Salida: Enciende/apaga el AD9954 (DVDD_I/O + reguladores)
-//  TRISAbits.TRISA5 = 1; // A5 - Entrada analógica: Nivel de batería
-//  TRISAbits.TRISA6 = 0; // A6 - Salida: Conectado a EN_0_REG_EMISORA
-//  TRISAbits.TRISA7 = 0; // A7 - Salida: Conectado al MOSFET que controla las luces nocturnas
-  TRISA = 0b00101000;
-
-//  TRISBbits.TRISB0 = 1; // B0 - Entrada: Conectado a interruptor de posición
-//  TRISBbits.TRISB1 = 1; // B1 - Entrada: Conectado a entrada de puerto Infrarrojos  (no implementado)
-//  TRISBbits.TRISB2 = 0; // B2 - Salida: Conectado a PS0 del AD9954
-//  TRISBbits.TRISB3 = 0; // B3 - Salida: Conectado a PS1 del AD9954
-//  TRISBbits.TRISB4 = 0; // B4 - Salida: Conectado a I/O UPDATE del AD9954
-//  TRISBbits.TRISB5 = 1; // B5 - Entrada: No conectado (Valor por defecto)
-//  TRISBbits.TRISB6 = 1; // B6 - Entrada: Conectado a ICSP - CLK (Valor por defecto)
-//  TRISBbits.TRISB7 = 1; // B7 - Entrada: Conectado a ICSP - DAT (Valor por defecto)
-  TRISB = 0b00100011;
-  WPUB = 0b00000000; // Resistencias internas Pullup desactivadas
-
-//  TRISCbits.TRISC0 = 1; // C0 - Entrada: No conectado (Valor por defecto)
-//  TRISCbits.TRISC1 = 1; // C1 - Entrada: Conectado a termómetro one-wire ds18b20 (no implementado)
-//  TRISCbits.TRISC2 = 0; // C2 - Salida: Conectado a reset del AD9954
-//  TRISCbits.TRISC3 = 1; // C3 - Salida: DB_LED --> blink blink	No conectado (Valor por defecto)
-//  TRISCbits.TRISC4 = 0; // C4 - Salida: LED usado en la placa de pruebas para DEBUG
-//  TRISCbits.TRISC5 = 0; // C5 - Salida: Enciende/Apaga el GPS
-//  TRISCbits.TRISC6 = 1; // C6 - Entrada: RS-232 pin TX (Configuración por defecto)
-//  TRISCbits.TRISC7 = 1; // C7 - Entrada: RS-232 pin RX (Configuración por defecto)
-  TRISC = 0b11000011;
+#endif
+	LATC = 0x00;  // 0x04; 
+#endif
 
 
-  ANSELA = 0b00101000;
-  ANSELB = 0x00;
+	TRISA = 0x00; // 40u;  // 0x1F;
+  TRISB = 0x09; // 0x00;  // 	TRISB = 0x01; // 0x00; becasue that is now Valim_Tilt...
+	TRISC = 0x82; // 0x80;
 
+	WPUB = 0b00000000;
+
+  WPUE = 0x08;
+  
 
 
 #elif USE_SPI_TILT
@@ -350,7 +281,7 @@ static void init_IO_PORTS(void){
 	ANSELA = 0x28;  // 40u; // 0x03;	
 	ANSELB = 0x00;	
 
-#if PCB_VERSION == 67
+#if PCB_VERSION == 66
 	LATA = 0x40;  // Becasu there is an inverted logic implemented...
 #else
 	LATA = 0x00;
@@ -364,7 +295,7 @@ static void init_IO_PORTS(void){
 	TRISC = 0x90; // 0x80;
 
 	WPUB = 0b00000000;
-
+  WPUE = 0x08;
   DB_PRINT("\r\nSPI_TILT_PREP\r\n");
 
 
@@ -376,7 +307,7 @@ static void init_IO_PORTS(void){
 	ANSELA = 0x28u; // 0x03;	
 	ANSELB = 0x00;	
 
-#if PCB_VERSION == 67
+#if PCB_VERSION == 66
 	LATA = 0x40;  // Becasu there is an inverted logic implemented...
 #else
 	LATA = 0x00;
@@ -403,7 +334,7 @@ static void init_IO_PORTS(void){
 	ANSELA = 40u; // 0x03;	
 	ANSELB = 0x00;	
 	// ANSELC = 0x00;
-#if PCB_VERSION == 67
+#if PCB_VERSION == 66
 	LATA = 0x40;  // Becasu there is an inverted logic implemented...
 #else
 	LATA = 0x00;
@@ -422,7 +353,7 @@ static void init_IO_PORTS(void){
 
 }
 
-
+#endif
 // for checking the correct cfg io
 #if 0
 

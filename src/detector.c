@@ -27,8 +27,31 @@
 
 #include "handlers.h"
 
+#include "gd_states.h"
+
 #include <string.h>
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_DETECTOR_DB_ENABLED
+#define FILE_DETECTOR_DB_ENABLED 0
+#endif
+
+
+  
+#if FILE_DETECTOR_DB_ENABLED
+
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+
+#else
+  
+#define DB_PRINT(str)
+#define UART_int(var)
+
+#endif
+
+
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
 
 
@@ -44,15 +67,30 @@
 #define  BIT_SLOT_TX_150BPS 4u
 #define  BIT_SLOT_LUZ_ENABLED 5u
 
+#define DEBUG_ILUM_MEASUREMENT 0
 
-#if DEBUGGING_IS_ON||0
-#define MEASURE_ILUMINATION_TIME_CNT_BASE (5u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+#if DEBUG_ILUM_MEASUREMENT
+
+  #define MEASURE_ILUMINATION_TIME_CNT_BASE (1u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+  #define MEASURE_ILUMINATION_TIME_CNT_ON_STARTUP (5u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+
 #else
-#define MEASURE_ILUMINATION_TIME_CNT_BASE (45u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+
+  #define MEASURE_ILUMINATION_TIME_CNT_BASE (60u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+  #define MEASURE_ILUMINATION_TIME_CNT_ON_STARTUP (2u * TIME_BASE_200_CNT)    // the time between measurements of the ilum.sensor
+
 #endif
+
+#define PWM_LUZ_STARTUP_CNT_SETTER (60u * TIME_BASE_200_CNT)
 
 #define BAT_IS_TOO_LOW_THRESHOLD 80
 
+#define CHARGE_FLAG_SET 0x01
+#define CHARGE_FLAG_RESET 0x00
+#define MAX_BATCNT_LIMIT (uint16_t)0x2F86 // 23x23x23
+
+
+#define LED_TIME_SHOWING 15u  // ten seconds on for the LED
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -92,31 +130,27 @@ union8_t gd_flags;
 
 static struct udt_m pwm_luz;
 
-static uint8_t measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
+static uint16_t measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
 
 struct udt_detector gd;
 
-
-uint8_t baterie_mV;
-
-// static uint8_t gVoltajeBateriaTrasTransmision = 0;
-
-#if USE_OLD_CFG_SETTER
-uint8_t FTW0[4];
-uint8_t FTW1[4];
-uint8_t FTW2[4];
-uint8_t FTW3[4];
+#if OV_PWM_LUZ
+static uint8_t pwm_luz_startup_cnt = PWM_LUZ_STARTUP_CNT_SETTER;
+#else
+static uint16_t pwm_luz_startup_cnt = PWM_LUZ_STARTUP_CNT_SETTER;
 #endif
+
 //   * * * * * * * *      P R I V A T E   F U N C T I O N S   P R O T O T Y P E S     * * * * * *  //
 
 static void measure_ilumination(void);
-static uint16_t calculate_voltage_from_input_value(uint16_t value);
-
+static uint8_t calculate_voltage_from_input_value(uint16_t value);
+static uint8_t read_bat_value(void);
 
 
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
+#if 0
 static void db_printing_bits(uint8_t onoff_bit){
   
   if(onoff_bit == 0u)
@@ -129,7 +163,7 @@ static void db_printing_bits(uint8_t onoff_bit){
   }
  
 }
-
+#endif
 
 
 #if 0
@@ -175,8 +209,8 @@ void init_detector_config(void){
   // add to it the dlta and then return the eeprom calculated value...
   
   gd.vbat_high = gd.vbat_low + VBAT_DELTA;
-  // gd.vbat_high = (((uint32_t)gd.vbat_low + VBAT_DELTA) * 1008u - 435u) / 131u; 
-#if DEBUGGING_BB_IS_ON
+ 
+#if DEBUGGING_BB_IS_ON&&0
 
   DB_PRINT("Vbat_L: ");
   UART_int(gd.vbat_low);
@@ -187,15 +221,7 @@ void init_detector_config(void){
   
 #endif
 
-#if USE_OLD_CFG_SETTER  
-  for ( i = 0; i < 4; i++ )
-  {
-    FTW0[i] = LeerEeprom ( 0x22u + (uint8_t)i );
-    FTW1[i] = LeerEeprom ( 0x27u + (uint8_t)i );
-    FTW2[i] = LeerEeprom ( 0x2Cu + (uint8_t)i );
-    FTW3[i] = LeerEeprom ( 0x31u + (uint8_t)i );
-  }
-#endif  
+
   
   pwm_luz.pwm_value = LeerEeprom ( 0x44u );
   
@@ -235,7 +261,12 @@ void init_detector_config(void){
     handlers_generic_set_handler_FLG(e_always_transmit_handler);
   }
   
- 
+  if(get_batcnt() > MAX_BATCNT_LIMIT)
+  {
+    write_eeprom(BATCNT_H_ADDRESS, 0u);
+    write_eeprom(BATCNT_L_ADDRESS, 0u);
+  }
+
   
 
 #if DEBUGGING_IS_ON||0
@@ -297,182 +328,125 @@ uint8_t get_max_detectores(void){
   
 }
 
+uint16_t get_batcnt(void){
+  
+  uint16_t ret_val = 0;
+  
+  uint8_t t_val = LeerEeprom(BATCNT_H_ADDRESS);
+  
+  ret_val = (uint16_t) t_val * 256;
+  
+  t_val = LeerEeprom(BATCNT_L_ADDRESS);
+  
+  ret_val = ret_val + t_val;
+ 
+  return ret_val;
+  
+}
 
-#if 1
 
+uint8_t LeerValorBateria(void){
 
-void LeerValorBateria(void){
-
-  uint16_t adcvalue;
   uint16_t adcconv;
   
-  ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
-
-  adcconv = ( (ADRESH * 256) + ADRESL );
-
-#if 0
-
-  // this is the original good one!
   
-  adcvalue = ( ( ( adcconv * 10 + 36 ) / 18 ) + ( ( adcconv * 17 + 49 ) / 48 ) ) / 7;
+#if DB_V69_PCB  
+  
+  
+  gd.bat_decivolt = 120;
+  
   
 #elif 1
-  
-  adcvalue = calculate_voltage_from_input_value(adcconv);
-  
-#else  
-  
-  DB_PRINT("\r\nOld: ");
-  
-  UART_int(adcvalue);
-  
 
+
+   
+  gd.bat_decivolt = read_bat_value();
+    
+
+
+#else
   
-  adcvalue = (adcconv * 131 + 759) / 1008;// that does not fit into a uint16_t 
-  DB_PRINT("\r\nNEW: ");
-  UART_int(adcvalue);
-  DB_PRINT("\r\n");
+  adcconv = read_bat_value();
+  
+  gd.bat_decivolt = calculate_voltage_from_input_value(adcconv);
+  
 #endif
 
-
-
-  baterie_mV = (adcvalue & 0x00ff);
-  // TODO:
-  // implement this line
-  // gTransmiteADoblePeriodo = ( ( adcconv / 4 ) <= LeerEeprom( 0x48 ) );
-  if((BAT_IS_LOW_FLG == true) && (adcvalue >= gd.vbat_high))
+  if((BAT_IS_LOW_FLG == true) && (gd.bat_decivolt >= gd.vbat_high))
   {
     BAT_IS_LOW_FLG = FALSE;
     BAT_IS_TOO_LOW = false;
   }
-  else if((BAT_IS_LOW_FLG == false) && (adcvalue  <= gd.vbat_low))
+  else if((BAT_IS_LOW_FLG == false) && (gd.bat_decivolt  <= gd.vbat_low))
   {
     BAT_IS_LOW_FLG = true;
-    if(adcvalue <= BAT_IS_TOO_LOW_THRESHOLD)
-    {
-      BAT_IS_TOO_LOW = true; 
-    }
+
+  }
+  if(gd.bat_decivolt <= BAT_IS_TOO_LOW_THRESHOLD)
+  {
+    BAT_IS_TOO_LOW = true; 
   }
   
-}
-
-#if 0
-
-// 16 words longer!! incredible but yes
-static uint16_t calculate_voltage_from_input_value(uint16_t value){
-  
-  uint16_t val_1 = 0;
-  uint16_t val_2 = 0;
-  uint16_t ret_value = 0u;
-  
-  val_1 = (5 * value / 9) + 2;
-  
-  val_2 = (17 * value + 49) >> 4;
-  
-  val_2 = val_2 / 3u;
-  
-  // val_2 = (17 * value + 49 ) / 48;
-  
-  ret_value = (val_1 + val_2) / 7;
-  
-  // ret_value = ( ( ( value * 5 + 9 ) / 2 ) + ( ( value * 17 + 49 ) / 48 ) ) / 7;
-  
-  return ret_value;
-
-}  
-#elif 1
-
-
-// 4 words shorter
-static uint16_t calculate_voltage_from_input_value(uint16_t value){
-  
-  uint16_t val_1 = 0;
-  uint16_t val_2 = 0;
-  uint16_t ret_value = 0u;
-  
-  val_1 = (5 * value / 9) + 2;
-  val_2 = (17 * value + 49 ) / 48;
-  ret_value = (val_1 + val_2) / 7;
-  
-  // ret_value = ( ( ( value * 5 + 9 ) / 2 ) + ( ( value * 17 + 49 ) / 48 ) ) / 7;
-  
-  return ret_value;
+  return gd.bat_decivolt;
   
 }
 
-#else
-  
-static uint16_t calculate_voltage_from_input_value(uint16_t value){
-  
-  
-  uint16_t ret_value = 0u;
-  
-  ret_value = ( ( ( value * 10 + 36 ) / 18 ) + ( ( value * 17 + 49 ) / 48 ) ) / 7;
-  
-  return ret_value;
-  
-}
-
-#endif
-
-#else
-  
-
-void LeerValorBateria(bool AntesDeTransmitir){
-
-  uint16_t adcvalue;
-  uint16_t adcconv;
 
 
-	// swoff_global_interrupt();
-  
-  ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
-
-  adcconv = ( (ADRESH * 256) + ADRESL );
-  
-  
-
-#if 1
-
-  // this is the original good one!
-  adcvalue = ( ( ( adcconv * 10 + 36 ) / 18 ) + ( ( adcconv * 17 + 49 ) / 48 ) ) / 7;
-  
-#else  
-  
-  DB_PRINT("\r\nOld: ");
-  
-  UART_int(adcvalue);
-  
-
-  
-  adcvalue = (adcconv * 131 + 759) / 1008;// that does not fit into a uint16_t 
-  DB_PRINT("\r\nNEW: ");
-  UART_int(adcvalue);
-  DB_PRINT("\r\n");
-#endif
 
 
-  if ( AntesDeTransmitir == true )
+
+void measure_bat_for_batcnt(e_gpsd_states_t state){
+  // becaseu we are hanlding pretty much the same things on the two instnaces we can use a
+  // single funciton and jsut depending on from where we are coming handling than the diferent things
+  
+  // first retrieve the flag and the cnt...
+  // and that comes from the EEPROM!
+  // easiest way to retrieve the information is to chuck them into an array and loop
+  // uint8_t temp_val;
+  uint8_t t_val;
+  uint8_t bat_val;
+  uint16_t c_cnt = 0;
+  
+  
+  bat_val = read_bat_value();
+  
+  t_val = LeerEeprom(BATCNT_FLG_ADDRESS);
+  
+  c_cnt = get_batcnt(); 
+  
+  // we have the last state...
+  if(state == E_TRANSMISSION_STATE)
   {
-    baterie_mV = ( adcvalue & 0x00ff );
-    // TODO:
-    // implement this line
-    // gTransmiteADoblePeriodo = ( ( adcconv / 4 ) <= LeerEeprom( 0x48 ) );
-    // BAT_IS_LOW_FLG = ( ( adcconv / 4 ) <= LeerEeprom( 0x48 ) );
-    
+    if((bat_val < BATCNT_LOW_VOLTAGE) && (t_val == CHARGE_FLAG_SET))
+    {
+      write_eeprom(BATCNT_FLG_ADDRESS, CHARGE_FLAG_RESET);
+      
+    }
   }
   else
   {
-    // 
-    gVoltajeBateriaTrasTransmision = ( adcvalue & 0x00ff );
-  }
+    if((bat_val > BATCNT_HIGH_VOLTAGE) && (t_val == CHARGE_FLAG_RESET))
+    {
+      
+      write_eeprom(BATCNT_FLG_ADDRESS, CHARGE_FLAG_SET);
   
-  adcvalue = 0;
-  
+      if(c_cnt >= MAX_BATCNT_LIMIT)
+      {
+        write_eeprom(BATCNT_H_ADDRESS, 0u);
+        write_eeprom(BATCNT_L_ADDRESS, 0u);
+      }
+      else
+      {
+        c_cnt++;
+        t_val = c_cnt/256;
+        write_eeprom(BATCNT_H_ADDRESS, t_val);
+        t_val = c_cnt%256;
+        write_eeprom(BATCNT_L_ADDRESS, t_val);
+      }
+    }
+  } 
 }
-
-
-#endif
 
 
 
@@ -492,12 +466,153 @@ uint8_t read_ilum_sensor(void){
 }
 
 
+// setting values for the startup of the ilumination part...
+void detector_init_ilumination_handling(void){
+  
+  // To avoid that the Detector iluminates on short wake ups...
+  LUZ_HANDLER_ON = false;
+  PWM_IS_ON = false;
+  PWM_LUZ_START = true;
+  measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_ON_STARTUP; // the time between measurements...
+  pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;
+  pwm_luz_startup_cnt = PWM_LUZ_STARTUP_CNT_SETTER; // that cnts 1 minute...the higher measuring circle...
+  
+}
+
 #if COMPILE_WITH_PWM_LUZ
 // if the pwm_luz is on from the config we enter here every time_base time(200ms)
 // and have to update than depending on the different counters the states..
 // to make the whole thing second based i use a cnt to five first and therefroe i can stay with most things inside a normal uint8_t cnt...
+
+#if OV_PWM_LUZ
+
+// in this version we enter only once per second...
+
 void pwm_luz_time_update(void){
   
+#if DEBUGGING_BB_IS_ON
+static uint8_t db_cnt = 10;
+#endif         
+// this is the 1 minute downcnt... 
+  if(PWM_LUZ_START == true)
+  {
+#if DEBUGGING_BB_IS_ON  
+    if(--db_cnt == 0)
+    {
+      DB_PRINT("\r\nL: ");
+      UART_int(pwm_luz_startup_cnt);
+      db_cnt = 10;
+    }
+#endif           
+    if(--pwm_luz_startup_cnt == 0)
+    {
+      PWM_LUZ_START = false;
+      DB_PRINT("\r\nL_START_DONE\r\n");
+    }
+  }
+  
+
+  if(--pwm_luz.pwm_onoff_time_cnt == 0u)
+  {
+    // we swap on_and_off
+    if(PWM_IS_ON == TRUE)
+    {
+      pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;
+      PWM_IS_ON = FALSE;
+      if(LUZ_HANDLER_ON == TRUE)
+      {
+        TMR0_IE = FALSE;
+        LED = FALSE;
+#if DEBUGGING_BB_IS_ON          
+      DB_PRINT("\r\nL_OFF ");
+      UART_int(pwm_luz_startup_cnt);
+      DB_LED_1_ON;
+#endif             
+      }
+    }
+    else
+    {
+      pwm_luz.pwm_onoff_time_cnt = pwm_luz.on_time;
+      PWM_IS_ON = TRUE;
+#if 1 
+      if(MEASURE_ILUM_FLG == true)
+      {
+#if DEBUGGING_BB_IS_ON          
+            DB_LED_1_OFF;
+            DB_PRINT("\r\nM ");
+            UART_int(pwm_luz_startup_cnt);
+#endif            
+        measure_ilumination();
+        MEASURE_ILUM_FLG = false;
+        
+      }
+#endif    
+      if(LUZ_HANDLER_ON == TRUE)
+      {
+        TMR0_IE = TRUE;
+        DB_PRINT("\r\nL_ON");
+      }
+    }
+  }
+
+  // we would need to check on these things: 
+  // * do we need to measure again the sensor?
+  // * swap over the cnt?
+  if(--measure_ilum_time_cnt == 0u)
+  {
+    
+    if(PWM_LUZ_START == true)
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_ON_STARTUP;
+    }
+    else
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
+    }
+    
+    MEASURE_ILUM_FLG = true;
+    
+  }
+
+  
+}
+
+#elif 0
+void pwm_luz_time_update(void){
+#if DEBUGGING_BB_IS_ON
+static uint8_t db_cnt = 10;
+#endif          
+  if(PWM_LUZ_START == true)
+  {
+#if DEBUGGING_BB_IS_ON  
+    if(--db_cnt == 0)
+    {
+      DB_PRINT("\r\nL: ");
+      UART_int(pwm_luz_startup_cnt);
+      db_cnt = 10;
+    }
+#endif           
+    if(--pwm_luz_startup_cnt == 0)
+    {
+      PWM_LUZ_START = false;
+      DB_PRINT("\r\nL_START_DONE\r\n");
+    }
+  }
+  
+#if 1 
+  if ((MEASURE_ILUM_FLG == true) && (PWM_IS_ON == false))
+  {
+#if DEBUGGING_BB_IS_ON          
+        DB_LED_1_OFF;
+        DB_PRINT("\r\nM ");
+        UART_int(pwm_luz_startup_cnt);
+#endif            
+    measure_ilumination();
+    MEASURE_ILUM_FLG = false;
+    
+  }
+#endif    
+
   
   if(LUZ_HANDLER_ON == TRUE)
   {
@@ -506,6 +621,216 @@ void pwm_luz_time_update(void){
       // we swap on_and_off
       if(PWM_IS_ON == TRUE)
       {
+        
+        pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;
+        TMR0_IE = FALSE;
+        PWM_IS_ON = FALSE;
+        LED = FALSE;
+#if DEBUGGING_BB_IS_ON          
+        DB_PRINT("\r\nL_OFF ");
+        UART_int(pwm_luz_startup_cnt);
+        DB_LED_1_ON;
+#endif        
+#if PWM_LUZ_DEBUG
+        LED_SIMUL_OFF;
+#endif        
+      }
+      else
+      {
+        
+        pwm_luz.pwm_onoff_time_cnt = pwm_luz.on_time;
+        TMR0_IE = TRUE;
+        PWM_IS_ON = TRUE;
+        DB_PRINT("\r\nL_ON");
+      }
+      
+#if DEBUGGING_BB_IS_ON
+// we have a new setting here...
+      DB_PRINT("\r\Nl_c: ");
+      UART_int(pwm_luz.pwm_onoff_time_cnt);
+#endif         
+      
+    }
+ 
+  }
+  else
+  {
+    pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;
+    TMR0_IE = FALSE;
+    PWM_IS_ON = FALSE;
+    LED = FALSE;
+  }
+  
+  // we would need to check on these things: 
+  // * do we need to measure again the sensor?
+  // * swap over the cnt?
+  if(--measure_ilum_time_cnt == 0u)
+  {
+    
+    if(PWM_LUZ_START == true)
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_ON_STARTUP;
+    }
+    else
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
+    }
+    
+    MEASURE_ILUM_FLG = true;
+    // measure_ilumination();
+    
+  }
+  
+#if 0
+  if ((MEASURE_ILUM_FLG == true) && (PWM_IS_ON == false))
+  {
+    measure_ilumination();
+    MEASURE_ILUM_FLG = false;
+  }
+#endif    
+  
+}
+
+
+
+#elif 1
+
+void pwm_luz_time_update(void){
+#if DEBUGGING_BB_IS_ON
+static uint8_t db_cnt = 10;
+#endif          
+  if(PWM_LUZ_START == true)
+  {
+#if DEBUGGING_BB_IS_ON  
+    if(--db_cnt == 0)
+    {
+      DB_PRINT("\r\nL: ");
+      UART_int(pwm_luz_startup_cnt);
+      db_cnt = 10;
+    }
+#endif           
+    if(--pwm_luz_startup_cnt == 0)
+    {
+      PWM_LUZ_START = false;
+      DB_PRINT("\r\nL_START_DONE\r\n");
+    }
+  }
+  
+#if 1 
+  if ((MEASURE_ILUM_FLG == true) && (PWM_IS_ON == false))
+  {
+#if DEBUGGING_BB_IS_ON          
+        DB_LED_1_OFF;
+        DB_PRINT("\r\nM ");
+        UART_int(pwm_luz_startup_cnt);
+#endif            
+    measure_ilumination();
+    MEASURE_ILUM_FLG = false;
+    
+  }
+#endif    
+
+  
+  if(LUZ_HANDLER_ON == TRUE)
+  {
+    if(--pwm_luz.pwm_onoff_time_cnt == 0u)
+    {
+      // we swap on_and_off
+      if(PWM_IS_ON == TRUE)
+      {
+        
+        pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;
+        TMR0_IE = FALSE;
+        PWM_IS_ON = FALSE;
+        LED = FALSE;
+#if DEBUGGING_BB_IS_ON          
+        DB_PRINT("\r\nL_OFF ");
+        UART_int(pwm_luz_startup_cnt);
+        DB_LED_1_ON;
+#endif        
+#if PWM_LUZ_DEBUG
+        LED_SIMUL_OFF;
+#endif        
+      }
+      else
+      {
+        
+        pwm_luz.pwm_onoff_time_cnt = pwm_luz.on_time;
+        TMR0_IE = TRUE;
+        PWM_IS_ON = TRUE;
+        DB_PRINT("\r\nL_ON");
+      }
+      
+#if DEBUGGING_BB_IS_ON
+// we have a new setting here...
+      DB_PRINT("\r\Nl_c: ");
+      UART_int(pwm_luz.pwm_onoff_time_cnt);
+#endif         
+      
+    }
+ 
+  }
+  else
+  {
+    pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;
+    TMR0_IE = FALSE;
+    PWM_IS_ON = FALSE;
+    LED = FALSE;
+  }
+  
+  // we would need to check on these things: 
+  // * do we need to measure again the sensor?
+  // * swap over the cnt?
+  if(--measure_ilum_time_cnt == 0u)
+  {
+    
+    if(PWM_LUZ_START == true)
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_ON_STARTUP;
+    }
+    else
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
+    }
+    
+    MEASURE_ILUM_FLG = true;
+    // measure_ilumination();
+    
+  }
+  
+#if 0
+  if ((MEASURE_ILUM_FLG == true) && (PWM_IS_ON == false))
+  {
+    measure_ilumination();
+    MEASURE_ILUM_FLG = false;
+  }
+#endif    
+  
+}
+
+
+#else
+  
+void pwm_luz_time_update(void){
+  
+  if(PWM_LUZ_START == true)
+  {
+    DB_PRINT("\r\nL: ");
+    UART_int(pwm_luz_startup_cnt);
+    if(--pwm_luz_startup_cnt == 0)
+    {
+      PWM_LUZ_START = false;
+    }
+  }
+
+  if(LUZ_HANDLER_ON == TRUE)
+  {
+    if(--pwm_luz.pwm_onoff_time_cnt == 0u)
+    {
+      // we swap on_and_off
+      if(PWM_IS_ON == TRUE)
+      {
+        
         pwm_luz.pwm_onoff_time_cnt = pwm_luz.off_time;
         TMR0_IE = FALSE;
         PWM_IS_ON = FALSE;
@@ -516,17 +841,22 @@ void pwm_luz_time_update(void){
       }
       else
       {
+        
         pwm_luz.pwm_onoff_time_cnt = pwm_luz.on_time;
         TMR0_IE = TRUE;
         PWM_IS_ON = TRUE;
       }
+      
+#if DEBUGGING_BB_IS_ON
+// we have a new setting here...
+      DB_PRINT("\r\Nl_c: ");
+      UART_int(pwm_luz.pwm_onoff_time_cnt);
+#endif         
+      
     }
-#if DEBUGGING_BB_IS_ON&&0
-    DB_PRINT("\r\nl_c: ");
-    UART_int(pwm_luz.pwm_onoff_time_cnt);
-#endif    
+ 
   }
-  
+
   
   // we would need to check on these things: 
   // * do we need to measure again the sensor?
@@ -534,14 +864,25 @@ void pwm_luz_time_update(void){
   if(--measure_ilum_time_cnt == 0u)
   {
     
-    measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
+    if(PWM_LUZ_START == true)
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_ON_STARTUP;
+    }
+    else
+    {
+      measure_ilum_time_cnt = MEASURE_ILUMINATION_TIME_CNT_BASE;
+    }
     
+ 
     measure_ilumination();
     
   }
   
+  
 }
 
+
+#endif
 
 uint8_t get_pwm_luz_pwm_value(void){
   
@@ -551,12 +892,76 @@ uint8_t get_pwm_luz_pwm_value(void){
 }
 
 
+void detector_status_led_handler(void){
+  
+  
+  gd.led_time_out_cnt--;
+  if(gd.led_time_out_cnt == 0)
+  {
+    STATUS_LED_ON = false;
+    STATUS_LED_RED_OFF();
+    STATUS_LED_GREEN_OFF();
+    gd.led_state = ALL_LED_OFF;
+    DB_PRINT("L_OFF\r\n");
+  }
+  else
+  {
+    if(gd.led_state == LED_RED_BLINKS)
+    {
+      STATUS_LED_RED_SWAP();
+    }
+    else if(gd.led_state == LED_GREEN_BLINKS)
+    {
+      STATUS_LED_GREEN_SWAP();
+    }
+  }
+  
+  
+  
+  
+  
+  
+}
 
+
+// this function starts the timeout counter of the status led
+// and what type of Status is getting set actually...
+void detector_status_led_cnt_on(leds_state_t led_status){
+  
+  // set the status
+  gd.led_state = led_status;
+  // set the timer
+  gd.led_time_out_cnt = LED_TIME_SHOWING;
+  // Set the flag
+  STATUS_LED_ON = true;
+
+  switch (gd.led_state)
+  {
+    
+    case LED_RED_ON: 
+    case LED_RED_BLINKS: 
+      STATUS_LED_RED_ON();
+      DB_PRINT("LR_ON\r\n");
+    break;
+    
+    case LED_GREEN_ON:
+    case LED_GREEN_BLINKS:
+      STATUS_LED_GREEN_ON();
+      DB_PRINT("LG_ON\r\n");
+    break;
+    case ALL_LED_OFF:
+      STATUS_LED_RED_OFF();
+      STATUS_LED_GREEN_OFF();
+      DB_PRINT("L_OFF\r\n");
+    break;
+
+  }
+  
+}
 
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
-
 
 
 static void measure_ilumination(void){
@@ -566,10 +971,9 @@ static void measure_ilumination(void){
   
   bool temp_IE = TMR0_IE;
   
-  // TODO:
   // measure the adc from the sensor and compare to thresholde
   // if there is a change --> run the change setter for on or for off
-#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0 //   DEBUGGING_BB_IS_ON  // 
+#if DEBUGGING_BB_IS_ON&&0  // DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0 //
   DB_PRINT("\r\nIlu: ");
 #endif  
   
@@ -581,7 +985,19 @@ static void measure_ilumination(void){
   // and now we need a delay to assure that 
   // we are not measring the LED actually
   // easiest solution is to give a 30ms delay
-  __delay_ms(30);
+  
+  // __delay_ms(30);
+  
+  if(FAST_CLOCK == false)  
+  {
+    __delay_ms(4);
+
+  }
+  else
+  {
+    __delay_ms(32);
+  
+  }
   
 #if PWM_LUZ_DEBUG
   LED_SIMUL_OFF;
@@ -592,12 +1008,14 @@ static void measure_ilumination(void){
   TMR0_IE = temp_IE;
   
 #if INVERTED_LDR_SENSOR
-  temp_flg = ( t_val < LUZ_ADC_DARK_THRESHOLD_INVERTED );
+  temp_flg = ( t_val < LUZ_ADC_DARK_THRESHOLD_INVERTED ); // 70
 #else    
-  temp_flg = ( t_val > LUZ_ADC_DARK_THRESHOLD );
+  temp_flg = ( t_val > LUZ_ADC_DARK_THRESHOLD );  // 230
 #endif
 
-#if DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0// DEBUGGING_BB_IS_ON  // 
+#if FILE_DETECTOR_DB_ENABLED  // DEBUGGING_BB_IS_ON&&0  // DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0// 
+  
+  DB_PRINT("\r\nIlum: ");
   UART_int(t_val);
   DB_PRINT("\r\n");
   
@@ -608,7 +1026,7 @@ static void measure_ilumination(void){
 
   if(LUZ_HANDLER_ON != temp_flg)
   {
-    // DB_PRINT("LUZ_ON\r\n");
+
     LUZ_HANDLER_ON = !LUZ_HANDLER_ON;
     
     if(LUZ_HANDLER_ON == FALSE)
@@ -618,18 +1036,216 @@ static void measure_ilumination(void){
       LED = false;
 #if PWM_LUZ_DEBUG
       LED_SIMUL_OFF;
-#endif        
+#endif   
+
+ #if DEBUGGING_BB_IS_ON  // DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0//     
       DB_PRINT("\r\nLUZ_h_OFF\r\n");
+#endif      
     }
     else
     {
+#if DEBUGGING_BB_IS_ON  // DEBUGGING_IS_ON&&PWM_LUZ_DEBUG&&0//       
       DB_PRINT("\r\nLUZ_h_ON\r\n");
+#endif      
     }
   }
 }
 
 
 #endif // COMPILE_WITH_PWM_LUZ
+
+
+
+#if VREF_METHOD
+
+static uint8_t read_bat_value(void){
+
+  uint16_t adcvalue;
+  uint8_t adcconv;
+  uint16_t bat_val;
+  
+#if 1  
+  
+  const uint32_t R_div_Vref_const = 8204;
+  uint16_t ADC_Vref = 0;
+  
+#if 1
+
+  FVRCON = 0x82;  // 10000010
+  while(FVRCONbits.FVRRDY == false)
+  {
+    // wait to stabilize...
+  }
+  
+  ADC_Vref = ConversionAdc(RIGHT_JUSTIFIED, VREF_ADC_CHANNEL);
+  FVRCONbits.FVREN = false;
+ 
+#if 0 
+  DB_PRINT("\r\nVref: ");
+  UART_int(ADC_Vref);
+#endif
+  
+#else  
+
+  adc_set_vref_adc_value();
+  
+#endif  
+
+  adcvalue = ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
+#if 0  
+  DB_PRINT("  Vbadc: ");
+  UART_int(adcvalue);
+#endif  
+  if(ADC_Vref != 0)
+	{
+		bat_val = (adcvalue * R_div_Vref_const) / ADC_Vref;
+	}
+  
+  
+  
+  // bat_val = calculate_mV_from_ADC(adcvalue);
+ #if 0  
+  DB_PRINT("  BAT: ");
+  UART_int(bat_val);
+#endif
+#if DEBUGGING_BB_IS_ON  
+  gd.db_adc_value = adcvalue;
+#endif  
+
+#if 0
+  adcconv = calculate_voltage_from_input_value(adcvalue);
+#else  
+  adcconv = bat_val / 100;  // calculate_voltage_from_input_value(adcvalue);
+#endif  
+
+#if 0
+  DB_PRINT("  BATv: ");
+  UART_int(adcconv);
+  DB_PRINT("\r\n");
+#endif   
+  
+#endif
+
+  return adcconv;
+  
+}
+
+
+
+#elif USE_ADC_OVERSAMPLING
+
+static uint8_t read_bat_value(void){
+
+  uint16_t adcvalue;
+  uint8_t adcconv;
+
+  adcvalue = ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
+  
+#if DEBUGGING_BB_IS_ON  
+  gd.db_adc_value = adcvalue;
+#endif  
+
+  adcconv = calculate_voltage_from_input_value(adcvalue);
+
+  return adcconv;
+  
+}
+
+
+#elif 1
+
+static uint8_t read_bat_value(void){
+
+  uint8_t adcvalue;
+  uint16_t adcconv;
+
+  ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
+
+
+  adcconv = ( ((uint16_t)ADRESH * 256) + ADRESL );
+  
+#if DEBUGGING_BB_IS_ON  
+  gd.db_adc_value = adcconv;
+#endif  
+
+  adcvalue = calculate_voltage_from_input_value(adcconv);
+
+  return adcvalue;
+  
+}
+
+#else
+
+static uint16_t read_bat_value(void){
+
+  // uint16_t adcvalue;
+  uint16_t adcconv;
+  
+  ConversionAdc(RIGHT_JUSTIFIED, BATERIA_ADC_CHANNEL);
+
+  adcconv = ( ((uint16_t)ADRESH * 256) + ADRESL );
+
+  // adcvalue = calculate_voltage_from_input_value(adcconv);
+
+  // baterie_mV = (adcvalue & 0x00ff);
+
+  return adcconv;
+  
+}
+
+#endif
+
+
+
+
+
+
+#if 0
+
+// 16 words longer!! incredible but yes
+static uint16_t calculate_voltage_from_input_value(uint16_t value){
+  
+  uint16_t val_1 = 0;
+  uint16_t val_2 = 0;
+  uint16_t ret_value = 0u;
+  
+  val_1 = (5 * value / 9) + 2;
+  
+  val_2 = (17 * value + 49) >> 4;
+  
+  val_2 = val_2 / 3u;
+  
+  ret_value = (val_1 + val_2) / 7;
+  
+  return ret_value;
+
+}  
+#else
+
+
+// 4 words shorter
+static uint8_t calculate_voltage_from_input_value(uint16_t value){
+  
+  uint16_t val_1 = 0;
+  uint16_t val_2 = 0;
+  uint16_t ret_value = 0u;
+  
+  val_1 = (5 * value / 9) + 2;
+  
+  val_2 = (17 * value + 49 ) / 48;
+  
+  ret_value = (val_1 + val_2) / 7;
+  
+  return (uint8_t)(ret_value & 0x00FF);
+  
+  // return ret_value;
+  
+}
+
+
+
+#endif
+
 
 
 

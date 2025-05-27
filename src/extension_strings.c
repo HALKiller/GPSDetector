@@ -5,6 +5,31 @@
 
 
 #include "extension_strings.h"
+#include "Global.h"
+
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_EXTENSION_STRINGS_DB_ENABLED
+#define FILE_EXTENSION_STRINGS_DB_ENABLED 0
+#endif
+#if FILE_EXTENSION_STRINGS_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
+
+
+
+
+
+
+
+
+
+
 
 #define NOT_IN_USE 0
 

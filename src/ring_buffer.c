@@ -24,6 +24,19 @@
 #define RING_BUFFER_SIZE (uint8_t)40u  
 #endif
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_RING_BUFFER_DB_ENABLED
+#define FILE_RING_BUFFER_DB_ENABLED 0
+#endif
+#if FILE_RING_BUFFER_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
 #define NOT_SEARCH_THE_BUG 1
 
 #if 1

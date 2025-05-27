@@ -28,6 +28,20 @@
 #include "UART.h"
 #endif
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_TIMERS_DB_ENABLED
+#define FILE_TIMERS_DB_ENABLED 0
+#endif
+#if FILE_TIMERS_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - // 
+
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -78,22 +92,39 @@ static void tmr1_timeout_handler(void);
 
 void timers_set_tmr1_id(tmr1_id_t t_id){
 
-#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
+#if 0 // DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
   DB_PRINT("\r\nTMR1: ");
   UART_int(t_id);
   UART_CRLF;
 #endif  
 
 
-#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
+
 
   if(TMR1_ON == TRUE)
   {
+  
     DB_PRINT("\r\nERR_tmr1. activ t_id: ");
     UART_int(t_id);
+    DB_PRINT(" ");
+    UART_int(timeout_cnt);
+
+    TMR1_ON = false;
+#if 0    
+    // TODO: we could set here some comun errflag ...
+    if(tmr1_id == STATUS_LED_TIMEOUT)
+    {
+      STATUS_LED_GREEN_OFF();
+      STATUS_LED_RED_OFF();
+    }
+    else
+    {
+      DB_PRINT("TMR1_ERR\r\n");
+    }
+#endif
+    
   }
 
-#endif
 
   tmr1_id = t_id;
   timeout_cnt_setter = timeout_setter[tmr1_id];
@@ -103,12 +134,14 @@ void timers_set_tmr1_id(tmr1_id_t t_id){
   UART_int(timeout_cnt_setter);
   UART_CRLF;
 #endif    
+
+
+
 }
 
 
 
 void timers_tmr1_decreaser(void){
-  
   
   timeout_cnt--;
   
@@ -161,15 +194,6 @@ void reset_timeout_timer(void){
   // uint8_t t_tmr1_ie = TMR1_IE;
   // uint8_t t_tmr1on = TMR1_ON;
     
-  // bool t_tmr1_ie = TMR1_IE;
-  // bool t_tmr1on = TMR1_ON;
-    
-  // bool t_tmr1_ie = (bool)TMR1_IE;
-  // bool t_tmr1on = (bool)TMR1_ON;
-  // bool t_tmr1on = (TMR1_ON != 0u);
-  // bool t_tmr1_ie = (TMR1_IE != 0u);
-
-  
   TMR1_ON = FALSE;
   
   TIMEOUT_FLG = FALSE;

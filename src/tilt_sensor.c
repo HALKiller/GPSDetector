@@ -37,6 +37,18 @@
 #include "UART.h"
 #endif
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_TILT_SENSOR_DB_ENABLED
+#define FILE_TILT_SENSOR_DB_ENABLED 0
+#endif
+#if FILE_TILT_SENSOR_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
@@ -100,10 +112,10 @@
  
 #define RESET_VALUE 0x00u
  
- 
+ #define WHO_AM_I_VERSION 51u
  
 // these defines are needed but that can be existing SPI lines from other peripherics
-#if 1
+#if 0
 
 #define BB_SPI_CS   LATCbits.LATC0
 #define BB_SPI_CLCK LATCbits.LATC1
@@ -118,9 +130,16 @@
 
 
 
-#define SENSOR_READINGS_PER_SECOND ((uint16_t)5u)
-#define CONST_ON_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_ON * SENSOR_READINGS_PER_SECOND)
-#define CONST_OFF_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * SENSOR_READINGS_PER_SECOND)
+
+
+
+
+
+#define SENSOR_READINGS_PER_TIME_BASE (uint16_t)(TIME_BASE / SENSOR_TIME_BETWEEN_READING))  // ((uint16_t)5u)
+
+#define CONST_ON_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_ON * ((uint16_t)5u))
+
+#define CONST_OFF_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * ((uint16_t)5u))
  
 
 
@@ -174,7 +193,7 @@ uint8_t rx_buffer[4];
 static uint8_t get_tilt_data(void);
 static void rw_data_bb_spi(uint8_t len_to_send);
 static uint8_t spi_transmit(uint8_t data);
-static void spi_tilt_timer(uint8_t us_time);
+
 
 
 #endif
@@ -299,6 +318,187 @@ uint8_t update_tilt_sensor_state(void){
 
 #if 1
 
+// because we are NOT switching off every time we need to configure the sensor anew every time...
+static uint8_t get_tilt_data(void){
+  
+  
+ uint8_t temp_PR = PR6;
+ 
+ uint8_t ret_value = 0u; 
+ uint8_t val_pos = false;
+ uint8_t r_cnt = 0;
+  
+ 
+  BB_SPI_CS = true;
+  
+#if 1
+
+  VALIM_TILT_ON();
+
+  if(FAST_CLOCK == false)  
+  {
+    __delay_us(625);
+    // _delay((uint32_t)625);
+    PR6 = 31;
+  }
+  else
+  {
+    __delay_ms(5);
+    // _delay((uint32_t)5000);
+    PR6 = 250;
+    
+  }
+  
+  T6_POSTSCALER = TMR6_16_POSTSCALER; // 0x01;	
+  TMR6 = 0;
+  TMR6_IF = false;
+  
+#endif
+
+#if 0
+// that switches of the internal pull ups
+  tx_buffer[0] = S2DCTRL1;
+  tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
+  tx_buffer[2] = S2DCTRL0;
+  tx_buffer[3] = 0x90;  // 0x10;  // 0x10u;
+  rw_data_bb_spi(4u);
+ 
+#else
+  
+  tx_buffer[0] = S2DCTRL1;
+  tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
+  rw_data_bb_spi(2u);
+  
+#endif   
+  
+
+  tx_buffer[0] = S2D_WHO_AM_I;
+  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
+  
+  rw_data_bb_spi(2u);
+  // this saves the WHO AM I answer into the next buffer slot...
+  rx_buffer[2] = rx_buffer[1];
+  
+
+#if INDICATE_TILT_SENSOR_ERROR  
+  
+
+
+  TILT_SENSOR_ERR = (rx_buffer[1] != WHO_AM_I_VERSION);
+  
+
+#endif
+  
+  
+#if 1
+
+  tx_buffer[0] = S2D_STATUS_READ;
+
+  tx_buffer[1] = RESET_VALUE;
+
+  TMR6_ON = true;
+  
+  while((val_pos == false) && (TMR6_IF == false))
+  {
+    // try reading the status reg zntil we have a valid Z position... 
+    rw_data_bb_spi(2u);
+    
+    if(rx_buffer[1] & 0x04)
+    {
+      val_pos = true; 
+    }
+    
+  
+  }
+  
+  PR6 = temp_PR;
+  T6_POSTSCALER = TMR6_02_POSTSCALER;
+  TMR6_ON = false;
+  
+#endif
+
+  tx_buffer[0] = S2D_OUT_READ_ZH;
+
+  rw_data_bb_spi(2u);
+
+  if(rx_buffer[1] == 0)
+  {
+    rw_data_bb_spi(2u);
+  }
+
+#if 0
+
+// set to power dwon mode...
+  tx_buffer[0] = S2DCTRL1;
+  tx_buffer[1] = 0x0C;  // 0x10;  // 0x10u;
+  rw_data_bb_spi(2u);
+
+#endif
+
+#if 1
+
+
+  VALIM_TILT_OFF();
+  
+#endif
+  
+  BB_SPI_CS   = false;
+  BB_SPI_CLCK = false;
+  BB_SPI_SDO  = false;
+  
+  
+#if DEBUGGING_BB_IS_ON&&1
+  DB_PRINT("\r\nI am: ");
+  UART_int(rx_buffer[2]);
+  
+  DB_PRINT("\r\nSPI_read: ");
+  UART_int(rx_buffer[1]);
+#endif
+
+
+#if 0
+  if(FAST_CLOCK == false)  
+  {
+    __delay_ms(312);
+  }
+  else
+  {
+    __delay_ms(2500);
+  }
+#endif    
+
+// when the Sensor data > 127 the IC is facing downwards --> 
+// it depends now where it is siuated to get a conclusion of the state
+#if DEBUGGING_BB_IS_ON&&1
+  // becaue that is actually a signed int
+  if(rx_buffer[1] > 127)
+  {
+    // facinf donw
+    DB_PRINT("\r\nZ ON\r\n");
+    
+    
+  }
+  else
+  {
+    // facin up
+    DB_PRINT("\r\nZ OFF\r\n");
+    ret_value = true;
+  }
+#else
+
+  if(rx_buffer[1] < 128)
+  {
+    ret_value = true;
+  }
+  
+#endif  
+
+  return ret_value;
+  
+}
+
+#else
+  
 // because we are switching off every time we need to configure the sensor anew every time...
 static uint8_t get_tilt_data(void){
   
@@ -309,27 +509,33 @@ static uint8_t get_tilt_data(void){
  uint8_t val_pos = false;
  uint8_t r_cnt = 0;
   
-  // DB_PRINT("\r\nVALIM_ON\r\n");
+ 
   
-  // configure here the timer 
+  // configure here the timer in case we switch on and off the TILT...
+#if 1
 
-  VALIM_TILT_ON = true;
+  VALIM_TILT_ON();
 
   if(FAST_CLOCK == false)  
   {
     __delay_us(625);
+    // _delay((uint32_t)625);
     PR6 = 31;
   }
   else
   {
     __delay_ms(5);
+    // _delay((uint32_t)5000);
     PR6 = 250;
     
   }
   
   T6_POSTSCALER = TMR6_16_POSTSCALER; // 0x01;	
   TMR6 = 0;
-  TMR6_IF = false; 
+  TMR6_IF = false;
+  
+#endif
+
   
   BB_SPI_CS = true;
 
@@ -350,30 +556,39 @@ static uint8_t get_tilt_data(void){
   
 #endif   
   
-#if 0
-  if(FAST_CLOCK == false)  
-  {
-    __delay_us(125);
-  }
-  else
-  {
-    __delay_ms(1);
-  }
-#endif    
-  
-  
-  
+
   tx_buffer[0] = S2D_WHO_AM_I;
   tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
   
   rw_data_bb_spi(2u);
+  // this saves the WHO AM I answer into the next buffer slot...
   rx_buffer[2] = rx_buffer[1];
+  
+
+#if INDICATE_TILT_SENSOR_ERROR  
+  
+#if 1
+
+  TILT_SENSOR_ERR = (rx_buffer[1] != WHO_AM_I_VERSION);
+  
+#else
+  
+  if(rx_buffer[1] != WHO_AM_I_VERSION)
+  {
+    
+    TILT_SENSOR_ERR = true;
+    // set errflg for tilt fail reading
+  }
+  else
+  {
+    TILT_SENSOR_ERR = false;
+  }
+#endif
+#endif
+  
   
 #if 0 
 
- 
-
-  
 
   // TODO:
   // check when releas that the TMR6 gets configured
@@ -424,11 +639,11 @@ static uint8_t get_tilt_data(void){
 #if 0
   if(FAST_CLOCK == false)  
   {
-    VALIM_TILT_ON = false;
+    VALIM_TILT_OFF();
   }
 #else
 
-  VALIM_TILT_ON = false;
+  VALIM_TILT_OFF();
   
 #endif
   
@@ -437,7 +652,7 @@ static uint8_t get_tilt_data(void){
   BB_SPI_SDO  = false;
   
   
-#if DEBUGGING_BB_IS_ON&&0
+#if DEBUGGING_BB_IS_ON&&1
   DB_PRINT("\r\nI am: ");
   UART_int(rx_buffer[2]);
   
@@ -457,16 +672,21 @@ static uint8_t get_tilt_data(void){
   }
 #endif    
 
-
-#if DEBUGGING_BB_IS_ON&&0
+// when the Sensor data > 127 the IC is facing downwards --> 
+// it depends now where it is siuated to get a conclusion of the state
+#if DEBUGGING_BB_IS_ON&&1
   // becaue that is actually a signed int
   if(rx_buffer[1] > 127)
   {
-    DB_PRINT("\r\nDet OFF\r\n");
+    // facinf donw
+    DB_PRINT("\r\nZ ON\r\n");
+    
+    
   }
   else
   {
-    DB_PRINT("\r\nDet ON\r\n");
+    // facin up
+    DB_PRINT("\r\nZ OFF\r\n");
     ret_value = true;
   }
 #else
@@ -483,388 +703,6 @@ static uint8_t get_tilt_data(void){
 }
 
 
-#elif 1
-// that one is good...
-// because we are switching off every time we need to configure the sensor anew every time...
-static uint8_t get_tilt_data(void){
-  
-  
-  
- uint8_t ret_value = 0u; 
- // int8_t hlooper = 0;
-  
-DB_PRINT("\r\nVALIM_ON\r\n");
-  
-  // configure here the timer 
-  
-  
-  VALIM_TILT_ON = true;
-    
-  if(FAST_CLOCK == false)  
-  {
-    __delay_us(625);
-  }
-  else
-  {
-    __delay_ms(5);
-  }
-  
-  
-  BB_SPI_CS = true;
-
-#if 0  
-// that switches of the internal pull ups
-  tx_buffer[0] = S2DCTRL0;
-  tx_buffer[1] = 0x90;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(2u);
-#endif  
-
-  tx_buffer[0] = S2DCTRL1;
-  tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(2u);
-  
-  
-#if 1
-  if(FAST_CLOCK == false)  
-  {
-    __delay_us(125);
-  }
-  else
-  {
-    __delay_ms(1);
-  }
-#endif    
-  
-  
-  tx_buffer[0] = S2D_WHO_AM_I;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-  
-  rw_data_bb_spi(2u);
-  
-  
-  
-  // this needs to be 68  .d for the IIS2
-  // this needs to be 51  .d for the LISDE12
-  rx_buffer[2] = rx_buffer[1];
-
-  tx_buffer[0] = S2D_OUT_READ_ZH;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-
-  rw_data_bb_spi(2u);
-
-#if 0
-  if(FAST_CLOCK == false)  
-  {
-    VALIM_TILT_ON = false;
-  }
-#else
-
-  VALIM_TILT_ON = false;
-  
-#endif
-  
-  BB_SPI_CS   = false;
-  BB_SPI_CLCK = false;
-  BB_SPI_SDO  = false;
-  
-  
-  
-  DB_PRINT("\r\nI am: ");
-  UART_int(rx_buffer[2]);
-  
-  DB_PRINT("\r\nSPI_read: ");
-  UART_int(rx_buffer[1]);
-  
-  
-#if 0
-  if(FAST_CLOCK == false)  
-  {
-    __delay_ms(312);
-  }
-  else
-  {
-    __delay_ms(2500);
-  }
-#endif    
-
-
-#if DEBUGGING_BB_IS_ON
-  // becaue that is actually a signed int
-  if(rx_buffer[1] > 127)
-  {
-    DB_PRINT("\r\nDet OFF\r\n");
-  }
-  else
-  {
-    DB_PRINT("\r\nDet ON\r\n");
-    ret_value = true;
-  }
-#else
-
-  if(rx_buffer[1] < 128)
-  {
-    ret_value = true;
-  }
-  
-#endif  
-
-  return ret_value;
-  
-}
-
-#elif 1 // here are db lines included
-// because we are switching off every time we need to configure the sensor anew every time...
-static uint8_t get_tilt_data(void){
-  
- uint8_t ret_value = 0u; 
- int8_t hlooper = 0;
-  
-
-  DB_PRINT("\r\nValim_on\r\n");
-  
-  
-
-  
-  
-  VALIM_TILT_ON = true;
-  
-  
-  BB_SPI_CLCK = true;
-  
-  __delay_ms(5);
-  
-  BB_SPI_CS   = true;
-  
-  
-  tx_buffer[0] = S2DCTRL0;
-  tx_buffer[1] = 0x90;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(2u);
-  
-  
-  
-  tx_buffer[0] = S2DCTRL1;
-  tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(2u);
-  
-  DB_PRINT("\r\nI am: ");
-  
-  tx_buffer[0] = S2D_WHO_AM_I;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-  
-  rw_data_bb_spi(2u);
-  
-  // this needs to be 68  .d for the IIS2
-  // this needs to be 51  .d for the LISDE12
-  
-  UART_int(rx_buffer[1]);
-
-  UART_CRLF;
- 
-
-#if 1
- 
-  tx_buffer[0] = S2D_OUT_READ_ZH;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-
-  rw_data_bb_spi(2u);
-  
-  
-  DB_PRINT("\r\nSPI_read: ");
-  UART_int(rx_buffer[1]);
-  
-  
-#else  
-  
-  
-  tx_buffer[0] = S2D_OUT_READ_XL;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-  tx_buffer[2] = RESET_VALUE;// 0x55;  // 
-  tx_buffer[3] = RESET_VALUE;// 0xAA;  // 
-  tx_buffer[4] = RESET_VALUE;// 0x55;  // 
-  tx_buffer[5] = RESET_VALUE;// 0xAA;  // 
-  tx_buffer[6] = RESET_VALUE;// 0x55;  // 
-  tx_buffer[7] = RESET_VALUE;// 0xAA;  // 
-  
-  rw_data_bb_spi(8u);
- 
-
-  DB_PRINT("\r\nSPI_read: ");
-  
-  for(hlooper = 0; hlooper < 6; hlooper = hlooper + 2)
-  {
-    
-    UART_int(rx_buffer[hlooper + 2]);
-    // DB_PRINT("-");
-    
-  }
-  
-#endif
-    
-  UART_CRLF;
-  
-#if 0  
-
-  hvar = (int16_t)rx_buffer[5] + 256 * (int16_t)rx_buffer[6];
-
-  force = (int16_t)hvar * 61 / 1000;  // iis2dlpc_from_fs2_to_mg(hvar);
-  if(force > 0)
-  {
-    DB_PRINT("Detector is OFF\r\n");
-  }
-  else
-  {
-    DB_PRINT("Detector is ON\r\n");
-  }
-  
-#elif 1
-  // becaue that is actually a signed int
-  if(rx_buffer[1] > 127)
-  {
-    
-    DB_PRINT("\r\nDetector OFF\r\n");
-    
-  }
-  else
-  {
-    DB_PRINT("\r\nDetector ON\r\n");
-    ret_value = true;
-  }
-  
-#else
-  
-
-  if(rx_buffer[6] > 127)
-
-  {
-    DB_PRINT("\r\nDetector OFF\r\n");
-  }
-  else
-  {
-    DB_PRINT("\r\nDetector ON\r\n");
-  }
-#endif        
-  
-  
-  VALIM_TILT_ON = false;
-  
-  BB_SPI_CS   = false;
-  BB_SPI_CLCK = false;
-  BB_SPI_SDO  = false;
-  
-  return ret_value;
-  
-}
-
-#else
-  static uint8_t get_tilt_data(void){
-  
- uint8_t ret_value = 0u; 
- int8_t hlooper = 0;
-  
- int16_t hvar = 0; 
- int16_t force = 0;
-  
-  
-  DB_PRINT("\r\nI am: ");
-  
-  tx_buffer[0] = S2D_WHO_AM_I;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-  
-  rw_data_bb_spi(2u);
-  
-  // this needs to be 68  .d
-  
-  UART_int(rx_buffer[1]);
-
-  UART_CRLF;
- 
-
-#if 1
- 
-  tx_buffer[0] = S2D_OUT_READ_ZH;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-
-  rw_data_bb_spi(2u);
-  
-  
-  DB_PRINT("\r\nSPI_read: ");
-  UART_int(rx_buffer[1]);
-  
-  
-#else  
-  
-  
-  tx_buffer[0] = S2D_OUT_READ_XL;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-  tx_buffer[2] = RESET_VALUE;// 0x55;  // 
-  tx_buffer[3] = RESET_VALUE;// 0xAA;  // 
-  tx_buffer[4] = RESET_VALUE;// 0x55;  // 
-  tx_buffer[5] = RESET_VALUE;// 0xAA;  // 
-  tx_buffer[6] = RESET_VALUE;// 0x55;  // 
-  tx_buffer[7] = RESET_VALUE;// 0xAA;  // 
-  
-  rw_data_bb_spi(8u);
- 
-
-  DB_PRINT("\r\nSPI_read: ");
-  
-  for(hlooper = 0; hlooper < 6; hlooper = hlooper + 2)
-  {
-    
-    UART_int(rx_buffer[hlooper + 2]);
-    // DB_PRINT("-");
-    
-  }
-  
-#endif
-    
-  UART_CRLF;
-  
-#if 0  
-
-  hvar = (int16_t)rx_buffer[5] + 256 * (int16_t)rx_buffer[6];
-
-  force = (int16_t)hvar * 61 / 1000;  // iis2dlpc_from_fs2_to_mg(hvar);
-  if(force > 0)
-  {
-    DB_PRINT("Detector is OFF\r\n");
-  }
-  else
-  {
-    DB_PRINT("Detector is ON\r\n");
-  }
-  
-#elif 1
-  // becaue that is actually a signed int
-  if(rx_buffer[1] > 127)
-  {
-    
-    DB_PRINT("\r\nDetector OFF\r\n");
-    
-  }
-  else
-  {
-    DB_PRINT("\r\nDetector ON\r\n");
-    ret_value = true;
-  }
-  
-#else
-  
-
-  if(rx_buffer[6] > 127)
-
-  {
-    DB_PRINT("\r\nDetector OFF\r\n");
-  }
-  else
-  {
-    DB_PRINT("\r\nDetector ON\r\n");
-  }
-#endif        
-
-  return ret_value;
-  
-}
 
 
 
@@ -951,22 +789,7 @@ static uint8_t spi_transmit(uint8_t data){
 
 #endif  // USE_SPI_TILT
 
-// just a waitning function which takes care with the tmr 6 -->
-// becasue of that implementation we will get the correctwaitting time 
-// independent of the clockspeed
-// PRE = 1:1
-// PSA = 2:1 --> that comes from the bit bang uart
-static void spi_tilt_timer(uint8_t us_time){
-  
-  // if clock is fast --> t_inc = 1us
-  // else             --> t_inc = 8us 
-  
-  
-  
-  
 
-
-}
 
 
 

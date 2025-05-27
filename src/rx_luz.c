@@ -16,18 +16,30 @@
 
 
 
-
+#include "Global.h"
 #include "rx_luz.h"
 
 #include "UART.h"
 #include "eeprom.h"
-#include "Global.h"
+
 #include "timers.h"
 #include "detector.h"  // for the sensor ilum
 #include "gps_extensions.h" // for the buffer
 #include "io_port_sfr_names.h"
 #include "generic_union_flgs.h"
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_RX_LUZ_DB_ENABLED
+#define FILE_RX_LUZ_DB_ENABLED 0
+#endif
+#if FILE_RX_LUZ_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
@@ -38,7 +50,8 @@
 
 #define REDUCE_MEM_USAGE 1
 
-
+// #define DB_PRINT_L(str) send_bb_string((const unsigned char *)(str))
+#define DB_PRINT_L(str)   // send_bb_string((const unsigned char *)(str))
 
 union udt_flags{
 	uint8_t reg;
@@ -72,7 +85,7 @@ enum d_length{
 
 
 
-
+#if 0
 enum{
   
   TMR_15ms_OF_TIME,
@@ -82,53 +95,14 @@ enum{
   
 };
 
-
+#endif
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
-#if PCB_VERSION == 68 
- 
- #if INVERTED_LDR_SENSOR
- // these are the adc from the light sensor (LDR) 
-// const uint8_t ADC_threshold = 10;  
-const uint8_t ADC_threshold = 154;  
-
-#else
-  
-const uint8_t ADC_threshold = 95;  
-
-#endif
-// 95; For high load switching and R = 63k - 75k (smaller)
-// 3330/255 
-
-char us_to_send[] = "030720";
 
 
+const uint8_t ADC_threshold = M_ADC_THRESHOLD; 
+char us_to_send[] = M_US_TO_SEND;
 
-#elif PCB_VERSION == 67
-
-#if INVERTED_LDR_SENSOR
- // these are the adc from the light sensor (LDR) 
-// const uint8_t ADC_threshold = 10;  
-const uint8_t ADC_threshold = 10;  
-
-#else
-  
-const uint8_t ADC_threshold = 10;  
-
-#endif
-// 95; For high load switching and R = 63k - 75k (smaller)
-// 3330/255 
-
-
-char us_to_send[] = "150000";
-
-
-#else
-  
-wat?
-
-
-#endif
 
 
 const uint8_t eeprom_addresses[] =
@@ -159,9 +133,6 @@ const uint8_t eeprom_addresses[] =
 #define TX_ERROR_HEADER 101
 #define TX_DUMMY_BYTE 0x55
 
-// #define RX_LUZ_HALFBIT_TIME 1	// that is 25ms OF_time
-// #define TX_LUZ_HALFBIT_TIME 2	// that is ...15ms(?) OF time
-
 #define TX_LUZ_TMR_OF_CNT 6	// 150ms
 
 
@@ -184,14 +155,8 @@ const uint8_t eeprom_addresses[] =
 
 #define CHARS_TO_RECEIVE	35	// 34 config bytes + 1 chcksum
 
-// this is the SECOND_RELEASED_VERSION_RX_BYTE on the grabador de luz
 
-// #define SENSOR_LDR_IDENTIFYER 49
-// #define SENSOR_LDR_IDENTIFYER 61
-// #define SENSOR_LDR_IDENTIFYER 0x85
-#define BIG_Z 0x5A
-#define SENSOR_LDR_IDENTIFYER BIG_Z // 0x85
-
+// #define M_RX_LUZ_INIT_TMR2_CFG 
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
@@ -208,27 +173,15 @@ static uint8_t detector_number_is_valid(void);
 
 
 static void rx_luz_configure_tmr2(uint8_t timeout_setter);
-
-
 static uint8_t wait_for_startbyte(void);
 static void Inicio_uart_luz(void);
-
-
-
 static uint8_t rx_config_data(uint8_t order_id);
-
-                                             
-
 static uint8_t tx_config_data(uint8_t order_id);
-
-
 static void wait_for_tmr_expires(uint8_t loopcnt);
 inline static void t2_reset(void);
 static uint8_t get_next_luz_char(void);
 static uint8_t wait_for_startbit(void);
-
 static uint8_t chcksum_checker(uint8_t to_loop_cnt);
-
 static void write_rx_data_to_eeprom(void);
 static void write_detector_number_data_to_eeprom(void);
 static void tx_luz(uint8_t tx_data);
@@ -252,14 +205,15 @@ void check_on_rx_luz(void){
 #if DB_UART_ON
 
 
-  UART_Write_Text("\r\nReset\r\n");
+  DB_PRINT_L("\r\nReset\r\n");
 
 #endif	
 
-
+  DB_PRINT_L("\r\nReset\r\n");
 
 	tx_luz(SENSOR_LDR_IDENTIFYER);
   __delay_ms(200);
+  // this is just an enum into the fuinction basically...
   tx_config_data(SEND_RX_SPEED);
 
 	
@@ -277,14 +231,10 @@ void check_on_rx_luz(void){
 					if(chcksum_checker(CHARS_TO_RECEIVE) == false) 
           {
             write_rx_data_to_eeprom();
-#if DB_LUZ_UART&&0			
-						DB_PRINT("\r\nEEPROM write\r\n");
-#endif						
+
 						tx_config_data(SEND_FULL_CONFIG);
           }
 				}
-      
-                                    
       
 			break;
 #if COMPILE_FULL_PROJECT	
@@ -311,10 +261,7 @@ void check_on_rx_luz(void){
 							write_detector_number_data_to_eeprom();
 							
 #endif
-							
-#if DB_LUZ_UART						
-							DB_PRINT("\r\nEEPROM write\r\n");
-#endif						
+										
 							tx_config_data(SEND_DETECTOR_NUMBER);
 						}
 						else
@@ -345,17 +292,6 @@ void check_on_rx_luz(void){
   TMR1_IE = false;
 
 	TMR2_ON = false;
-	
-#if USE_BIT_BANGED_UART
-
-  // Using TMR6 for that now...
-  init_TMR_bitbang_uart(NORMAL_CLOCK);
-  
-#endif  
-
-#if DB_LUZ_UART
-  // uart_init_cfg(B9600);
-#endif    
 
 }
 
@@ -369,6 +305,7 @@ void check_on_rx_luz(void){
 	Inicio_uart_luz();
 
 #if DEBUGGING_IS_ON
+
   UART_Write_Text("\r\nReset\r\n");
 
 #endif	
@@ -418,10 +355,6 @@ static void Inicio_uart_luz(void){
 	ADIE = 0;
   ADIF = 0;
 	
-#if DB_LUZ_UART
-  // uart_init_cfg(B57600);
-#endif  
-
 // because we are sending now a version byte as identifyer ...
 
 	rx_luz_configure_tmr2(TMR_1ms_OF_TIME);
@@ -448,14 +381,22 @@ static uint8_t wait_for_startbyte(void){
   // once we have received a startcondition we keep on going otherwise we might 
   // just stop when there is no TMR time left
 
+#if 1
+
+  rx_luz_configure_tmr2(DEFAULT_TMR2);
+
+#else
+
 #if SENSOR_LDR_IDENTIFYER==61||SENSOR_LDR_IDENTIFYER==0x85||SENSOR_LDR_IDENTIFYER==BIG_Z
 
-#if PCB_VERSION == 68
-  rx_luz_configure_tmr2(TMR_3072us_OF_TIME);
-  DB_PRINT("3ms");
-#elif PCB_VERSION == 67
+#if (PCB_VERSION==68)||(PCB_VERSION==69)
   
-  DB_PRINT("15ms");
+  rx_luz_configure_tmr2(TMR_3072us_OF_TIME);
+
+  
+#elif PCB_VERSION==66
+  
+
   rx_luz_configure_tmr2(TMR_15ms_OF_TIME);
   
 #else
@@ -465,11 +406,12 @@ wat?
   
 #else
   
-  DB_PRINT("\r\nBaud_15ms");
+  DB_PRINT_L("\r\nBaud_15ms");
 	rx_luz_configure_tmr2(TMR_15ms_OF_TIME);
   
 #endif
 
+#endif
 
 	TMR2ON = true;
 
@@ -571,8 +513,7 @@ static uint8_t rx_config_data(uint8_t to_loop_cnt){
 	// we have received a startbyte 'w' and now we are waiting for xy chars to be written inot th eEEPROM if the received 
 	// chars are correct --> send with it a single chcksum byte
 	uint8_t bytelooper = 0;
-	// uint8_t ret_value = true;
-  // uint8_t to_loop_to = 0;
+
 
 	for(bytelooper = 0; bytelooper < to_loop_cnt; bytelooper++)
 	{
@@ -630,7 +571,7 @@ static uint8_t tx_config_data(uint8_t order_id){
 #if DB_LUZ_UART 
 				UART_int(hlooper);
 				UART_int(tx_data);
-				DB_PRINT("\r\n");
+				DB_PRINT_L("\r\n");
 #endif    
 			}
 		
@@ -648,7 +589,7 @@ static uint8_t tx_config_data(uint8_t order_id){
 #if DB_LUZ_UART 
 				UART_int(hlooper);
 				UART_int(tx_data);
-				DB_PRINT("\r\n");
+				DB_PRINT_L("\r\n");
 #endif    
 			}		
 			
@@ -698,11 +639,7 @@ static uint8_t chcksum_checker(uint8_t to_loop_cnt){
   uint8_t ret_value = false;
   uint8_t hlooper = 0u;
   uint8_t chcksum = 0u;
-  
-#if DB_LUZ_UART  
-  // DB_PRINT("Chcksum: \r\n");
-#endif  
-  
+
   for(hlooper = 0; hlooper < to_loop_cnt; hlooper++)
   {
     
@@ -710,13 +647,13 @@ static uint8_t chcksum_checker(uint8_t to_loop_cnt){
 #if DB_LUZ_UART&&0
 	UART_int(sentence_buffer.gps_buffer[hlooper]);
 	UART_int(chcksum);
-	DB_PRINT("\r\n");
+	DB_PRINT_L("\r\n");
 #endif
   }
 	
 #if DB_LUZ_UART&&0
 
-	DB_PRINT("chcksum: ");
+	DB_PRINT_L("chcksum: ");
 	UART_int(chcksum);
 	
 #endif	
@@ -811,15 +748,7 @@ static uint8_t get_next_luz_char(void){
 	
 	uint8_t rx_byte = 0;
 	uint8_t bitlooper = 0;
-
 	uint8_t t_val = 0;
-
-	
-#if DB_LUZ_UART&&1
-
-	DB_PRINT("\r\nA ");
-	
-#endif	
 
 	reset_timeout_timer();
 	
@@ -829,7 +758,6 @@ static uint8_t get_next_luz_char(void){
 
 	for(bitlooper = 0; bitlooper < BITCNT; bitlooper++)
 	{		
-
     
 
 		wait_for_tmr_expires(RX_LUZ_FULLBIT_TIME_OF_CNT);
@@ -837,9 +765,7 @@ static uint8_t get_next_luz_char(void){
     DB_LED1_SWAP;
 		
     t_val =  read_ilum_sensor();
-    
-    
-    
+
 #if INVERTED_LDR_SENSOR	
 		if(t_val > ADC_threshold)
 #else
@@ -848,12 +774,10 @@ static uint8_t get_next_luz_char(void){
 
 		{
 			rx_byte = rx_byte >> 1;
-      // DB_PRINT("0 ");
 		}
 		else
 		{
 			rx_byte = (rx_byte >> 1) + 128; 
-      // DB_PRINT("1 ");
 		}
     
 #if DB_LUZ_UART&&1	
@@ -865,9 +789,10 @@ static uint8_t get_next_luz_char(void){
   
 #if DB_LUZ_UART&&1
 
-	DB_PRINT("Byte: ");
+	DB_PRINT_L("Byte: ");
 	UART_int(rx_byte);
 	UART_CRLF;
+  
 #endif	
 
 	return rx_byte;

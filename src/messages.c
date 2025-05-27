@@ -30,12 +30,24 @@
 
 #include "generic_union_flgs.h" // for the BAT_LOW_FLG
 
-#if DEBUGGING_IS_ON || DEBUGGING_BB_IS_ON
 #include "UART.h"
+
 #include "io_port_sfr_names.h"
-#endif
 
 #include <string.h>
+
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_MESSAGES_DB_ENABLED
+#define FILE_MESSAGES_DB_ENABLED 0
+#endif
+#if FILE_MESSAGES_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
@@ -52,33 +64,25 @@
  
 
  
-struct MonthDay {
-  const char* month;
-  uint8_t days;
-};
-
-struct MonthDay months[] = {
-  {"Jan", 31},
-  {"Feb", 29},
-  {"Mar", 31},
-  {"Apr", 30},
-  {"May", 31},
-  {"Jun", 30},
-  {"Jul", 31},
-  {"Aug", 31},
-  {"Sep", 30},
-  {"Oct", 31},
-  {"Nov", 30},
-  {"Dec", 31}
-}; 
- 
- 
 #if SEND_NEW_VERSION_NUMBER
  
 const char gMensajeActivandose_new  [] = "ACTIVANDOSE ";
 
+#if 1
 
-const char gMensajeVersion_new[] = "V>25<" LETTER_REPLACER ">01< C ";
+const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">" PCB_V_STRING "< C ";
+// const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">69< C "; that works
+
+// const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">" PCB_V_STRING "< C ";
+
+#else
+  
+const char gMensajeVersion_new[] = "V>24<" LETTER_REPLACER ">69< C ";
+
+// const char gMensajeVersion_new[] = "V>24<" LETTER_REPLACER ">69< C ";
+
+
+#endif
 
 // const char gMensajeVersion_new      [] = "V>25<R>01< C "; 
 
@@ -97,24 +101,11 @@ const char msg_gps_error        [] = "NOTICE GPS >";
 const char msg_gps_error        [] = "FALLO MODULO GPS >-< ERROR >";
 #endif
 
-const char msg_gps_dds_error    [] = "FALLO MOD DDS GPS >-< ERROR ";
-
-const char gMensajeGuion        [] = ">-< ";
-const char gMensajeHora         [] = "HORA ";
 
 #if USE_NEW_VERSION_ID
 
-#if TRY_HEX_IN_VERSION_DIGITS
-const char gMensajeVersion_H      [] = "V";
-#else
-const char gMensajeVersion_H      [] = "V>";
-#endif
 
-#if TRY_BATCHARGE_ACTIVATION
-const char gMensajeVersion_T      [] = "< ";
-#else
-const char gMensajeVersion_T      [] = "< ";
-#endif
+
 #else
   
 #if PIC_16F1936
@@ -173,8 +164,9 @@ static void msg_no_gps(void);
 
 
 static void insert_msg_header(void);
+static void insert_bat_error(uint8_t slot);
 static void insert_baterie(void);
-static void insert_bat_charge_count(uint16_t bcc);
+static void insert_bat_charge_count(void);
 static void insert_time(uint8_t pos);
 #if USE_NEW_VERSION_ID
 static void insert_version(uint8_t * buf);
@@ -240,7 +232,7 @@ static void msg_activation(void){
   
   strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );
 
-  insert_bat_charge_count(bat_cnt);
+  insert_bat_charge_count();
 
   d_pnt = gps_buffer_get_len();
   
@@ -251,121 +243,7 @@ static void msg_activation(void){
   sentence_buffer.gps_buffer[d_pnt] = ' ';
 
   
-  bat_cnt++;
-  if(bat_cnt >= 17575)
-  {
-    bat_cnt = 0;
-  }
-  
 }
-
-
-#elif TRY_BATCHARGE_ACTIVATION
-
-// e_Activation
-static void msg_activation(void)
-{
-
-  uint16_t temp_v = version_nr;
-  uint8_t d_pnt = 0;
-  
-  insert_msg_header();
-  
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 23), gMensajeActivandose );
-  
-  
-  
-#if DB_NEW_SPI  
-  version_nr++;
-  if(DDS_CFG_ERR == true)
-  {
-    version_nr = version_nr + 999;
-  }
-  if(version_nr > 9999)
-  {
-    version_nr = version_nr - 10000;
-  }
-#endif  
-
-#if USE_NEW_VERSION_ID||OV_VERSION_ID
-
-
-
-  // d_pnt = sentence_buffer.gps_buffer + gps_buffer_get_len();
-
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion_H );
-  insert_version((char*)(sentence_buffer.gps_buffer + 37));
-  // strcpy ( (char*)(sentence_buffer.gps_buffer + 41), gMensajeVersion_T );
-  
-  d_pnt = gps_buffer_get_len();
-  
-  // DB_PRINT("D_PNT: ");
-  // UART_int(d_pnt);
-  
-  // insert_batcharged_cnt(41);
-  insert_batcharged_cnt(d_pnt);
-  d_pnt = gps_buffer_get_len();
-  
-  // DB_PRINT("D_PNT: ");
-  // UART_int(d_pnt);
-    // insert_batcharged_cnt(d_pnt);
-  // d_pnt = gps_buffer_get_len();
-  
-    // insert_batcharged_cnt(d_pnt);
-  // d_pnt = gps_buffer_get_len();
-  
-    // insert_batcharged_cnt(d_pnt);
-  // d_pnt = gps_buffer_get_len();
-  
-  strcpy ( (char*)(&sentence_buffer.gps_buffer[d_pnt]), gMensajeVersion_T );
-  
-  
-#else  
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion );
-#endif
-  
-}
-
-#else // TRY_BATCHARGE_ACTIVATION
-  
-  // e_Activation
-static void msg_activation(void)
-{
-
-  uint16_t temp_v = version_nr;
-
-  insert_msg_header();
-  
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 23), gMensajeActivandose );
-  
-  
-  
-#if DB_NEW_SPI  
-  version_nr++;
-  if(DDS_CFG_ERR == true)
-  {
-    version_nr = version_nr + 999;
-  }
-  if(version_nr > 9999)
-  {
-    version_nr = version_nr - 10000;
-  }
-  DB_PRINT("V: ");
-  UART_int(version_nr);
-#endif  
-
-#if USE_NEW_VERSION_ID||OV_VERSION_ID
-
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion_H );
-  insert_version((char*)(sentence_buffer.gps_buffer + 37));
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 41), gMensajeVersion_T );
-  
-#else  
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 35), gMensajeVersion );
-#endif
-  
-}
-
 
 
 #endif
@@ -395,18 +273,7 @@ static void msg_position(uint8_t resend)
 
   sentence_buffer.gps_buffer[61] =  'H';
 
-#if 0  
-  if(resend == true)
-  {
-    sentence_buffer.gps_buffer[61] = 'J';
-  }
-  // TODO: Get bat level:
-  if(BAT_IS_LOW_FLG == true)
-  {
-    sentence_buffer.gps_buffer[61] = sentence_buffer.gps_buffer[61] + 1u;
-  }
 
-#endif
 // TODO: 
 // optimize that in the way that the enum value is straight out the char we need
 // --> optimizing the usage of RAM and ROM
@@ -445,6 +312,12 @@ static void msg_position(uint8_t resend)
   {
     sentence_buffer.gps_buffer[58] = '1';
   }
+
+#if 1
+
+  insert_bat_error(59u);
+  
+#else
   
   sentence_buffer.gps_buffer[59] = '0';
   // TODO: Get bat level:
@@ -463,8 +336,9 @@ static void msg_position(uint8_t resend)
     sentence_buffer.gps_buffer[59] = sentence_buffer.gps_buffer[59] + 3u;
     
   }
- 
- #else
+#endif 
+
+#else
   
   ertc_convert_to_real_time(eRTC_get_second_cnt());
 
@@ -473,166 +347,70 @@ static void msg_position(uint8_t resend)
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 58, ertc.seconds  , 2, false );
 
 #endif
-  
+
+#if SEND_LOCK_TIME_DECIMAS_LATITUDE  
+
+  uint16_t temp_var = gps_get_last_lock_time();
+
+  DecimalUint16ToA( sentence_buffer.gps_buffer + 29, temp_var                            , 4, false );
+  DecimalUint16ToA( sentence_buffer.gps_buffer + 45, rmc_sentence.Longitude.Decimas      , 4, false );
+
+
+#else
+
   DecimalUint16ToA( sentence_buffer.gps_buffer + 29, rmc_sentence.Latitude.Decimas       , 4, false );
   DecimalUint16ToA( sentence_buffer.gps_buffer + 45, rmc_sentence.Longitude.Decimas      , 4, false );
+  
+#endif  
   
 }
 
 
 
-#if USE_ERR_MSG_IN_BAD_POS
-
+// e_No_gps
 static void msg_no_gps(void){
 
-  // static uint16_t bat_cnt = 702; // DDC
+
   uint16_t temp_cnt = bat_cnt;
+  
   uint8_t d_pnt = 0;
 
   char t_char = 0;
   
+  
   insert_msg_header();
   
-
   strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_error);
 
-  
-  
-  
-  // perhaps adding the err number here..?
-  // get len position
   // put in the gps error and than the same is with pos...
   d_pnt = gps_buffer_get_len();
-  sentence_buffer.gps_buffer[d_pnt] = '0';
-  sentence_buffer.gps_buffer[d_pnt + 1] = '1';
+  
+  t_char = gps_get_gps_state();
+  
+  sentence_buffer.gps_buffer[d_pnt] = t_char + '0';
+  
+  // get the error from baterie and stuff...
+  insert_bat_error(d_pnt + 1);
+
   sentence_buffer.gps_buffer[d_pnt + 2] = '<';
   sentence_buffer.gps_buffer[d_pnt + 3] = ' ';
+  
   d_pnt = gps_buffer_get_len();
   
   strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );
   d_pnt = gps_buffer_get_len();
   
-  
-#if 1
-  
-  insert_bat_charge_count(bat_cnt);
-
-#else  
-  
-  
-  // strcpy ( (char*)(sentence_buffer.gps_buffer [d_pnt]), gMensajeVersion_H );
-  // d_pnt = gps_buffer_get_len();
-  // insert_version((char*)(sentence_buffer.gps_buffer + 53)); // d_pnt
-  // strcpy ( (char*)(sentence_buffer.gps_buffer + 57), gMensajeVersion_T );
-  t_char = temp_cnt / 529;  // 676u;
-  sentence_buffer.gps_buffer[d_pnt] = t_char + 'A';
-  d_pnt++;
-  temp_cnt = temp_cnt%529;  // 676u;
-  t_char = temp_cnt / 23u;
-  sentence_buffer.gps_buffer[d_pnt] = t_char  + 'A';
-  d_pnt++;
-  t_char = temp_cnt%23u;
-  sentence_buffer.gps_buffer[d_pnt] = t_char  + 'A';
-
-#endif
-  // d_pnt = gps_buffer_get_len();
-  
-
-  
-  // strcpy ( (char*)(&sentence_buffer.gps_buffer[d_pnt]), gMensajeVersion_T );
-  
-  bat_cnt++;
-  if(bat_cnt >= 17575)
-  {
-    bat_cnt = 0;
-  }
-  
- 
-
-
+  insert_bat_charge_count();
   
 }
 
-
-
-#elif 1
-
-static void msg_no_gps(void){
-
-
-  insert_msg_header();
-  
-  if(DDS_CFG_ERR == true)
-  {
-    strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_dds_error);
-  }
-  else
-  {
-    strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_error);
-  }
-  
-  
-  
-  // perhaps adding the err number here..?
-  
-
-  
-#if USE_NEW_VERSION_ID && 0
-
-  strcat ( (char*)(sentence_buffer.gps_buffer), gMensajeVersion_H );
-  insert_version((char*)(sentence_buffer.gps_buffer + 53));
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 57), gMensajeVersion_T );
-
-#elif 1
-
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 51), gMensajeVersion_H );
-  insert_version((char*)(sentence_buffer.gps_buffer + 53));
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 57), gMensajeVersion_T );
-  
-  
- 
-#else  
-  
-  strcpy((char*)sentence_buffer.gps_buffer + 34, gMensajeVersion);
-  
-#endif
-
-  
-}
-
-#else
-  
-// e_No_gps
-static void msg_no_gps(void){
-// PreparaMensajeNoHayGps(void)
-
-  insert_msg_header();
-  
-  strcpy((char*)sentence_buffer.gps_buffer + 23, gMensajeNoHay);
-  strcpy((char*)sentence_buffer.gps_buffer + 30, gMensajeGps);
-  
-#if USE_NEW_VERSION_ID
-
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 34), gMensajeVersion_H );
-  insert_version((char*)(sentence_buffer.gps_buffer + 36));
-  strcpy ( (char*)(sentence_buffer.gps_buffer + 40), gMensajeVersion_T );
-  
-  
-  
-#else  
-  strcpy((char*)sentence_buffer.gps_buffer + 34, gMensajeVersion);
-#endif
-  
-  strcpy((char*)sentence_buffer.gps_buffer + 42, gMensajeRadiogonio);
-  
-}
-
-#endif
 
 
 
 static void insert_msg_header(void)
 {
+  
+  // DB_PRINT("msg_header\r\n");
   
   insert_baterie();
   
@@ -660,26 +438,43 @@ static void insert_msg_header(void)
   
 }
 
+static void insert_bat_error(uint8_t slot){
+  
 
+  sentence_buffer.gps_buffer[slot] = '0';
+  
+  if(BAT_IS_LOW_FLG == true)
+  {
+    sentence_buffer.gps_buffer[slot] = '1';
+  }
+  
+  if(BAT_IS_TOO_LOW == true)
+  {
+    sentence_buffer.gps_buffer[slot] = '2';
+  }
+  
+  if(DDS_CFG_ERR == true)
+  {
+    sentence_buffer.gps_buffer[slot] = sentence_buffer.gps_buffer[slot] + 3u;
+  }
+ 
+  
+  
+}
 
+#if USE_ADC_OVERSAMPLING
 
 static void insert_baterie(void)
 {
   
-#if DEBUGGING_IS_ON&&0
-
-  sentence_buffer.gps_buffer[14] = '5'; // vbat[0];
-  sentence_buffer.gps_buffer[15] = '4'; // vbat[1];
-  sentence_buffer.gps_buffer[17] = '2'; // vbat[2];
-
-  
-#else  
-  
   char vbat[3];
+ 
+  uint8_t baterie_mV = gd.bat_decivolt;
   
-  LeerValorBateria();
-  
-  
+#if DB_V69_PCB
+  baterie_mV = 120;
+#endif
+ 
   
   DecimalUint8ToA( (uint8_t*)&vbat[0], baterie_mV, 3, false );
 
@@ -687,34 +482,59 @@ static void insert_baterie(void)
   sentence_buffer.gps_buffer[15] = vbat[1];
   sentence_buffer.gps_buffer[17] = vbat[2];
   
-#endif
+}
+
+#else
+  
+static void insert_baterie(void)
+{
+  
+  char vbat[3];
+  
+  uint8_t baterie_mV = LeerValorBateria();
+  
+
+  
+  DecimalUint8ToA( (uint8_t*)&vbat[0], baterie_mV, 3, false );
+
+  sentence_buffer.gps_buffer[14] = vbat[0];
+  sentence_buffer.gps_buffer[15] = vbat[1];
+  sentence_buffer.gps_buffer[17] = vbat[2];
   
 }
+
+#endif
 
 // converts into a base_23 Alphabet 
 // 0 --> AAA
 // 1 --> AAB max first digit is W --> AAW overflow to ABA because there cant be an 'X' in the sentence_buffer
 // because  that would be the end of the frame.
-static void insert_bat_charge_count(uint16_t bcc){
+static void insert_bat_charge_count(void){
   
   uint8_t hlooper;
-  uint16_t d_base = 529u;
-  uint16_t temp_cnt = bcc;
+  uint16_t d_base = 529u; // 23 * 23
   char t_char;
-
   uint8_t d_pnt;
-  
+#if COMPILE_FOR_INTERNAL_TEST  
+  uint16_t temp_cnt = get_txcnt();
+#else
+  uint16_t temp_cnt = get_batcnt();
+#endif
   d_pnt = gps_buffer_get_len();
   
   for(hlooper = 0; hlooper < 3; hlooper++)
   {
     t_char = temp_cnt / d_base;  
+    
     sentence_buffer.gps_buffer[d_pnt] = t_char + 'A';
+    
     d_pnt++;
+    
     temp_cnt = temp_cnt%d_base;
+    
     d_base = d_base / 23u;
+    
   }
-  
   
 }
 
@@ -725,287 +545,16 @@ static void insert_time(uint8_t pos)
   
   ertc_convert_to_real_time(eRTC_get_second_cnt());
   
-  
-  
   sentence_buffer.gps_buffer[pos] =  '>';
   DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 1, ertc.hours    , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 3, ertc.minutes  , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + pos + 5, ertc.seconds  , 2, false );
   sentence_buffer.gps_buffer[pos + 7] =  'H';
-}
-
-
-static void insert_version(uint8_t * buf){
-#if TRY_HEX_IN_VERSION_DIGITS
-
-  strcpy ( buf, Hex_char );
-  
-#elif TRY_BATCHARGE_ACTIVATION
-  
-  strcpy ( buf, version_char );
-  
-#else  
-  
-  DecimalUint16ToA(buf, (uint16_t)version_nr, 4, false);
-  
-#endif
-  
-}
-
-
-static void insert_batcharged_cnt(uint8_t d_pnt){
-  
-  // these have to be two bytes because the bat might get more often charged than 0xFF times...
-  static uint16_t charge_cnt = 5555u;
-  
-  uint8_t *des_pnt = &sentence_buffer.gps_buffer[d_pnt];
-  // charge_cnt = LeerEeprom(HIGH_BYTE_EEPROM_ADDRESS_BAT_CNT);
-  
-  // charge_cnt = charge_cnt << 8;
-  
-  // charge_cnt = charge_cnt + LeerEeprom(LOW_BYTE_EEPROM_ADDRESS_BAT_CNT);
-  
-  charge_cnt++;
-  
-  if(charge_cnt > 9999)
-  {
-    charge_cnt = 9999;
-  }
-  
-  DecimalUint16ToA(des_pnt, charge_cnt, 4, false);
-  
-}
-
-
-
-// in the end it seems we are using again a standard string 
-// and not creating a version based on dates
-#if USE_NEW_VERSION_ID&&0  
-// clean up now...
-#if 0
-
-
-int get_month_index(void) {
-  
-  const char* date_str = __DATE__;
-  
-  char month_str[4];
-  
-  uint16_t day_of_year = 0u;
-  
-  uint8_t day_of_month = 0u;
-  
-  uint8_t compiled_week = 0u;
-  // uint8_t compiled_year = 0u;
-  int compiled_year = (date_str[9] - '0') * 10 + (date_str[10] - '0');
-  
-  strncpy(month_str, &date_str[0], 3);
-  
-  month_str[3] = '\0';
-  
-  DB_PRINT(&month_str);
-  
-  for (int i = 0; i < 12; i++)
-  {
-    if (strcmp(month_str, months[i].month) == 0) 
-    {
-      
-      day_of_year = day_of_year + get_day_of_month();
-      
-      UART_int(day_of_year);
-      
-      UART_CRLF;
-      
-      compiled_week = day_of_year / 7u;
-      
-      UART_int(compiled_week);
-      
-      UART_CRLF;
-      
-      version_nr = (((uint16_t)(compiled_week)) *100)  + compiled_year;
-      
-      UART_int(version_nr);
-      
-      UART_CRLF;
-      
-      return i;
-      
-    }
-    
-    day_of_year = day_of_year + months[i].days;
-    UART_int(day_of_year);
-    UART_CRLF;
-  }
-  
-
-  // assert(false); // Month not found
-  return -1;
-  
-}
-
-
-int get_day_of_month(void){
-  
-  const char* date_str = __DATE__;
-  int day = 0;
-  int i = 4;  // becasue for example Nov 15 2024
-
-
-  // Handle both single-digit and double-digit days
-  if (date_str[i] != ' ')
-  {
-    day = (date_str[i] - '0') * 10 + (date_str[i+1] - '0');
-  }
-  else
-  {
-    day = (date_str[i+1] - '0');
-  }
-
-  return day;
-  
-}
-
-#else
-
-#if REDUCE_ROM_ON_VERSION_CREATION&&0
-void calculate_version_number(void) {
-  
-  version_nr = 325;
   
   
 }
 
 
-#elif TRY_BATCHARGE_ACTIVATION
 
-// here the version is the exact date...
-void calculate_version_number(void) {
-  
-  const char *date_str = __DATE__; 
-
-  char month_str[4];
- 
-  int8_t month_num = 0;
-  int8_t hlooper = 0;
-  // strncpy(month_str, &date_str[0], 3);
-  
-  month_str[0] = date_str[0];
-  month_str[1] = date_str[1];
-  month_str[2] = date_str[2];
-  month_str[3] = 0;
-  
-  
-
-  
-  // Extract day
-  if (date_str[4] != ' ')
-  {
-    version_char[0] = date_str[4];
-  }
-  else
-  {
-    version_char[0] = '0';
-  }
-
-  version_char[1] = date_str[5];
-
-  version_char[2] = '\0';
-  
-
-
-  for (hlooper = 0; hlooper < 12; hlooper++)
-  {
-    if (strcmp(month_str, months[hlooper].month) == 0u) 
-    {
-      month_num = hlooper + 1;
-    }
-
-  }
-
-
-  version_char[2] = (month_num / 10) + '0'; 
-  version_char[3] = (month_num % 10) + '0';
-  
-  
-  version_char[4] = date_str[9];
-  version_char[5] = date_str[10];
-  version_char[6] = '-'; 
-  version_char[7] = '\0'; 
-  
-  DB_PRINT("\r\nDate: ");
-  DB_PRINT(&version_char[0]);
-
-  
-}
-
-
-#else
-
-// here the version is week and year --> p.e. 0425
-void calculate_version_number(void) {
-  
-  const char* date_str = __DATE__;
-  
-  char month_str[4];
-  
-  uint16_t day_of_year = 0u;
-  
-  uint8_t day_of_month = 0u;
-  
-  uint8_t compiled_week = 0u;
-  
-  int compiled_year = (date_str[9] - '0') * 10 + (date_str[10] - '0');
-  
-  strncpy(month_str, &date_str[0], 3);
-  
-  month_str[3] = '\0';
-  
-  
-  
-  for (int i = 0; i < 12; i++)
-  {
-    if (strcmp(month_str, months[i].month) == 0u) 
-    {
-
-      if (date_str[4] != ' ')
-      {
-        day_of_month = (date_str[4] - '0') * 10 + (date_str[5] - '0');
-      }
-      else
-      {
-        day_of_month = (date_str[5] - '0');
-      }
-      
-      day_of_year = day_of_year + day_of_month;
-
-#if DEBUGGING_BB_IS_ON&&0
-      DB_PRINT("\r\nV: ");
-      UART_int(day_of_year);
-#endif
-      
-      compiled_week = day_of_year / 7u;
-      
-
-      version_nr = (((uint16_t)(compiled_week)) * 100)  + compiled_year;
-#if DEBUGGING_BB_IS_ON&&0
-      DB_PRINT("\r\nV: ");
-      UART_int(version_nr);
-#endif
-      
-    }
-    
-    day_of_year = day_of_year + months[i].days;
-   
-  }
-  
-  
-  
-}
-
-#endif
-
-#endif
-
-#endif
 
 // EOF

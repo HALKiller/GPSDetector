@@ -23,10 +23,24 @@
 #include <stdint.h>
 #include "xc.h"
 
+
 #if DEBUGGING_IS_ON
 #include "generic_union_flgs.h"
 #endif
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_UART_DB_ENABLED
+#define FILE_UART_DB_ENABLED 0
+#endif
+
+#if FILE_UART_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
 
 //  **********************  DATA TYPES, STRUCTS, ENUMS  ************************  //
@@ -518,12 +532,13 @@ DB_PRINT("Uart_int\r\n");
 
 
 #else
-
-void UART_int(uint16_t hvar){
+  
+void UART_INT_C(uint32_t hvar){
+// void UART_int(uint16_t hvar){
 
   char str[11];
 
-  // uint_to_str(hvar, str);
+
 #if 1
   uint32_to_str(hvar, str);
 #else
@@ -531,7 +546,6 @@ void UART_int(uint16_t hvar){
 #endif
 	
 
-  
   DB_PRINT(&str[0]);
 	
 }

@@ -8,6 +8,7 @@ void init_all(void);
 
 void startup(void);
 
+void set_lpm_ioports(void);
 
 
 

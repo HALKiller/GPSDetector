@@ -20,6 +20,20 @@
 
 // #include "io_port_sfr_names.h"
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_BIT_BANGED_UART_DB_ENABLED
+#define FILE_BIT_BANGED_UART_DB_ENABLED 0
+#endif
+#if FILE_BIT_BANGED_UART_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -158,6 +172,89 @@ void init_TMR_bitbang_uart(uint8_t clockspeed){
 }
 
 
+#if 1
+
+void send_bb_string(const unsigned char *str_pnt){
+	
+  uint8_t lencnt = 0;
+	uint8_t r_shifter = 0x01;
+	uint8_t hlooper = 0;
+	uint8_t bitwise[10];
+  char temp_char;
+  
+  uint8_t t_GIE;
+  
+  if(FAST_CLOCK == FALSE)
+  {
+    PR6 = BB_SLOW;
+  }
+  else
+  {
+    PR6 = BB_PR;
+  }
+
+  bitwise[0] = STARTBIT;
+  bitwise[9] = STOPBIT;
+  
+	while((*str_pnt != NULL_TERMINATOR) && (const_max_str_length > lencnt))
+	{
+    
+    temp_char = *str_pnt;
+    
+    r_shifter = 0x01;
+    
+    for(hlooper = 1; hlooper < 9; hlooper++)
+      
+    {
+      
+      if(temp_char & r_shifter)
+      {
+        bitwise[hlooper] = 1u;
+      }
+      else
+      {
+        bitwise[hlooper] = 0u;
+      }
+      
+      r_shifter = r_shifter << 1;
+      
+    }
+
+    BB_TMR_ON = false;
+    BB_TMR = 0;
+    
+    t_GIE = GIE;
+    GIE = false;
+    
+    BB_TMR_IF = false;
+    BB_TMR_ON = true;
+
+    for(hlooper = 0; hlooper < 10; hlooper++)
+    {
+      
+      BB_UART = bitwise[hlooper];
+
+      BB_TMR_IF = false;
+      
+      while(BB_TMR_IF == false);
+
+    }
+    
+    BB_TMR_ON = false;
+    BB_TMR_IF = false;
+    GIE = t_GIE;  
+
+    str_pnt++;
+    lencnt++;
+    
+  }
+
+}
+
+
+
+
+#else
 
 void send_bb_string(const unsigned char *str_pnt){
 	
@@ -207,6 +304,12 @@ static void bang_char_out(uint8_t the_char){
 		
 	}
 	bitwise[9] = STOPBIT;
+  
+  
+  
+  
+  
+  
 	send_it(&bitwise[0]);
 	
 
@@ -246,7 +349,7 @@ static void send_it(uint8_t *bit_arr){
 }
 
 
-
+#endif
 
 
 

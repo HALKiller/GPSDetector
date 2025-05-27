@@ -27,6 +27,18 @@
 #include <stdint.h>
 
 
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_GD_STATES_DB_ENABLED
+#define FILE_GD_STATES_DB_ENABLED 0
+#endif
+#if FILE_GD_STATES_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -76,7 +88,7 @@ static gpsd_state_t detector_state;
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
 
-#if DEBUGGING_IS_ON&&0
+#if 0
 
   static const char *app_txt[] = {
     
@@ -199,7 +211,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.last_state = detector_state.actual_state;
   
-#if DEBUGGING_BB_IS_ON
+#if 0
   DB_PRINT("\r\nLS: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
   UART_CRLF;
@@ -210,7 +222,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.actual_state = next_state;
   
-#if DEBUGGING_BB_IS_ON
+#if 0
   DB_PRINT("NS: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
   UART_CRLF;
@@ -227,7 +239,7 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
   
   detector_state.last_state = detector_state.actual_state;
   
-#if DEBUGGING_IS_ON
+#if 0
   DB_PRINT("l_switch state: ");
   DB_PRINT(app_txt[detector_state.actual_state]);
 #endif
@@ -265,16 +277,10 @@ void gd_states_switch_to_next_state(e_gpsd_states_t next_state){
     
     
   }
-  
-  
-  // stateHandlers[next_state]();
-  
+
   detector_state.actual_state = next_state;
   
-#if DEBUGGING_IS_ON
-  DB_PRINT("New state: ");
-  DB_PRINT(app_txt[detector_state.actual_state]);
-#endif  
+
 
   
 }
@@ -337,33 +343,8 @@ static void f_E_SLEEP_BEFORE_TRANSMISSION_STATE_handler(void){
   // get into LP Mode and set flag indicating where to go from there
   handlers_generic_set_handler_FLG(e_ertc_handler_start);
 
-#if DB_L_POWER
-    
-  DB_PRINT("\r\nL_Power_1\r\n");
-    
-#if PCB_VERSION == 67
-  LATA = 0x40;
-  LATB = 0x00;
-  LATC = 0x00;
-#elif PCB_VERSION == 68
-// TODO: CS line needs to stay high!!
-  LATA = 0x00;
-#if DEBUGGING_BB_IS_ON  
-  LATB &= 0b01000000; // 100011;
-#else  
-  LATB = 0x00;
-#endif  
-  LATC = 0x00; 
-#else  
-  LATC &= 0b11011011;
-  LATB &= 0b00100011;
-  LATA |= 0b01000000;
-  LATA &= 0b11101000;
-#endif    
-
-#endif
-  
-  
+  set_lpm_ioports();    
+ 
 }
 
 

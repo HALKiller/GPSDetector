@@ -26,19 +26,32 @@
 
 #include "generic_union_flgs.h"
 
+
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+#ifndef FILE_E_RTC_DB_ENABLED
+#define FILE_E_RTC_DB_ENABLED 0
+#endif
+#if FILE_E_RTC_DB_ENABLED
+#define DB_PRINT(str) G_DB_PRINT(str)
+#define UART_int(var) G_UART_INT(var)
+#else
+#define DB_PRINT(str)
+#define UART_int(var)
+#endif
+// - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
+
+
+
+
+
+
+
+
+
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
-#if 0
-typedef struct udt_my_time {
-  
-  uint8_t hours;
-  uint8_t minutes;
-  uint8_t seconds;
-  
-  
-}my_time_t;
 
-#endif
 my_time_t ertc;
 
 
@@ -232,112 +245,7 @@ void eRTC_calculate_time_until_tx(void)
 #endif
 
 
-#if 0
 
-void CalculaTiempoSiguienteTransmision(void){
-  
-  uint16_t t_entre_transmisiones;
-  uint32_t hora_captura = 0u;
-  uint16_t resto_division;
-  int8_t quien_transmite;
-  uint8_t transmission_time = get_transmit_time();
-  uint8_t max_detectores = get_max_detectores();
-  uint8_t det_number = get_detector_number();
-  //*****Dieter//
-  // if(gHayHoraUTC)
-	// {
-
-//  t_duracion_transmision = gTiempoSincronismo + gTiempoDatos + gTiempoSeguridad;
-#if 0
-      t_entre_transmisiones = max_detectores * transmission_time;
-      
-      
-      
-      hora_captura  = gTramaRmc.UtcOfPosition.Horas * 3600ul;
-      hora_captura += gTramaRmc.UtcOfPosition.Minutos * 60;
-      hora_captura += gTramaRmc.UtcOfPosition.Segundos + ( 15 - transmission_time );  //15 Dieter
-#endif
-      
-      hora_captura = eRTC_get_second_cnt();
-      hora_captura = hora_captura + ( 15 - gd.transmit_time );
-    //  hora_captura += gTramaRmc.UtcOfPosition.Segundos + 5;
-      resto_division = hora_captura % gd.time_between_tx;
-      quien_transmite = ( resto_division / gd.transmit_time );
-      quien_transmite = ( quien_transmite % max_detectores ) + 1;
-      int8_t cuantas_balizas = det_number - ( quien_transmite % max_detectores + 1 );
-      uint8_t cualquier_baliza_transmite = gd.transmit_time - ( resto_division % gd.transmit_time );
-     
-
-			gd.seconds_until_next_tx = cuantas_balizas * gd.transmit_time + cualquier_baliza_transmite;
-			
-			if ( cuantas_balizas < 0 )
-      {
-        gd.seconds_until_next_tx = gd.seconds_until_next_tx + t_entre_transmisiones;
-      }
-  // }
-  
-}
-
-
-
-
-#if 0 //7 for refernece pruposes..
-void CalculaTiempoSiguienteTransmision(void)
-{
-  uint16_t t_entre_transmisiones;
-//  uint8_t t_duracion_transmision;
-  uint32_t hora_captura = 0;
-  uint16_t resto_division;
-  int8_t quien_transmite;
-  //*****Dieter//
-  if(gHayHoraUTC)
-	{
-
-//  t_duracion_transmision = gTiempoSincronismo + gTiempoDatos + gTiempoSeguridad;
-      t_entre_transmisiones = gTotalBalizas * gTiempoDuracionTransmision;
-   //****Dieter***
-      
-      hora_captura  = gTramaRmc.UtcOfPosition.Horas * 3600ul;
-      hora_captura += gTramaRmc.UtcOfPosition.Minutos * 60;
-      hora_captura += gTramaRmc.UtcOfPosition.Segundos + ( 15 - gTiempoDuracionTransmision );  //15 Dieter
-    //  hora_captura += gTramaRmc.UtcOfPosition.Segundos + 5;
-      resto_division = hora_captura % t_entre_transmisiones;
-      quien_transmite = ( resto_division / gTiempoDuracionTransmision );
-      quien_transmite = ( quien_transmite % gTotalBalizas ) + 1;
-      int8_t cuantas_balizas = gNumeroDeBaliza - ( quien_transmite % gTotalBalizas + 1 );
-      uint8_t cualquier_baliza_transmite = gTiempoDuracionTransmision - ( resto_division % gTiempoDuracionTransmision );
-     
-// 11 words saved		 
-#if 1
-
-			gSegundosHastaLaSiguienteTransmision = cuantas_balizas * gTiempoDuracionTransmision + cualquier_baliza_transmite;
-			
-			if ( cuantas_balizas < 0 )
-      {
-        gSegundosHastaLaSiguienteTransmision = gSegundosHastaLaSiguienteTransmision + t_entre_transmisiones;
-      }
-			
-#else
-	
-			
-			
-			if ( cuantas_balizas < 0 )
-      {
-        gSegundosHastaLaSiguienteTransmision = t_entre_transmisiones + cuantas_balizas * gTiempoDuracionTransmision + cualquier_baliza_transmite;
-      }
-      else
-      {
-        gSegundosHastaLaSiguienteTransmision = cuantas_balizas * gTiempoDuracionTransmision + cualquier_baliza_transmite;
-      }
-
-#endif			
-			
-  }
-}
-
-#endif
-
-#endif
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //
@@ -362,8 +270,9 @@ void ertc_convert_to_str(void){
   
   
   my_time_t *const the_time = &ertc;
+  
   uint8_t time_str[11];
-#if 1
+
 
   DecimalUint8ToA(time_str, the_time->hours, 2, false );
   
@@ -373,14 +282,8 @@ void ertc_convert_to_str(void){
   DecimalUint8ToA(time_str + 3, the_time->minutes, 2, false );
   DecimalUint8ToA(time_str + 6, the_time->seconds, 2, true );
 
-#else
-  
-  DecimalUint8ToA(time_str, the_time->hours, 2, false );
-  DecimalUint8ToA(time_str + 2, the_time->minutes, 2, false );
-  DecimalUint8ToA(time_str + 4, the_time->seconds, 2, true );
+
  
-#endif 
-  
   DB_PRINT(time_str);
   DB_PRINT("\r\n");
   

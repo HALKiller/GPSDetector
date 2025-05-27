@@ -24,14 +24,15 @@ enum gps_data_slots{
 
 
 typedef enum gps_state_type {
-  
-  STATE_OFF,
-  GPS_ALL_GOOD,
+
   GPS_SENTENCE_RECEIVING,
-  RECEIVING_NOT_CORRECTLY,
-  NO_BAUDSETTING_WORKS, // Unahnaled error so far!!
+  NOT_RECEIVING_CORRECTLY,
   NOT_RECEIVING,
+  GPS_NUM_STATES,
   
+  // NO_BAUDSETTING_WORKS, // Unahnaled error so far!!
+  // STATE_OFF,
+  // GPS_ALL_GOOD,
   
 }gps_state_t;
 

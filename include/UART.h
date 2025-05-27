@@ -72,60 +72,20 @@ typedef enum baudtype{
 #define SPBRGL_9600_LCKL_VAL 12u
 
 
-
-
-
-
-
-
-
-
-
-
-
 #define CR	13
 #define LF	10
 #define SPACE 32
 #define TAB 9
 
-#define UWF always_send_string
-
 #define UART_GPS_SEND(str) send_string((const unsigned char *)(str))
 
-
-
-#if DEBUGGING_IS_ON
-#define UWT(str) send_string((const unsigned char *)(str))
-#else
-#define UWT(str)  
-#endif
-
-// #define UWT send_string
 #define UART_CRLF DB_PRINT("\r\n");
-// #define UART_CRLF UWT((const unsigned char *)"\r\n");
+
 
 #define USE_TX_ISR 0
 
 
 #define USE_THE_GENERIC 0
-
-#if USE_THE_GENERIC&&0
-
-void uint8_to_str(uint8_t num, char *str);
-void uint16_to_str(uint16_t num, char *str);
-void uint32_to_str(uint32_t num, char *str);
-
-
-
-#define uint_to_str(num, str) _Generic((num),  \
-    uint8_t: uint8_to_str,                    \
-    uint16_t: uint16_to_str,                  \
-    uint32_t: uint32_to_str                   \
-)(num, str)
-
-#endif
-
-
 
 #define DEBUG_BAUDRATE B9600
 typedef enum {
@@ -154,13 +114,28 @@ inline void uart_swoff_reception(void);
 void send_string(const unsigned char *str_pnt);
 
 
-// void always_send_string(const unsigned char *str_pnt);
+
 #if USE_THE_GENERIC
+
 #define UART_int(var) UART_ui2s(&var, sizeof(var))
 void UART_ui2s(void* hvar, size_t size);
+
 #else
-void UART_int(uint16_t hvar);
+
+#if COMPILE_FOR_RELEASE
+
+// #define UART_int(var)
+
+#else
+  
+// #define UART_int(var) UART_INT_C((uint32_t) var)
+
+// void UART_int(uint16_t hvar);
+
 #endif
+#endif
+
+void UART_INT_C(uint32_t hvar);
 
 void uart_hex(uint8_t hvar);
 

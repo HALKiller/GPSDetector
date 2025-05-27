@@ -10,16 +10,22 @@
 
 
 
+#define DEBUG_ADC_RESULTS 0
 
-
+#if USE_ADC_OVERSAMPLING
+uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal);
+extern uint16_t adc_res[8];
+#else
 void ConversionAdc(bool JustificacionOrdenBits, uint8_t canal);
+#endif
+
+void adc_getvref_adc_value(void);
+void adc_set_vref_adc_value(void);
+uint16_t calculate_mV_from_ADC(uint16_t ADC_value);
 
 
 
 
-// void init_ADC(void);
-
-// uint8_t adc_samples_channel(uint8_t channel_to_sample);
 
 
 
