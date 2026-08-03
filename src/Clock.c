@@ -82,6 +82,9 @@ void init_clock(void){
   
   FAST_CLOCK = TRUE;
 	
+  // datasheet --> switching to the PLL can take +- 2ms --> 
+	__delay_ms(5u);
+  
 }
 
 
@@ -109,13 +112,16 @@ void init_clock(void){
   
   FAST_CLOCK = TRUE;
 	
+  // datasheet --> switching to the PLL can take +- 2ms --> 
+	__delay_ms(5u);
+  
 }
 
 #endif
 
+
 void set_slow_clock(void){
   
-
   OSCCONbits.SCS = 0x00u;  // 0x2u;
   
   OSCCONbits.IRCF = CLOCK_500KHZ_MF_CLOCK;  // CLOCK_3125KHZ_MF_CLOCK;  //0x0C; // 31.25kHz   0x7;
@@ -128,9 +134,8 @@ void set_slow_clock(void){
     // just wait till it is locked
   }
   
-  
+
   FAST_CLOCK = FALSE;
-  
   
 }
 

@@ -14,6 +14,13 @@
 //  * * * * * * * * * * * * *  g l o b a l  a b r e v i a t i o n s   r e l a t e d     * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  g l o b a l  a b r e v i a t i o n s   r e l a t e d     * * * * * * * * * * * * *  //
 
+// To free TMR6 completely we can use actually
+// TMR2 for the TILT Sensor Timing
+#define USE_TMR2_AS_TILT_SENS_TMR 1
+
+// #define USE_SHORT_FILE_NAMES 1
+
+
 #define NULL_TERMINATOR	(char)'\0'
 
 #define TRUE (1u)
@@ -32,8 +39,7 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 0
-
+#define COMPILE_FOR_RELEASE 1
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
 #define COMPILE_FOR_TEST 0
@@ -41,13 +47,18 @@
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
 
+#define COMPILE_FOR_DEBUG 0
+
+#if COMPILE_FOR_RELEASE+COMPILE_FOR_TEST+COMPILE_FOR_INTERNAL_TEST+COMPILE_FOR_DEBUG != 1
+err
+#endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 67
+#define PCB_VERSION 66
 
 
-// The actual Version as string but that is not working yet...
-#define FW_VERSION_STR "24"
+// The actual Version as string...
+#define FW_VERSION_STR "28"
 
 
 // to get better adc readings...
@@ -70,8 +81,10 @@
 // in the message
 #define CREATE_TX_MESSAGE_AFTER_DDS_CFG 1
 
+// this one seems allready unused...
 #define TRY_HEX_IN_VERSION_DIGITS 1
 
+// this one seems allready unused...
 #define USE_ERR_MSG_IN_GOOD_POS 0
 
 
@@ -82,7 +95,18 @@
 #define REDUCE_ALL_ROM_USAGE 0
 
 
-// ---------------------------------------------------------  COMPILKE FOR RELEASE  -------------------------  //
+// because there seem to be problems sometimes when the first lock is into a GLONASS,
+// there is a time offset 
+#define DISABLE_GLONASS 1
+#define DISABLE_NOT_GLONASS 0
+
+// this define creates a version were we do not swoff the GPS --> 
+// we keep it on until the tx moment has come -->
+#define RUN_GPS_TILL_TX 1
+
+
+// ---------------------------------------------------------  COMPILE FOR RELEASE  -------------------------  //
+// ---------------------------------------------------------  COMPILE FOR RELEASE  -------------------------  //
 #if COMPILE_FOR_RELEASE
 
 
@@ -91,11 +115,14 @@
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
 #define COMPILE_WITH_RX_LUZ 1 // 656 bytes --> 8%
 #define COMPILE_WITH_PWM_LUZ 1
-
+#define USE_BB_UART_AS_GPS_INPUT 0
 #define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
 
 #define LETTER_REPLACER "R"
 
+
+// to avoid to have to wait for a GPS_position we emulate some fake position and time
+#define EMULATE_GPS_TIME_POSITION 0
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
 #define USE_PWM_LED 1
@@ -105,10 +132,11 @@
 // activating/deactivating the detector but is always on
 #define TILT_IS_ALWAYS_ON 0
 
+// when set we read the cfg back from the DDS to assure the cfg got 
+// transferred correctly. if not we retry 
 #define READBACK_DDS 1
+
 #define DB_LUZ 0
-
-
 
 #define SEND_ONLY_ADC_VALUE 0
 #define TEST_STATUS_LEDS 0
@@ -118,7 +146,7 @@
 // all DB_FILE ANBLED are swoffed
 #define SWOFF_ALL_DB_FILE_ENABLED 1
 
-
+// ---------------------------------------------------------  COMPILE FOR TEST  -------------------------  //
 // ---------------------------------------------------------  COMPILE FOR TEST  -------------------------  //
 #elif COMPILE_FOR_TEST
 
@@ -128,10 +156,13 @@
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
 #define COMPILE_WITH_RX_LUZ 1
 #define COMPILE_WITH_PWM_LUZ 1
-
+#define USE_BB_UART_AS_GPS_INPUT 0
 #define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
 
 #define LETTER_REPLACER "T"
+
+// to avoid to have to wait for a GPS_position we emulate some fake position and time
+#define EMULATE_GPS_TIME_POSITION 0
 
 // when set the LED really iluminates, otherwise we skpip one instruction
 #define USE_PWM_LED 1
@@ -139,7 +170,7 @@
 
 // so that the tilt sensor is not 
 // activating/deactivating the detector but is always on
-#define TILT_IS_ALWAYS_ON 1
+#define TILT_IS_ALWAYS_ON 0
 
 // we are using the readback functionality of the DDS to check its correct confuration
 #define READBACK_DDS 1
@@ -153,7 +184,7 @@
 #define SEND_LOCK_TIME_DECIMAS_LATITUDE 0
 
 // all DB_FILE ANBLED are swoffed
-#define SWOFF_ALL_DB_FILE_ENABLED 1
+#define SWOFF_ALL_DB_FILE_ENABLED 0
 
 
 // ---------------------------------------------------------  COMPILE FOR INTERNAL TEST  -------------------------  //
@@ -161,14 +192,19 @@
 
 
 #define DEBUGGING_IS_ON 0
-#define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
+#define DEBUGGING_BB_IS_ON 0  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
-#define COMPILE_WITH_RX_LUZ 0
+#define COMPILE_WITH_RX_LUZ 1
 #define COMPILE_WITH_PWM_LUZ 1
-
+#define USE_BB_UART_AS_GPS_INPUT 1
 #define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
 
 #define LETTER_REPLACER "I"
+
+// to avoid to have to wait for a GPS_position we emulate some fake position and time
+#define EMULATE_GPS_TIME_POSITION 0
+
+
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
 #define USE_PWM_LED 1
@@ -176,7 +212,7 @@
 //********************
 // so that the tilt sensor is not 
 // activating/deactivating the detector but is always on
-#define TILT_IS_ALWAYS_ON 0
+#define TILT_IS_ALWAYS_ON 1
 
 #define READBACK_DDS 1
 #define DB_LUZ 0
@@ -193,18 +229,24 @@
 
 
 // ---------------------------------------------------------  COMPILE FOR DEBUG  -------------------------  //
-#else // COMPILE_FOR_RELEASE --> the DB PART here
+// ---------------------------------------------------------  COMPILE FOR DEBUG  -------------------------  //
+#elif COMPILE_FOR_DEBUG // COMPILE_FOR_DEBUG --> the DB PART here
 
 
 #define DEBUGGING_IS_ON 0
 #define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
 #define COMPILE_WITH_RX_LUZ 0
-#define COMPILE_WITH_PWM_LUZ 1
-
+#define COMPILE_WITH_PWM_LUZ 0
+#define USE_BB_UART_AS_GPS_INPUT 0
 #define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
 
 #define LETTER_REPLACER "D"
+
+// to avoid to have to wait for a GPS_position we emulate some fake position and time
+#define EMULATE_GPS_TIME_POSITION 0
+
+
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
 #define USE_PWM_LED 1
@@ -226,9 +268,12 @@
 #define DB_V69_PCB 0
 #define SEND_LOCK_TIME_DECIMAS_LATITUDE 0 // sending the lock time in the decima slot...
 
-// all DB_FILE ANBLED are swoffed
+// all DB_FILE_ENABLED are swoffed with a single cmd
 #define SWOFF_ALL_DB_FILE_ENABLED 0
 
+#else
+  
+// none --> thorw err!
 
 #endif  // COMPILE_FOR_RELEASE
 
@@ -240,7 +285,7 @@
 // when set we replace the seconds in the messages with an err code 
 // --> therefore we can add several states into that
 
-#define SEND_ERROR_CODES_IN_SECONDS_SLOT 1
+#define SEND_ERROR_CODES_IN_SECONDS_SLOT 0
 
 
 //****************************
@@ -277,6 +322,12 @@
 
 
 
+// this define activates the position cnt validation-->
+// that could get avoided with tsetting it in case to one and accepting the first one a svalid
+#define USE_POSITION_CNT_VALIDATION 1
+// this define sets the amount of valid necessary positions before we accept 
+// the last position as the position to transmit
+#define POSITION_CNT_BEFORE_VALID 10u
 
 
 
@@ -434,7 +485,7 @@ extern const uint16_t shifts[16];
 
 #else
 
-#define               FILE_MAIN_DB_ENABLED 1
+#define               FILE_MAIN_DB_ENABLED 0
 #define           FILE_INIT_ALL_DB_ENABLED 1
 #define               FILE_UART_DB_ENABLED 1  // the UART_int is not working otherwise of course...
 #define              FILE_CLOCK_DB_ENABLED 0
@@ -448,9 +499,9 @@ extern const uint16_t shifts[16];
 #define        FILE_TILT_SENSOR_DB_ENABLED 0
 #define             FILE_TIMERS_DB_ENABLED 0
 #define          FILE_GD_STATES_DB_ENABLED 0
-#define                FILE_GPS_DB_ENABLED 1
+#define                FILE_GPS_DB_ENABLED 0
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
-#define              FILE_E_RTC_DB_ENABLED 0
+#define              FILE_E_RTC_DB_ENABLED 1
 #define             FILE_EEPROM_DB_ENABLED 0
 #define                FILE_DDS_DB_ENABLED 1
 #define           FILE_MESSAGES_DB_ENABLED 1
@@ -473,7 +524,11 @@ extern const uint16_t shifts[16];
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 
+#if COMPILE_FOR_DEBUG&&0
+#define MIPS 8u //1u
+#else
 #define MIPS 1u //1u
+#endif
 
 #define SLOW_CLCK LOW_500KHZ
 
@@ -521,7 +576,7 @@ error again --> that MIPS is not standard so far --> write it extra out
 
 #define US_PER_SECOND 1000000
 
-
+#if 0
 #if MIPS==8
 
 #define TMR2_OF_125US 0
@@ -535,7 +590,7 @@ error again --> that MIPS is not standard so far --> write it extra out
 #else
 	// FAIL compilation
 #endif
-
+#endif
 
 
 
@@ -580,7 +635,7 @@ error again --> that MIPS is not standard so far --> write it extra out
 #define GPS_LOCK_TIME_DECIMO_PERCENTAGER 5u  // == 50%, 1 = 10, 2 = 20 ...10 = 100;
 
 // to avoi dthat the gps on is to short at some moment
-#define MINIMUM_GPS_ON_BEFORE_TRANSMISSION 50u
+#define MINIMUM_GPS_ON_BEFORE_TRANSMISSION 30u
 
 
 #define BATCNT_L_ADDRESS 0x00

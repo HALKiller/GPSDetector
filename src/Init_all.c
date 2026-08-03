@@ -83,21 +83,18 @@ void init_all(void){
 
   CLRWDT();
 
-	
   init_clock();
 
 
 // datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5u);
+	// __delay_ms(5u);
 
 
-// that needs to run always becasue 
-// we are using this timer also with SPI_TILT_SENSOR
+#if !COMPILE_FOR_RELEASE
+// we are using this timer also with SPI_TILT_SENSOR --> NOT ANYMORE! 06112025
   init_TMR_bitbang_uart(NORMAL_CLOCK);
+#endif
 
-  
-
-	
 	init_tmr1();
 	
 
@@ -151,18 +148,25 @@ void startup(void){
   
   gps_init();
   
+  
+#if EMULATE_GPS_TIME_POSITION  
+
+  RTC_TIME_IS_GOOD = false;
+  RTC_ALARM_ON = false;
+  eRTC_clock_reset();
+ 
+#else  
   // on startup we reset the time...
   RTC_TIME_IS_GOOD = false;
   RTC_ALARM_ON = false;
   eRTC_clock_reset();
   
+#endif
   // TODO:  we should reset the time also ...
   gd.no_position_cnt = 0u;
   
   // setting up the initial state 
   detector_init_ilumination_handling();
-  
-  
   
   
 	TMR0_IF = FALSE;

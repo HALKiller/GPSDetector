@@ -55,8 +55,6 @@ static uint8_t FTW_TX[5];
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
 
-// #define AD9954_SDI PORTAbits.RA1
-// #define SDIO_TRIS TRISAbits.TRISA1
 #define PIN_INPUT 1u
 #define PIN_OUTPUT 0u
 
@@ -139,7 +137,7 @@ static uint8_t SpiReceive(void);
 
 static void AD9954TransmiteByte(uint8_t ByteBaudot);
 static void AD9954PulsoUpdate(void);
-// static void AD9954PulsoIoSync(void);
+
 static void select_bank(uint8_t bankbits);
 
 static uint8_t dds_read_all(void);
@@ -205,30 +203,6 @@ void Transmite(bool TransmiteRadiogonio){
   AD9954Enciende();
 
 
-
-#if READBACK_DDS&&0
-
-  do
-  {
-    AD9954Configura();
-  
-    if(dds_read_all() == true)
-    {
-      re_cfg_cnt = 5;
-    }
-    else
-    {
-      RESET_AD9954 = true;
-      re_cfg_cnt++;
-      DDS_CFG_ERR = true;
-      RESET_AD9954 = false;
-      // todo: set err flag for txing...
-    }
-    
-  }while(re_cfg_cnt < 5) && (DDS_CFG_ERR==true));
-
-#elif 1
-
   while(re_cfg_cnt < 5)
   {
     AD9954Configura();
@@ -243,16 +217,13 @@ void Transmite(bool TransmiteRadiogonio){
       re_cfg_cnt++;
       DDS_CFG_ERR = true;
       RESET_AD9954 = false;
-      // DB_PRINT("\r\nDerr");
+      // DB_PRINT("r\nDerr");
       // todo: set err flag for txing...
     }
     
   }
-#else
   
-  AD9954Configura();  
-  
-#endif  
+
   
   
 #if CREATE_TX_MESSAGE_AFTER_DDS_CFG&&1   
@@ -299,9 +270,23 @@ void Transmite(bool TransmiteRadiogonio){
 
   DB_PRINT("\r\nMSG: ");
   
-  DB_PRINT(sentence_buffer.gps_buffer); 
+  DB_PRINT(sentence_buffer.gps_buffer);
+  
   UART_CRLF;
   
+#elif COMPILE_FOR_TEST&&0
+
+  //  HERE WE WOULD NEED TO CHECK THAT THE uart IS swon
+  UART_GPS_SEND("\r\nMSG: ");
+  
+  UART_GPS_SEND(sentence_buffer.gps_buffer);
+  
+  UART_GPS_SEND("\r\n");;
+
+#else
+  
+  // NOthing
+
 #endif  
   
   DDS_flush_buffer();
@@ -312,6 +297,7 @@ void Transmite(bool TransmiteRadiogonio){
 }
 
 #endif
+
 
 #if COMPILE_FOR_INTERNAL_TEST  
 uint16_t get_txcnt(void){
@@ -371,84 +357,26 @@ void AD9954Configura(void){
 
 
 
-
-#if 1
-
 void AD9954TransmiteMensaje(void){
   
-  // TODO: get the Null_Terminator len_cnt 
-#if 0  
-  gEntradaDeTrama.PosicionDelBufer = strlen((const char *) gEntradaDeTrama.BuferDeEntrada);
-#else
   sentence_buffer.position = gps_buffer_get_len();
-#endif
-
 
 #if DO_TRANSMIT_RF
   
-#if 1
 
   AD9954TransmiteString(&msg_header[0], 4);
-  // AD9954TransmiteString(4, &msg_header[0]);
-  
-#else  
-  
-  AD9954_TRANSMITE_CARACTER_ASCII('<');   // Originalmente se incluyen 8 caracteres de cambio a letras
-  AD9954_TRANSMITE_CARACTER_ASCII('<');   // Con 2 también se puede transmitir el mensaje sin problemas
-  AD9954_TRANSMITE_CARACTER_ASCII('\n');  // Nueva línea
-  AD9954_TRANSMITE_CARACTER_ASCII('\r');
-  
-#endif
   
   AD9954TransmiteString(sentence_buffer.gps_buffer, sentence_buffer.position);
-  // AD9954TransmiteString(gEntradaDeTrama.BuferDeEntrada, gEntradaDeTrama.PosicionDelBufer);
-  
-  // AD9954TransmiteString(gEntradaDeTrama.PosicionDelBufer, gEntradaDeTrama.BuferDeEntrada);
 
-#if 1
   AD9954TransmiteString(&msg_tail[0], 3);
-  // AD9954TransmiteString(3, &msg_tail[0]);
-#else  
-  AD9954_TRANSMITE_CARACTER_ASCII('X');  // Carácter de fin de trama
-  AD9954_TRANSMITE_CARACTER_ASCII('\n'); // Otra nueva línea, para que se pueda detectar en el programa receptor
-  AD9954_TRANSMITE_CARACTER_ASCII('\r');
-#endif  
-
+ 
 
 #endif  // DO_TRANSMIT_RF
 
-  // DDS_flush_buffer();
-  
 }
 
 
 
-
-#else
-  
-void AD9954TransmiteMensaje(void){
-  // Actualiza el tamaño del búfer para saber cuántos bits ha de transmitir
-  // sentence_buffer.position = strlen(sentence_buffer.gps_buffer);
-  sentence_buffer.position = gps_buffer_get_len();
-  AD9954_TRANSMITE_CARACTER_ASCII('<');   // Originalmente se incluyen 8 caracteres de cambio a letras
-  AD9954_TRANSMITE_CARACTER_ASCII('<');   // Con 2 también se puede transmitir el mensaje sin problemas
-  AD9954_TRANSMITE_CARACTER_ASCII('\n');  // Nueva línea
-  AD9954_TRANSMITE_CARACTER_ASCII('\r');
-  AD9954TransmiteString( sentence_buffer.gps_buffer, sentence_buffer.position);
-  // AD9954TransmiteString(gEntradaDeTrama.PosicionDelBufer, gEntradaDeTrama.BuferDeEntrada);
-  AD9954_TRANSMITE_CARACTER_ASCII('X');  // Carácter de fin de trama
-  AD9954_TRANSMITE_CARACTER_ASCII('\n'); // Otra nueva línea, para que se pueda detectar en el programa receptor
-  AD9954_TRANSMITE_CARACTER_ASCII('\r');
-  
-  
-  
-}
-
-
-
-
-
-#endif
 
 
 
@@ -460,8 +388,7 @@ void AD9954TransmiteMensaje(void){
 // this got tested and worked
 // AD9954 accepts data change on falling clock edge
 // AD9954 shifts data in at rising clock edge
-static void SpiTransmite(uint8_t Dato)
-{
+static void SpiTransmite(uint8_t Dato){
 
   uint8_t hlooper = 0;
   uint8_t shifter = 0x80;
@@ -493,11 +420,6 @@ static void SpiTransmite(uint8_t Dato)
   }
 
 }
-
-
-
-
-
 
 
 
@@ -705,9 +627,9 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
     
     // 300 bps
     // that creates 3332us --> 1000/300 = 3.333ms
-    T2_PRESCALER = TMR2_300BAUD_PRE;
+    TMR2_PRESCALER = TMR2_300BAUD_PRE;
     
-    T2_POSTSCALER = TMR2_300BAUD_POST;
+    TMR2_POSTSCALER = TMR2_300BAUD_POST;
    
     PR2 = TMR2_300BAUD_PR;  // 216;
  
@@ -717,9 +639,9 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
     // 6,56ms --> wtf...
     // 150 bps
     // Ajuste del PostScaler
-    T2_POSTSCALER = TMR2_150BAUD_POST;
+    TMR2_POSTSCALER = TMR2_150BAUD_POST;
     // Ajuste del PreScaler
-    T2_PRESCALER = TMR2_150BAUD_PRE; 
+    TMR2_PRESCALER = TMR2_150BAUD_PRE; 
     
     PR2 = TMR2_150BAUD_PR;
   }
@@ -753,9 +675,6 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
 }
 
 
-
-
-
 static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos){
   
   
@@ -771,11 +690,6 @@ static void AD9954TransmiteString(uint8_t *CadenaAscii, uint8_t NumDatos){
 }
 
 
-
-
-
-
-
 void DDS_flush_buffer(void){
   
   volatile int8_t i;
@@ -789,15 +703,13 @@ void DDS_flush_buffer(void){
 }
 
 
-
-
 static void AD9954Enciende(void){
   
   TMR2_ON = FALSE;
   
-  T2_POSTSCALER = 0u; // 0b0000; // PostScaler 1  T2CONbits.TOUTPS = 0b0000; // PostScaler 1
+  TMR2_POSTSCALER = 0u; // 0b0000; // PostScaler 1  T2CONbits.TOUTPS = 0b0000; // PostScaler 1
 
-  T2_PRESCALER = 0u;  // 0b00; // Preescaler 1
+  TMR2_PRESCALER = 0u;  // 0b00; // Preescaler 1
   
   PR2 = TMR2_DDS_CFG_PR;
 
@@ -827,22 +739,25 @@ static void AD9954Enciende(void){
   
 }
 
-static void AD9954Apaga(void)
-{
-  
-  
+
+static void AD9954Apaga(void){
   
   VALIM_DDS_OFF();
   
   VCC_TLV_OFF();
   
   RESET_AD9954 = false;
+  
   SYNC_AD9954 = false;
+  
   SDIO_AD9954 = false;
+  
   SCLK_AD9954 = false;
   
   UPDATE_AD9954 = false;
+  
   PS0_AD9954 = false;
+  
   PS1_AD9954 = false;
   
   
@@ -852,7 +767,6 @@ static void AD9954Apaga(void)
 static void select_bank(uint8_t bankbits){
 
 
-  
   PS1_AD9954 = (bankbits>>1) & 0x01u;
   PS0_AD9954 = bankbits & 0x01u;
   
@@ -880,20 +794,6 @@ static void AD9954PulsoUpdate(void){
 
 // OBSOLETE-----------------------------
 
-
-#if 0
-static void AD9954PulsoIoSync(void){
-  
-  TMR2ON = true;
-  SYNC_AD9954 = 1;
-  while ( TMR2ON );
-  SYNC_AD9954 = 0;
-  
-}
-
-
-
-#endif
 
 
 

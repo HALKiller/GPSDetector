@@ -2,7 +2,8 @@
 
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+#line 7 "detector.c"
 
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 
@@ -28,6 +29,8 @@
 #include "handlers.h"
 
 #include "gd_states.h"
+
+#include "my_assert.h"
 
 #include <string.h>
 
@@ -203,6 +206,12 @@ void init_detector_config(void){
   
   gd.time_between_tx = gd.transmission_duration * gd.max_detectores;
   
+  if(gd.time_between_tx == 0u)
+  {
+    // TODO:    ERROR HERE!!!
+    assert(false);
+  }
+  
   gd.vbat_low = calculate_voltage_from_input_value(LeerEeprom(0x48u) * 4u);
   
   // and now we would need  to calculate back first the mV value ,
@@ -302,6 +311,20 @@ void init_detector_config(void){
 
 
 #endif
+
+
+void increment_detector(void){
+  
+  
+  gd.number++;
+  if(gd.number > gd.max_detectores)
+  {
+    gd.number = 1;
+  }
+  
+}
+
+
 
 uint8_t get_detector_number(void){
   
@@ -478,6 +501,78 @@ void detector_init_ilumination_handling(void){
   pwm_luz_startup_cnt = PWM_LUZ_STARTUP_CNT_SETTER; // that cnts 1 minute...the higher measuring circle...
   
 }
+
+
+void detector_status_led_handler(void){
+  
+  
+  gd.led_time_out_cnt--;
+  if(gd.led_time_out_cnt == 0)
+  {
+    STATUS_LED_ON = false;
+    STATUS_LED_RED_OFF();
+    STATUS_LED_GREEN_OFF();
+    gd.led_state = ALL_LED_OFF;
+    DB_PRINT("L_OFF\r\n");
+  }
+  else
+  {
+    if(gd.led_state == LED_RED_BLINKS)
+    {
+      STATUS_LED_RED_SWAP();
+    }
+    else if(gd.led_state == LED_GREEN_BLINKS)
+    {
+      STATUS_LED_GREEN_SWAP();
+    }
+  }
+  
+  
+  
+  
+  
+  
+}
+
+
+// this function starts the timeout counter of the status led
+// and what type of Status is getting set actually...
+void detector_status_led_cnt_on(leds_state_t led_status){
+  
+  // set the status
+  gd.led_state = led_status;
+  // set the timer
+  gd.led_time_out_cnt = LED_TIME_SHOWING;
+  // Set the flag
+  STATUS_LED_ON = true;
+
+  switch (gd.led_state)
+  {
+    
+    case LED_RED_ON: 
+    case LED_RED_BLINKS: 
+      STATUS_LED_RED_ON();
+      DB_PRINT("LR_ON\r\n");
+    break;
+    
+    case LED_GREEN_ON:
+    case LED_GREEN_BLINKS:
+      STATUS_LED_GREEN_ON();
+      DB_PRINT("LG_ON\r\n");
+    break;
+    case ALL_LED_OFF:
+      STATUS_LED_RED_OFF();
+      STATUS_LED_GREEN_OFF();
+      DB_PRINT("L_OFF\r\n");
+    break;
+
+  }
+  
+}
+
+
+
+
 
 #if COMPILE_WITH_PWM_LUZ
 // if the pwm_luz is on from the config we enter here every time_base time(200ms)
@@ -890,75 +985,6 @@ uint8_t get_pwm_luz_pwm_value(void){
   return pwm_luz.pwm_value;
   
 }
-
-
-void detector_status_led_handler(void){
-  
-  
-  gd.led_time_out_cnt--;
-  if(gd.led_time_out_cnt == 0)
-  {
-    STATUS_LED_ON = false;
-    STATUS_LED_RED_OFF();
-    STATUS_LED_GREEN_OFF();
-    gd.led_state = ALL_LED_OFF;
-    DB_PRINT("L_OFF\r\n");
-  }
-  else
-  {
-    if(gd.led_state == LED_RED_BLINKS)
-    {
-      STATUS_LED_RED_SWAP();
-    }
-    else if(gd.led_state == LED_GREEN_BLINKS)
-    {
-      STATUS_LED_GREEN_SWAP();
-    }
-  }
-  
-  
-  
-  
-  
-  
-}
-
-
-// this function starts the timeout counter of the status led
-// and what type of Status is getting set actually...
-void detector_status_led_cnt_on(leds_state_t led_status){
-  
-  // set the status
-  gd.led_state = led_status;
-  // set the timer
-  gd.led_time_out_cnt = LED_TIME_SHOWING;
-  // Set the flag
-  STATUS_LED_ON = true;
-
-  switch (gd.led_state)
-  {
-    
-    case LED_RED_ON: 
-    case LED_RED_BLINKS: 
-      STATUS_LED_RED_ON();
-      DB_PRINT("LR_ON\r\n");
-    break;
-    
-    case LED_GREEN_ON:
-    case LED_GREEN_BLINKS:
-      STATUS_LED_GREEN_ON();
-      DB_PRINT("LG_ON\r\n");
-    break;
-    case ALL_LED_OFF:
-      STATUS_LED_RED_OFF();
-      STATUS_LED_GREEN_OFF();
-      DB_PRINT("L_OFF\r\n");
-    break;
-
-  }
-  
-}
-
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //

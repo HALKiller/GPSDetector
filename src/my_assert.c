@@ -82,7 +82,7 @@
 void assertion_failure(char *expr, char* file){
 	
 	DB_PRINT("\r\nASSERT FAILURE!");
-	
+	STATUS_LED_RED_ON(); 
 	while(1);
   
 }

@@ -2,7 +2,7 @@
 
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-
+#line 6 "timers.c"
 
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 
@@ -110,32 +110,13 @@ void timers_set_tmr1_id(tmr1_id_t t_id){
     UART_int(timeout_cnt);
 
     TMR1_ON = false;
-#if 0    
-    // TODO: we could set here some comun errflag ...
-    if(tmr1_id == STATUS_LED_TIMEOUT)
-    {
-      STATUS_LED_GREEN_OFF();
-      STATUS_LED_RED_OFF();
-    }
-    else
-    {
-      DB_PRINT("TMR1_ERR\r\n");
-    }
-#endif
+
     
   }
 
 
   tmr1_id = t_id;
   timeout_cnt_setter = timeout_setter[tmr1_id];
-  
-#if DEBUGGING_IS_ON&&0
-  DB_PRINT("cnt: ");
-  UART_int(timeout_cnt_setter);
-  UART_CRLF;
-#endif    
-
-
 
 }
 

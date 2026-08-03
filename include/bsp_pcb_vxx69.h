@@ -2,7 +2,7 @@
 #define BSP_PCB_VXX69_H
 
 
-#define PCB_V_STRING "67"
+#define PCB_V_STRING "69"
 
 
 // --------   PORT A  ---------------

@@ -7,14 +7,14 @@
 #include <stddef.h>
 
 
-typedef enum baudtype{
+// typedef enum baudtype{
   
-  BAUD_9600 = 96,
-  BAUD_57600 = 576,
-  BAUD_115200 = 1152,
-  BAUD_1953,
+  // BAUD_9600 = 96,
+  // BAUD_57600 = 576,
+  // BAUD_115200 = 1152,
+  // BAUD_1953,
   
-}baudtype_t;
+// }baudtype_t;
 
 
 
@@ -92,7 +92,7 @@ typedef enum {
   
   B9600 = 96,
   B57600 = 576,
-  B115200 =1152,
+  B115200 = 1152,
   B9600_low_clk,
   
 }baudrate_t;
@@ -100,40 +100,20 @@ typedef enum {
 
 void uart_init_cfg(baudrate_t baudrate);
 
-uint8_t check_next_char(void);
+// uint8_t check_next_char(void);
 
-void init_uart_flags(void);
+// void init_uart_flags(void);
 
 void uart_init_slow_clock(void);
 
-void init_UART(void);
+// void init_UART(void);
 
-inline void uart_swoff_reception(void);
+// inline void uart_swoff_reception(void);
 
 
 void send_string(const unsigned char *str_pnt);
 
 
-
-#if USE_THE_GENERIC
-
-#define UART_int(var) UART_ui2s(&var, sizeof(var))
-void UART_ui2s(void* hvar, size_t size);
-
-#else
-
-#if COMPILE_FOR_RELEASE
-
-// #define UART_int(var)
-
-#else
-  
-// #define UART_int(var) UART_INT_C((uint32_t) var)
-
-// void UART_int(uint16_t hvar);
-
-#endif
-#endif
 
 void UART_INT_C(uint32_t hvar);
 
@@ -141,14 +121,12 @@ void uart_hex(uint8_t hvar);
 
 void UART_32_int(uint32_t hvar);
 
-
 void send_character(uint8_t the_char);
 
-
-
-uint8_t *get_pnt_to_uart_rx_buffer(void);
+// uint8_t *get_pnt_to_uart_rx_buffer(void);
 
 void UART_off(void);
+
 void UART_on(void);
 
 

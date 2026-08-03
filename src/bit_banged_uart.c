@@ -1,6 +1,11 @@
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
-
-// because we are having a really slow clock with 500kHz i dropped the Baudrate down to 4800.
+// 06112025:
+// starting to implement also a bit_banged_receiver --> therefore it is necessary to consider
+// a few details: for example should it perhaps only be possible to adjust the BB_SPEED to the tx?
+// or rx? higer clock speeds and lower clock speeds?
+// on one hand it sounds nice to have higher throughput but that might not be possible on the low clock speed settings...
+// it seems better to stay active for reception ONLY on high clock speeds and that seems in that case 32MHz --> becaue this system shall only be used of rdebugging internally
+//  because we are having a really slow clock with 500kHz i dropped the Baudrate down to 4800.
 // the easiest way to to so was to increase the Post from 1:1 to 2:1
 
 
@@ -61,7 +66,8 @@ static const uint8_t const_max_str_length = 96;
 // #define ICSPCLCK 			LATBbits.LATB6
 // #define ICSPDAT 			  LATBbits.LATB7
 
-#define BB_UART           LATBbits.LATB6// LATAbits.LATA7 // 
+#define BB_TX_UART           LATBbits.LATB6// LATAbits.LATA7 // 
+#define BB_RX_UART           LATBbits.LATB7// LATAbits.LATA7 // 
 
 
 #if MIPS == 1
@@ -87,7 +93,7 @@ static const uint8_t const_max_str_length = 96;
 
 #elif MIPS==8
 
-#define BB_PR	52 // 153600
+#define BB_PR	52 // 76923 //9600    // 153600
 
 #define BB_PSA  TMR6_01_PRESCALER 
 #define BB_POST TMR6_02_POSTSCALER
@@ -159,13 +165,14 @@ void init_TMR_bitbang_uart(uint8_t clockspeed){
   {
     PR6 = BB_SLOW;
   }
+  
 	BB_TMR_IF = false;
 	
 	TRISBbits.TRISB6 = false; // the UART__BB
-  
+  TRISBbits.TRISB7 = true;  // the RX_Pin
 	// set_bb_uart(true);	// because UART TX is idle high
 	
-  BB_UART = true;
+  BB_TX_UART = true;
   
   
   
@@ -232,7 +239,7 @@ void send_bb_string(const unsigned char *str_pnt){
     for(hlooper = 0; hlooper < 10; hlooper++)
     {
       
-      BB_UART = bitwise[hlooper];
+      BB_TX_UART = bitwise[hlooper];
 
       BB_TMR_IF = false;
       
@@ -295,7 +302,6 @@ static void bang_char_out(uint8_t the_char){
 	uint8_t hlooper = 0;
 	uint8_t bitwise[10];
 	
-  
   bitwise[0] = STARTBIT;
 	for(hlooper = 0; hlooper < 8; hlooper++)
 	{
@@ -305,13 +311,7 @@ static void bang_char_out(uint8_t the_char){
 	}
 	bitwise[9] = STOPBIT;
   
-  
-  
-  
-  
-  
 	send_it(&bitwise[0]);
-	
 
 }
 
@@ -319,7 +319,6 @@ static void bang_char_out(uint8_t the_char){
 static void send_it(uint8_t *bit_arr){
 	
 	uint8_t hlooper = 0;
-	
 	
 	BB_TMR_ON = false;
 	BB_TMR = 0;
@@ -332,7 +331,7 @@ static void send_it(uint8_t *bit_arr){
 	for(hlooper = 0; hlooper < 10; hlooper++)
 	{
     
-    BB_UART = *bit_arr;
+    BB_TX_UART = *bit_arr;
     
 		bit_arr++;
 		

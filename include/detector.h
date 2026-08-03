@@ -77,7 +77,7 @@ struct udt_detector{
 extern struct udt_detector gd;
 
 void init_detector_config(void);
-
+void increment_detector(void);
 void pwm_luz_time_update(void);
 
 uint8_t get_detector_number(void);

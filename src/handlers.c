@@ -2,7 +2,7 @@
 
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
-
+#line 6 "handlers.c"
 //  **********************  COMMENT BLOCK  ************************  //
 
 
@@ -101,7 +101,8 @@ static const HandlersHandlerType Handler_arr[] =
 	{ e_switch_clock_handler,             fn_clock_switching },	
   { e_1000ms_h,                         rtc_1000ms_handler },	
   
-  { e_200ms_h,                          rtc_200ms_handler },  
+  // { e_200ms_h,                          empty_function },  
+  { e_200ms_h,                          rtc_200ms_handler }, 
   { e_gps_has_full_position_h,          f_gps_has_position },  
 	{ e_ring_buffer_handler,              process_next_char_from_input },
 
@@ -438,13 +439,8 @@ static void reset_handler_FLG(uint8_t handler_flg_spot){
 static void local_up_f1(void){
   
   DB_PRINT("\r\nE: ");
-        
-#if USE_FULL_SECONDS_FOR_RTC      
+
   ertc_convert_to_real_time(eRTC_get_second_cnt());
-#else        
-  ertc_convert_to_real_time(eRTC_get_second_cnt() / 10u);
-        
-#endif      
 
   ertc_convert_to_str();
   
@@ -507,15 +503,13 @@ static void rtc_1000ms_handler(void){
   }
 #endif
 #endif  
-#if DEBUGGING_IS_ON      
+#if DEBUGGING_IS_ON // ||DEBUGGING_BB_IS_ON    
   if(DEBUG_FLG_PRINT_TIME == TRUE)
   {
 
     local_up_f1();
   }
 #endif    
-  
-  
   
   
 }
@@ -546,7 +540,6 @@ static void rtc_alarm_handler(void){
       gps_stop();
       
       set_max_lock_time();
-      // stop_gps_lock_time_cnt();
       
       gps_calculate_lock_time();
    
@@ -644,8 +637,6 @@ static void rtc_200ms_handler(void){
 }
 
 
-
-
 static void process_next_char_from_input(void){
 	
   uint8_t rx_data;
@@ -654,10 +645,10 @@ static void process_next_char_from_input(void){
   get_data_from_buffer_with_pnt(&rx_data);
 
   values_to_gps_rx_buffer(rx_data);
-  
-  
 
 }
+
+
 
 #if 1
 
@@ -708,7 +699,7 @@ static void f_gps_test_rx(void){
     if(gps_state == GPS_SENTENCE_RECEIVING)
     {
       set_message_for_tx(e_Activation);
-#if 1
+
       if(TILT_SENSOR_ERR == true)
       {
         detector_status_led_cnt_on(LED_RED_BLINKS);
@@ -717,35 +708,65 @@ static void f_gps_test_rx(void){
       {
         detector_status_led_cnt_on(LED_GREEN_ON);
       }
-      
-#else      
-  
-      STATUS_LED_GREEN_ON();
-#endif    
+ 
     }
     else
     {
       set_message_for_tx(e_No_gps);
-#if 1
-      detector_status_led_cnt_on(LED_RED_BLINKS); // LED_RED_ON
-#else      
-      STATUS_LED_RED_ON();
-#endif
-    }
 
-#if 0    
-    timers_set_tmr1_id(STATUS_LED_TIMEOUT);
-    reset_timeout_timer();
-    TMR1_IE = TRUE;
-    TMR1_ON = TRUE;
-#endif    
+      detector_status_led_cnt_on(LED_RED_BLINKS); // LED_RED_ON
+
+    }
+    
+    // added: 16072025:
+    gps_stop();
+
     gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
 
   }
   
 }
 
+#if RUN_GPS_TILL_TX
 
+static void f_gps_has_position(void){
+
+  DB_PRINT(" F ");
+
+  eRTC_calculate_time_until_tx();
+
+  gd.no_position_cnt = 0;
+  
+  if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
+  {
+    
+    copy_position_from_to(SAVEPOSITION);
+   
+    if(gd.seconds_until_next_tx >= (2 * SLEEP_BEFORE_TX_SWAP_BACK_TIME))
+    {
+      
+      gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
+
+    }
+    else
+    {
+      
+      gps_stop();
+      DB_PRINT("GPS_OFF\r\n");
+      gd.rtc_alarm = gd.seconds_until_next_tx;
+      RTC_ALARM_ON = true;
+      set_message_for_tx(e_send_position);
+      gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+
+    }
+
+  }
+  
+}
+
+
+#else
+  
 static void f_gps_has_position(void){
 
   gps_stop();
@@ -781,6 +802,9 @@ static void f_gps_has_position(void){
   }
   
 }
+
+
+#endif
 
 
 
@@ -830,7 +854,7 @@ static void f_prepare_msg(void){
   measure_bat_for_batcnt(E_TRANSMISSION_STATE);
   
   WDTCONbits.SWDTEN = TRUE;
-  
+ 
   if(gd_states_get_last_state() == E_GPS_CHECK_ON_ACTIVATION)
   {
     // TODO --> at some stage we would need to transmit something...
@@ -974,6 +998,9 @@ static void f_rx_luz_com_handler(void){
   WDTCONbits.SWDTEN = TRUE;
   
   gd_states_switch_to_next_state(E_STARTUP_STATE);
+#if EMULATE_GPS_TIME_POSITION    
+  RTC_TIME_IS_GOOD = false;
+#endif  
   
 }
 
@@ -1142,6 +1169,8 @@ static void f_gd_off(void){
 
 static void f_always_transmit(void){
   
+  
+  
   while(1)
   {
     
@@ -1150,7 +1179,21 @@ static void f_always_transmit(void){
 #if !CREATE_TX_MESSAGE_AFTER_DDS_CFG    
     messages_before_transmission();
 #endif
+    
+    
+    if(STATUS_LED_ON == false)
+    {
+      STATUS_LED_GREEN_ON();
+      STATUS_LED_RED_OFF();
+    }
+    else
+    {
+      STATUS_LED_RED_ON();    
+      STATUS_LED_GREEN_OFF();
+    }
 
+    STATUS_LED_ON = !STATUS_LED_ON;
+    
     Transmite(false);
     
     CLRWDT();

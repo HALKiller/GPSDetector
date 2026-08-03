@@ -34,6 +34,7 @@
 
 
 #if 1
+
 #define FTW0_1 0x15
 #define FTW0_2 0x70
 #define FTW0_3 0xE0
@@ -42,7 +43,7 @@
 #define FTW1_1 0x15
 #define FTW1_2 0x70
 #define FTW1_3 0xFA
-#define FTW1_4 0x58
+#define FTW1_4 0x59
 
 #define FTW2_1 0x15
 #define FTW2_2 0x70
@@ -93,11 +94,10 @@
 // BALIZA
 #define BLID_0 '0'
 #define BLID_1 '0'
-#define BLID_2 '0'
-#define BLID_2 '4'
+#define BLID_2 '6'
 
 // DETECTOR CONFIG
-#define TX_DURATION         0x0A
+#define TX_DURATION         0x06
 #define TIEMPO_SINCRONISMO  0x01
 #define PWM_PORCENTAGE      0x01
 #define PWM_LUZ_ON_OFF      0x28  // 0x1A
@@ -127,7 +127,7 @@
 
 #endif
 
-#define MAX_DETECORES       0x0C
+#define MAX_DETECTORES      0x14 // 0x3C  // 0x14  // 0x0C
 #define BATERIE_LEVEL       0xCF
 #define BATNIV              0xCF  // CF = 10.8
 
@@ -143,7 +143,7 @@ __EEPROM_DATA(FTW1_2, FTW1_3, FTW1_4, UNUSED, FTW2_1, FTW2_2, FTW2_3, FTW2_4);
 __EEPROM_DATA(UNUSED, FTW3_1, FTW3_2, FTW3_3, FTW3_4, UNUSED, HEAD_0, HEAD_1);
 __EEPROM_DATA(HEAD_2, HEAD_3, CLID_0, CLID_1, CLID_2, CLID_3, BLID_0, BLID_1);
 
-__EEPROM_DATA(BLID_2, UNUSED ,TX_DURATION,  TIEMPO_SINCRONISMO, PWM_PORCENTAGE, PWM_LUZ_ON_OFF, BPS_CONFIG, MAX_DETECORES);
+__EEPROM_DATA(BLID_2, UNUSED ,TX_DURATION,  TIEMPO_SINCRONISMO, PWM_PORCENTAGE, PWM_LUZ_ON_OFF, BPS_CONFIG, MAX_DETECTORES);
 __EEPROM_DATA(BATNIV, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED);
 __EEPROM_DATA(UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED);
 __EEPROM_DATA(UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED);
@@ -188,7 +188,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
   FTW1_2, FTW1_3, FTW1_4, UNUSED, FTW2_0, FTW2_2, FTW2_3, FTW2_4,
   UNUSED, FTW3_0, FTW3_2, FTW3_3, FTW3_4, UNUSED, HEAD_0, HEAD_1,
   HEAD_2, HEAD_3, CLID_0, CLID_1, CLID_2, CLID_3, BLID_0, BLID_1,
-  BLID_2, UNUSED ,TX_DURATION,  TIEMPO_SINCRONISMO, PWM_PORCENTAGE, PWM_LUZ_ON_OFF, BPS_CONFIG, MAX_DETECORES,
+  BLID_2, UNUSED ,TX_DURATION,  TIEMPO_SINCRONISMO, PWM_PORCENTAGE, PWM_LUZ_ON_OFF, BPS_CONFIG, MAX_DETECTORES,
   BATNIV, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED,
   
   UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED,
@@ -308,7 +308,7 @@ __eeprom unsigned char gContenidoEeprom[] = {
         /* Nibble inferior: gSegundosLuzEnOff.                                */
         /* número de segundos con luz nocturna apagada.                       */
   EEPROM_BPS_CONFIG, /* Tipo de configuración de la baliza   90=150bps   80=300bps         */
-  EEPROM_MAX_DETECORES, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
+  EEPROM_MAX_DETECTORES, /* gTotalBalizas: Número de balizas en total 3C=60 2A=42  32=50  24=36  1E=30   18=24*/
   0xCF, /* Valor de batería para transmisión cada 2 ciclos  CF=10.8  D7=11.2  */
   0xFC, /* Segunda palabra de configuración de la baliza                      */
   0x02, /* Número de satélites a la vista antes de apagar el GPS (no usado)   */

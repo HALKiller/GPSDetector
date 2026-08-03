@@ -1,7 +1,7 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
-
+#line 5 "tilt_sensor.c"
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
 // this is the api for the handling of the tilt sensor ->
 // the sensor needs thes input output  and periferics to make it work:
@@ -112,27 +112,16 @@
  
 #define RESET_VALUE 0x00u
  
- #define WHO_AM_I_VERSION 51u
+#define WHO_AM_I_VERSION 51u
  
-// these defines are needed but that can be existing SPI lines from other peripherics
-#if 0
 
-#define BB_SPI_CS   LATCbits.LATC0
-#define BB_SPI_CLCK LATCbits.LATC1
-#define BB_SPI_SDO  LATCbits.LATC3
-#define BB_SPI_SDI  PORTCbits.RC4
-
-#define VALIM_TILT_ON LATBbits.LATB7
 
 #endif
 
-#endif
-
-
-
-
-
-
+#define DELAY_DIVIDER 2*MIPS  // because: 4MHz --> 500kHz
+#define DELAY_TIME_1 5000 // these are us as base --> from that we calculate than into ms and divider by...
+#define DELAY_TIME_FAST_1 DELAY_TIME_1/1000u
+#define DELAY_TIME_SLOW_1 DELAY_TIME_1/(DELAY_DIVIDER)
 
 
 #define SENSOR_READINGS_PER_TIME_BASE (uint16_t)(TIME_BASE / SENSOR_TIME_BETWEEN_READING))  // ((uint16_t)5u)
@@ -142,8 +131,48 @@
 #define CONST_OFF_CNT_DEBOUNCED (uint8_t)(TIME_THRESHOLD_FOR_DETECTOR_IS_OFF * ((uint16_t)5u))
  
 
+// The TMR related defines...
+#define SPI_TILT_TMR            TMR2
+#define SPI_TILT_TMR_ON         TMR2_ON
+#define SPI_TILT_TMR_POSTSCALER TMR2_POSTSCALER
+#define SPI_TILT_TMR_PRESCALER  TMR2_PRESCALER
+#define SPI_TILT_TMR_IF         TMR2_IF
+#define SPI_TILT_TMR_IE         TMR2_IE
+#define SPI_TILT_TMR_PR         PR2
 
 
+#if MIPS == 1
+
+#define SPI_TILT_TMR_PSA  TMR246_01_PRESCALER 
+#define SPI_TILT_TMR_POST TMR246_16_POSTSCALER
+#define SPI_TILT_TMR_PR_VALUE	250u
+
+#elif MIPS==2
+
+#define SPI_TILT_TMR_PSA  TMR246_04_PRESCALER 
+#define SPI_TILT_TMR_POST TMR246_16_POSTSCALER
+#define SPI_TILT_TMR_PR_VALUE	125u
+
+#elif MIPS==4
+
+#define SPI_TILT_TMR_PSA  TMR246_04_PRESCALER 
+#define SPI_TILT_TMR_POST TMR246_16_POSTSCALER
+#define SPI_TILT_TMR_PR_VALUE	250u
+
+#elif MIPS==8
+
+#define SPI_TILT_TMR_PSA  TMR246_16_PRESCALER 
+#define SPI_TILT_TMR_POST TMR246_16_POSTSCALER
+#define SPI_TILT_TMR_PR_VALUE	125u
+
+#else	
+wat
+#endif
+
+
+#define SPI_TILT_TMR_SLOW_PRESCALER  TMR246_01_PRESCALER 
+#define SPI_TILT_TMR_SLOW_POSTSCALER TMR246_02_POSTSCALER
+#define SPI_TILT_TMR_SLOW_PR_VALUE	250u
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -305,18 +334,10 @@ uint8_t update_tilt_sensor_state(void){
 }
 
 
-
-
-
-
 #endif
 
 #if USE_SPI_TILT
 
-
-
-
-#if 1
 
 // because we are NOT switching off every time we need to configure the sensor anew every time...
 static uint8_t get_tilt_data(void){
@@ -334,43 +355,61 @@ static uint8_t get_tilt_data(void){
 #if 1
 
   VALIM_TILT_ON();
-
+  
+#if USE_TMR2_AS_TILT_SENS_TMR
+  
+  SPI_TILT_TMR_ON = false;
+  
   if(FAST_CLOCK == false)  
   {
-    __delay_us(625);
-    // _delay((uint32_t)625);
+    __delay_us(DELAY_TIME_SLOW_1);  // becaseu fast clock is sooo much faster 
+    
+    SPI_TILT_TMR_PRESCALER = SPI_TILT_TMR_SLOW_PRESCALER;
+    SPI_TILT_TMR_POSTSCALER = SPI_TILT_TMR_SLOW_POSTSCALER;
+    SPI_TILT_TMR_PR = SPI_TILT_TMR_SLOW_PR_VALUE; // 31;
+  }
+  else
+  {
+    __delay_ms(DELAY_TIME_FAST_1);
+    
+    SPI_TILT_TMR_PRESCALER = SPI_TILT_TMR_PSA;
+    SPI_TILT_TMR_POSTSCALER = SPI_TILT_TMR_POST;
+    SPI_TILT_TMR_PR = SPI_TILT_TMR_PR_VALUE;
+    
+  }
+  
+  // TMR2_POSTSCALER = TMR2_16_POSTSCALER; // 0x01;	
+  SPI_TILT_TMR = 0;
+  SPI_TILT_TMR_IF = false;
+  
+#else
+  
+  if(FAST_CLOCK == false)  
+  {
+    __delay_us(625);  // becaseu fast clock is sooo much faster 
+    
     PR6 = 31;
   }
   else
   {
     __delay_ms(5);
-    // _delay((uint32_t)5000);
-    PR6 = 250;
+   
+    PR6 = 250;  // gives 4ms...
     
   }
   
   T6_POSTSCALER = TMR6_16_POSTSCALER; // 0x01;	
   TMR6 = 0;
   TMR6_IF = false;
-  
+#endif 
 #endif
 
-#if 0
-// that switches of the internal pull ups
-  tx_buffer[0] = S2DCTRL1;
-  tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
-  tx_buffer[2] = S2DCTRL0;
-  tx_buffer[3] = 0x90;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(4u);
- 
-#else
-  
+
   tx_buffer[0] = S2DCTRL1;
   tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
   rw_data_bb_spi(2u);
   
-#endif   
-  
+
 
   tx_buffer[0] = S2D_WHO_AM_I;
   tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
@@ -382,20 +421,41 @@ static uint8_t get_tilt_data(void){
 
 #if INDICATE_TILT_SENSOR_ERROR  
   
-
-
   TILT_SENSOR_ERR = (rx_buffer[1] != WHO_AM_I_VERSION);
   
-
 #endif
   
-  
-#if 1
+
 
   tx_buffer[0] = S2D_STATUS_READ;
 
   tx_buffer[1] = RESET_VALUE;
+  
+#if USE_TMR2_AS_TILT_SENS_TMR
 
+  SPI_TILT_TMR_IE = true;
+  SPI_TILT_TMR_ON = true;
+  // TMR2_IE = true;
+  // TMR2_ON = true;
+  
+  while((val_pos == false) && (SPI_TILT_TMR_ON == true))
+  {
+    // try reading the status reg zntil we have a valid Z position... 
+    rw_data_bb_spi(2u);
+    
+    if(rx_buffer[1] & 0x04)
+    {
+      val_pos = true; 
+    }
+    
+  
+  }
+  
+  SPI_TILT_TMR_ON = false;
+  SPI_TILT_TMR_IE = false;
+  // SPI_TILT_TMR_IF
+#else
+  
   TMR6_ON = true;
   
   while((val_pos == false) && (TMR6_IF == false))
@@ -426,17 +486,8 @@ static uint8_t get_tilt_data(void){
     rw_data_bb_spi(2u);
   }
 
-#if 0
-
-// set to power dwon mode...
-  tx_buffer[0] = S2DCTRL1;
-  tx_buffer[1] = 0x0C;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(2u);
-
-#endif
 
 #if 1
-
 
   VALIM_TILT_OFF();
   
@@ -455,17 +506,6 @@ static uint8_t get_tilt_data(void){
   UART_int(rx_buffer[1]);
 #endif
 
-
-#if 0
-  if(FAST_CLOCK == false)  
-  {
-    __delay_ms(312);
-  }
-  else
-  {
-    __delay_ms(2500);
-  }
-#endif    
 
 // when the Sensor data > 127 the IC is facing downwards --> 
 // it depends now where it is siuated to get a conclusion of the state
@@ -497,216 +537,6 @@ static uint8_t get_tilt_data(void){
   
 }
 
-#else
-  
-// because we are switching off every time we need to configure the sensor anew every time...
-static uint8_t get_tilt_data(void){
-  
-  
- uint8_t temp_PR = PR6;
- 
- uint8_t ret_value = 0u; 
- uint8_t val_pos = false;
- uint8_t r_cnt = 0;
-  
- 
-  
-  // configure here the timer in case we switch on and off the TILT...
-#if 1
-
-  VALIM_TILT_ON();
-
-  if(FAST_CLOCK == false)  
-  {
-    __delay_us(625);
-    // _delay((uint32_t)625);
-    PR6 = 31;
-  }
-  else
-  {
-    __delay_ms(5);
-    // _delay((uint32_t)5000);
-    PR6 = 250;
-    
-  }
-  
-  T6_POSTSCALER = TMR6_16_POSTSCALER; // 0x01;	
-  TMR6 = 0;
-  TMR6_IF = false;
-  
-#endif
-
-  
-  BB_SPI_CS = true;
-
-
-#if 0
-// that switches of the internal pull ups
-  tx_buffer[0] = S2DCTRL1;
-  tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
-  tx_buffer[2] = S2DCTRL0;
-  tx_buffer[3] = 0x90;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(4u);
- 
-#else
-  
-  tx_buffer[0] = S2DCTRL1;
-  tx_buffer[1] = 0x1C;  // 0x10;  // 0x10u;
-  rw_data_bb_spi(2u);
-  
-#endif   
-  
-
-  tx_buffer[0] = S2D_WHO_AM_I;
-  tx_buffer[1] = RESET_VALUE;// 0xAA;  // 
-  
-  rw_data_bb_spi(2u);
-  // this saves the WHO AM I answer into the next buffer slot...
-  rx_buffer[2] = rx_buffer[1];
-  
-
-#if INDICATE_TILT_SENSOR_ERROR  
-  
-#if 1
-
-  TILT_SENSOR_ERR = (rx_buffer[1] != WHO_AM_I_VERSION);
-  
-#else
-  
-  if(rx_buffer[1] != WHO_AM_I_VERSION)
-  {
-    
-    TILT_SENSOR_ERR = true;
-    // set errflg for tilt fail reading
-  }
-  else
-  {
-    TILT_SENSOR_ERR = false;
-  }
-#endif
-#endif
-  
-  
-#if 0 
-
-
-  // TODO:
-  // check when releas that the TMR6 gets configured
-  while(TMR6_IF == false);
-
-  
-  
-  // this needs to be 68  .d for the IIS2
-  // this needs to be 51  .d for the LISDE12
-  
-
-#else
-
-  tx_buffer[0] = S2D_STATUS_READ; // S2D_WHO_AM_I;
-
-  tx_buffer[1] = RESET_VALUE;
-
-  TMR6_ON = true;
-  
-  while((val_pos == false) && (TMR6_IF == false))
-  {
-    // try reading the status reg zntil we have a valid Z position... 
-    rw_data_bb_spi(2u);
-    
-    if(rx_buffer[1] & 0x04)
-    {
-      val_pos = true; 
-    }
-    
-  
-  }
-  
-  PR6 = temp_PR;
-  T6_POSTSCALER = TMR6_02_POSTSCALER;
-  TMR6_ON = false;
-  
-#endif
-
-  tx_buffer[0] = S2D_OUT_READ_ZH;
-
-  rw_data_bb_spi(2u);
-
-  if(rx_buffer[1] == 0)
-  {
-    rw_data_bb_spi(2u);
-  }
-
-#if 0
-  if(FAST_CLOCK == false)  
-  {
-    VALIM_TILT_OFF();
-  }
-#else
-
-  VALIM_TILT_OFF();
-  
-#endif
-  
-  BB_SPI_CS   = false;
-  BB_SPI_CLCK = false;
-  BB_SPI_SDO  = false;
-  
-  
-#if DEBUGGING_BB_IS_ON&&1
-  DB_PRINT("\r\nI am: ");
-  UART_int(rx_buffer[2]);
-  
-  DB_PRINT("\r\nSPI_read: ");
-  UART_int(rx_buffer[1]);
-#endif
-
-
-#if 0
-  if(FAST_CLOCK == false)  
-  {
-    __delay_ms(312);
-  }
-  else
-  {
-    __delay_ms(2500);
-  }
-#endif    
-
-// when the Sensor data > 127 the IC is facing downwards --> 
-// it depends now where it is siuated to get a conclusion of the state
-#if DEBUGGING_BB_IS_ON&&1
-  // becaue that is actually a signed int
-  if(rx_buffer[1] > 127)
-  {
-    // facinf donw
-    DB_PRINT("\r\nZ ON\r\n");
-    
-    
-  }
-  else
-  {
-    // facin up
-    DB_PRINT("\r\nZ OFF\r\n");
-    ret_value = true;
-  }
-#else
-
-  if(rx_buffer[1] < 128)
-  {
-    ret_value = true;
-  }
-  
-#endif  
-
-  return ret_value;
-  
-}
-
-
-
-
-
-#endif
 
 // sending first the address and after that the data, 
 // furthermore reading back the result in case it was a read instruction
@@ -786,6 +616,7 @@ static uint8_t spi_transmit(uint8_t data){
   return received;
   
 }
+
 
 #endif  // USE_SPI_TILT
 

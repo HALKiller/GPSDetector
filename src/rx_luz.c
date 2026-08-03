@@ -233,6 +233,10 @@ void check_on_rx_luz(void){
             write_rx_data_to_eeprom();
 
 						tx_config_data(SEND_FULL_CONFIG);
+#if 1            
+            RESET();
+#endif            
+            
           }
 				}
       
@@ -263,6 +267,9 @@ void check_on_rx_luz(void){
 #endif
 										
 							tx_config_data(SEND_DETECTOR_NUMBER);
+#if 1            
+              RESET();
+#endif                 
 						}
 						else
 						{
@@ -272,12 +279,12 @@ void check_on_rx_luz(void){
 						}
           }
 				}
-                                     
+
 			break;			
 #endif	// COMPILE_FULL_PROJECT
 			case e_READ_ORDER:
 				tx_config_data(SEND_FULL_CONFIG);
-                                   
+
 			break;
 			case e_TIMED_OUT:
       
@@ -835,8 +842,8 @@ static void rx_luz_configure_tmr2(uint8_t timeout_setter){
     case TMR_15ms_OF_TIME:
       
       // 15ms
-      T2_PRESCALER = TMR2_15MS_PRE;
-      T2_POSTSCALER = TMR2_15MS_POST;
+      TMR2_PRESCALER = TMR2_15MS_PRE;
+      TMR2_POSTSCALER = TMR2_15MS_POST;
       PR2 = TMR2_15MS_PR;
       
     break;
@@ -844,31 +851,31 @@ static void rx_luz_configure_tmr2(uint8_t timeout_setter){
     case TMR_1ms_OF_TIME:
       
       // 1ms
-      T2_PRESCALER = TMR2_1MS_PRE;
-      T2_POSTSCALER = TMR2_1MS_POST;
+      TMR2_PRESCALER = TMR2_1MS_PRE;
+      TMR2_POSTSCALER = TMR2_1MS_POST;
       PR2 = TMR2_1MS_PR;
       
     break;
     case TMR_500us_OF_TIME:
 #if 1
-      T2_PRESCALER = TMR2_500US_PRE;
+      TMR2_PRESCALER = TMR2_500US_PRE;
       PR2 = TMR2_500US_PR;  // 125;
-      T2_POSTSCALER = TMR2_500US_POST;  // TMR2_01_POSTSCALER;    
+      TMR2_POSTSCALER = TMR2_500US_POST;  // TMR2_01_POSTSCALER;    
     
 #else
   
-      T2_PRESCALER = TMR2_01_PRESCALER;
+      TMR2_PRESCALER = TMR2_01_PRESCALER;
       PR2 = 250;
-      T2_POSTSCALER = TMR2_02_POSTSCALER;
+      TMR2_POSTSCALER = TMR2_02_POSTSCALER;
       
 #endif      
     break;
 
     case TMR_3072us_OF_TIME:
     
-      T2_PRESCALER = TMR2_3072US_PRE;
+      TMR2_PRESCALER = TMR2_3072US_PRE;
       PR2 = TMR2_3072US_PR;
-      T2_POSTSCALER = TMR2_3072US_POST;
+      TMR2_POSTSCALER = TMR2_3072US_POST;
     
     break;
     

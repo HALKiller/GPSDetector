@@ -35,7 +35,7 @@
 
 #define ADC_CHANNEL ADCON0bits.CHS
 
-#define ADC_SAMPLES	4
+#define ADC_SAMPLES	18
 
 #define START_CONVERSION	ADCON0bits.GO
 
@@ -55,9 +55,99 @@ uint16_t adc_res[8];
 
 #if 1
 
+// OV 22042026: highest lowest reject, oversampling rate = 18; reduce Ton time
+// was: 250u, now 25u , adquisition time = 10u
 // this version should be fine now for both chips...
-uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal)
-{
+uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal){
+	
+  uint8_t hlooper = 0;
+  uint8_t samples_setter = 1;
+  uint16_t adc_sum = 0; 
+  uint16_t ret_value = 0;
+  uint16_t biggest = 0;
+  uint16_t smallest = 0xFFFF;
+  uint16_t temp_res = 0;
+  uint8_t of_FLG = false;
+#if 0
+  ADCON1bits.ADCS = 0b001;  // Fosc/8 --> because Errata in this Chip!    0b11; // Reloj RC
+	 // Se selecciona la referencia de voltaje
+  ADCON1bits.ADPREF = 0; // Se selecciona AVDD = VDD
+  ADCON1bits.ADNREF = 0; // Se selecciona AVSS = VSS
+#else
+  ADCON1 = 0x10;
+#endif
+
+  ADCON1bits.ADFM = JustificacionOrdenBits;
+    // Se selecciona el canal a convertir
+  ADCON0bits.CHS = canal;
+  // ADC On
+  ADCON0bits.ADON = 1;
+	
+	__delay_us( 25 );
+
+
+	if((canal == BATERIA_ADC_CHANNEL)||(canal == VREF_ADC_CHANNEL))
+	{
+		__delay_us( 25 );
+    samples_setter = ADC_SAMPLES;
+    of_FLG = true;
+	}
+
+
+  for(hlooper = 0; hlooper < samples_setter; hlooper++)
+  {
+    
+    __delay_us( 10 );
+    ADCON0bits.GO_nDONE = 1;
+
+    NOP();
+    while(ADCON0bits.GO_nDONE == true)
+    {
+      // loop until flag is set
+    }
+#if DEBUG_ADC_RESULTS    
+    adc_res[hlooper] = 256 * ADRESH + ADRESL;
+#endif    
+    
+    temp_res = (256 * ADRESH + ADRESL);
+    
+    if(of_FLG == true)
+    {
+      if(temp_res > biggest)
+      {
+        biggest = temp_res;
+      }
+      
+      if(temp_res < smallest)
+      {
+        smallest = temp_res;
+      }
+    }
+    
+    adc_sum = adc_sum + temp_res;
+   
+  }
+  
+  ADCON0bits.ADON = 0;
+  
+  if(of_FLG == true)
+  {
+    ret_value = (adc_sum - smallest - biggest)/(samples_setter - 2);
+  }
+  else
+  {
+    ret_value = adc_sum / samples_setter;
+  }
+  
+
+  return ret_value;
+
+}
+
+#elif 1
+
+// this version should be fine now for both chips...
+uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal){
 	
   uint8_t hlooper = 0;
   uint8_t samples_setter = 1;
