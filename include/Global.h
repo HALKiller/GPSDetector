@@ -54,7 +54,7 @@ err
 #endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 69
+#define PCB_VERSION 67
 
 
 // The actual Version as string...

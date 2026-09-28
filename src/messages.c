@@ -16,6 +16,8 @@
 
 #include "gps_extensions.h"
 
+#include "gps.h"
+
 #include "eeprom.h"
 
 #include "extension_strings.h"
@@ -70,10 +72,10 @@ const char gMensajeActivandose_new  [] = "ACTIVANDOSE ";
 
 #if 1
 
-#define CFG_ERROR_LETTER "E"
+/* The status marker follows "V>" + FW_VERSION_STR + "<". */
+#define VERSION_STATUS_LETTER_INDEX (2u + sizeof(FW_VERSION_STR))
 
 const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">" PCB_V_STRING "< C ";
-const char gMensajeError[] = "V>" FW_VERSION_STR "<" CFG_ERROR_LETTER ">" PCB_V_STRING "< C ";
 
 
 #else
@@ -162,6 +164,7 @@ static uint16_t bat_cnt = 702; // DDC
 static void msg_activation(void);
 static void msg_position(uint8_t resend);
 static void msg_no_gps(void);
+static char get_startup_status_letter(void);
 
 
 static void insert_msg_header(uint8_t invert);
@@ -221,6 +224,26 @@ void messages_before_transmission(void){
 
 #if SEND_NEW_VERSION_NUMBER 
 // e_Activation
+static char get_startup_status_letter(void){
+
+  if(CFG_HAS_ERROR == true)
+  {
+    if(gps_pair_configuration_is_verified() == true)
+    {
+      return 'E';
+    }
+
+    return 'B';
+  }
+
+  if(gps_pair_configuration_is_verified() == false)
+  {
+    return 'G';
+  }
+
+  return LETTER_REPLACER[0];
+}
+
 static void msg_activation(void){
 
   uint8_t d_pnt = 0;
@@ -231,14 +254,8 @@ static void msg_activation(void){
   
   d_pnt = gps_buffer_get_len();
   
-  if(CFG_HAS_ERROR == true)
-  {
-    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeError );        
-  }
-  else
-  {
-    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );    
-  }
+  strcpy((char *)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new);
+  sentence_buffer.gps_buffer[d_pnt + VERSION_STATUS_LETTER_INDEX] = get_startup_status_letter();
   
 
   insert_bat_charge_count();
@@ -406,14 +423,8 @@ static void msg_no_gps(void){
   
   d_pnt = gps_buffer_get_len();
   
-  if(CFG_HAS_ERROR == true)
-  {
-    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeError );        
-  }
-  else
-  {
-    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );    
-  }
+  strcpy((char *)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new);
+  sentence_buffer.gps_buffer[d_pnt + VERSION_STATUS_LETTER_INDEX] = get_startup_status_letter();
   
   d_pnt = gps_buffer_get_len();
   

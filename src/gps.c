@@ -499,6 +499,15 @@ void gps_calculate_lock_time(void){
   
 }
 
+bool gps_pair_configuration_is_verified(void){
+
+#if DISABLE_GLONASS
+  return gps_pair_status == (GPS_PAIR_066_ACK | GPS_PAIR_067_ACK | GPS_PAIR_067_MATCH);
+#else
+  return true;
+#endif
+}
+
 
 // because during the development its interesting to see where it fails, in the release it makes no difference, it works or it does not
 // we are checking here to find out:

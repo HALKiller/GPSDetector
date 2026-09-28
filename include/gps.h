@@ -127,6 +127,8 @@ uint8_t gps_buffer_get_len(void);
 
 void copy_position_from_to(fromto_t fromto);
 
+bool gps_pair_configuration_is_verified(void);
+
 
 
 
