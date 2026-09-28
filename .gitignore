@@ -1,0 +1,24 @@
+# MPLAB X private/user-specific files
+nbproject/private/
+
+# Build output
+build/
+dist/
+
+# Generated dependency/cache files
+*.o
+*.d
+*.p1
+*.pre
+*.sym
+
+# Optional generated firmware output
+# Uncomment if you do NOT want HEX files in Git
+# *.hex
+
+# OS/editor junk
+Thumbs.db
+.DS_Store
+
+# Folder for general keeping
+/Verschiedenes/*

@@ -1,0 +1,51 @@
+r_buffer_in: 114
+                                                              
+FUNC_pnt: 2
+                                                                   
+CB221
+                                                                         
+114
+                                                                           
+chcknchar114
+                                                                  
+exit handlerr_buffer_in: 36
+                                                   
+FUNC_pnt: 2
+                                                                   
+CB221
+                                                                         
+36
+                                                                            
+chcknchar36
+                                                                   
+exit handlerr_buffer_in: 36
+                                                   
+r_buffer_in: 69
+                                                               
+r_buffer_in: 69
+                                                               
+FUNC_pnt: 2
+                                                                   
+CB221
+                                                                         
+36
+                                                                            
+chcknchar36
+                                                                   
+exit handlerFUNC_pnt: 2
+                                                       
+CB221
+                                                                         
+69
+                                                                            
+chcknchar69
+                                                                   
+exit handlerFUNC_pnt: 2
+                                                       
+CB221
+                                                                         
+69
+                                                                            
+chcknchar69
+                                                                   
+exit handler   

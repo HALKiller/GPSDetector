@@ -1,0 +1,23 @@
+# Ignore everything
+*
+
+# Don't ignore directories, so we can track files within them
+!*/
+
+# Ignore everything in other directories
+/other/*
+
+# Track all .c files in the src directory
+!/src/**/*.c
+
+# Track all .h files in the include directory
+!/include/**/*.h
+
+# Track specific files regardless of location
+!project.xml
+!configurations.xml
+!Makefile
+
+# Ignore the private directory and its contents
+nbproject/private/
+
