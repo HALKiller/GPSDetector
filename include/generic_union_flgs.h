@@ -18,7 +18,7 @@
 
 
 // FLAGS   
-// #define LUZ_ENABLED     gd_flags.b0 // from the eeprom cfg
+#define CFG_HAS_ERROR       gd_flags.b0 // from the eeprom cfg something does not fit up correctly
 #define LUZ_HANDLER_ON      gd_flags.b1 // that is getting set when the sensor measures it is dark
 #define DOUBLE_PERIOD       gd_flags.b2
 #define COPY_POS_IS_VALID   gd_flags.b3

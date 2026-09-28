@@ -65,7 +65,7 @@ volatile static uint8_t rtc_decimo_cnt = 0;
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
-#define TRANSMISSION_TIME_OFFSET 15u 
+#define TRANSMISSION_TIME_OFFSET 15
 
 
 

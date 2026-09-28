@@ -94,6 +94,9 @@
 
 
 #define LED_TIME_SHOWING 15u  // ten seconds on for the LED
+#define MAX_PERMITTED_DETECTORS 99u // there shall never be more than at max. 99 detectors in a series
+#define MAX_PERMITTED_TX_DURATION 15u // there should never be such a long tx time duration...
+#define DEFAULT_TIME_BETWEEN_TX 10u
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -204,11 +207,24 @@ void init_detector_config(void){
   gd.syncro_time    = LeerEeprom ( 0x43u ); 
   gd.max_detectores = LeerEeprom ( 0x47u );
   
+  if((gd.max_detectores == 0u) ||
+    (gd.transmission_duration == 0u) ||
+    (gd.transmission_duration > MAX_PERMITTED_TX_DURATION) ||
+    (gd.max_detectores > MAX_PERMITTED_DETECTORS) ||
+    (gd.number == 0u) ||
+    (gd.number > gd.max_detectores))
+    {
+      CFG_HAS_ERROR = true;
+    }
+    
+  
   gd.time_between_tx = gd.transmission_duration * gd.max_detectores;
   
   if(gd.time_between_tx == 0u)
   {
     // TODO:    ERROR HERE!!!
+    CFG_HAS_ERROR = true;
+    gd.time_between_tx = DEFAULT_TIME_BETWEEN_TX;
     assert(false);
   }
   

@@ -70,10 +70,11 @@ const char gMensajeActivandose_new  [] = "ACTIVANDOSE ";
 
 #if 1
 
-const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">" PCB_V_STRING "< C ";
-// const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">69< C "; that works
+#define CFG_ERROR_LETTER "E"
 
-// const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">" PCB_V_STRING "< C ";
+const char gMensajeVersion_new[] = "V>" FW_VERSION_STR "<" LETTER_REPLACER ">" PCB_V_STRING "< C ";
+const char gMensajeError[] = "V>" FW_VERSION_STR "<" CFG_ERROR_LETTER ">" PCB_V_STRING "< C ";
+
 
 #else
   
@@ -230,7 +231,15 @@ static void msg_activation(void){
   
   d_pnt = gps_buffer_get_len();
   
-  strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );
+  if(CFG_HAS_ERROR == true)
+  {
+    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeError );        
+  }
+  else
+  {
+    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );    
+  }
+  
 
   insert_bat_charge_count();
 
@@ -397,7 +406,15 @@ static void msg_no_gps(void){
   
   d_pnt = gps_buffer_get_len();
   
-  strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );
+  if(CFG_HAS_ERROR == true)
+  {
+    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeError );        
+  }
+  else
+  {
+    strcpy ( (char*)(sentence_buffer.gps_buffer + d_pnt), gMensajeVersion_new );    
+  }
+  
   d_pnt = gps_buffer_get_len();
   
   insert_bat_charge_count();
