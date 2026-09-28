@@ -69,6 +69,12 @@
 
 #define const_STARTWORDCOUNT_LEN 6
 
+/* PAIR replies are received in the normal GPS sentence buffer. */
+#define GPS_PAIR_SENTENCE_ID 5u
+#define GPS_PAIR_066_ACK     0x01u
+#define GPS_PAIR_067_ACK     0x02u
+#define GPS_PAIR_067_MATCH   0x04u
+
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
 
@@ -173,6 +179,7 @@ const uint8_t c_GNRMC[] = "$GNRMC";
 const uint8_t c_GPGSA[] = "$GPGSA";
 const uint8_t c_GNGSA[] = "$GNGSA";
 const uint8_t c_EERES[] = "$EESLf"; // Reset MCU
+const uint8_t c_PAIR[] = "$PAIR0";
 
 const uint8_t *const sentences[] = {
   
@@ -180,7 +187,8 @@ const uint8_t *const sentences[] = {
   c_GNRMC,
   c_GPGSA,
   c_GNGSA,
-  c_EERES
+   c_EERES,
+   c_PAIR
 };
 
 #endif
@@ -210,6 +218,9 @@ static uint8_t *temp_buff_pnt = &sentence_buffer.gps_buffer[0];
 static uint8_t temp_buff_pnt_cnt = MAX_DATA_LENGTH_GPS_SENTENCE;  // cMax_Sentence_length_GPS;
 
 static uint8_t endbyte_cnt = 2;
+
+/* One byte only: acknowledgements and the PAIR067 read-back result. */
+static uint8_t gps_pair_status = 0u;
 
 // static uint32_t gps_lock_timer_start = 0u;
 
@@ -254,6 +265,8 @@ static void Debugging_read_out_rmc(void);
 static void convert_utc_to_gps_rtc_time(void);
 
 static void copy_rmc_to_from(RMC_sentence_t *const des_pnt,  RMC_sentence_t const *const src_pnt);
+static void process_pair_sentence(void);
+static void gps_wait_for_pair_reply(uint16_t timeout_ms);
 
 
 
@@ -671,14 +684,24 @@ static void try_reconfigure_gps(void){
   
 #if DISABLE_GLONASS
 
-  // swoff glonass
+  /*
+   * PAIR066 restarts the receiver.  Consume replies while waiting for that
+   * restart, then verify both the PAIR067 acknowledgement and read-back.
+   */
+  gps_pair_status = 0u;
+  reset_uart_handler_flags();
   UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
-  
-  __delay_ms(500);
+
+  gps_wait_for_pair_reply(500u);
   
   UART_GPS_SEND("$PAIR067*3B\r\n");
-  
-  __delay_ms(100);  
+
+  gps_wait_for_pair_reply(100u);
+
+  if (gps_pair_status != (GPS_PAIR_066_ACK | GPS_PAIR_067_ACK | GPS_PAIR_067_MATCH))
+  {
+    DB_PRINT("PAIR cfg err\r\n");
+  }
 
 #elif DISABLE_NOT_GLONASS
 
@@ -1477,6 +1500,76 @@ static uint8_t check_against_header(const char *t_buffer){
   
 }
 
+/*
+ * No additional receive buffer is used.  The indices below are fixed by the
+ * two PAIR sentences and are reached only after their NMEA checksums pass.
+ */
+static void process_pair_sentence(void){
+
+  if ((sentence_buffer.gps_buffer[6] == '0') &&
+      (sentence_buffer.gps_buffer[7] == '1') &&
+      (sentence_buffer.gps_buffer[8] == ',') &&
+      (sentence_buffer.gps_buffer[12] == ',') &&
+      (sentence_buffer.gps_buffer[13] == '0'))
+  {
+    if ((sentence_buffer.gps_buffer[9] == '0') &&
+        (sentence_buffer.gps_buffer[10] == '6') &&
+        (sentence_buffer.gps_buffer[11] == '6'))
+    {
+      gps_pair_status |= GPS_PAIR_066_ACK;
+    }
+    else if ((sentence_buffer.gps_buffer[9] == '0') &&
+             (sentence_buffer.gps_buffer[10] == '6') &&
+             (sentence_buffer.gps_buffer[11] == '7'))
+    {
+      gps_pair_status |= GPS_PAIR_067_ACK;
+    }
+  }
+  else if ((sentence_buffer.gps_buffer[6] == '6') &&
+           (sentence_buffer.gps_buffer[7] == '7') &&
+           (sentence_buffer.gps_buffer[8] == ',') &&
+           (sentence_buffer.gps_buffer[9] == '1') &&
+           (sentence_buffer.gps_buffer[10] == ',') &&
+           (sentence_buffer.gps_buffer[11] == '0') &&
+           (sentence_buffer.gps_buffer[12] == ',') &&
+           (sentence_buffer.gps_buffer[13] == '1') &&
+           (sentence_buffer.gps_buffer[14] == ',') &&
+           (sentence_buffer.gps_buffer[15] == '1') &&
+           (sentence_buffer.gps_buffer[16] == ',') &&
+           (sentence_buffer.gps_buffer[17] == '1') &&
+           (sentence_buffer.gps_buffer[18] == ',') &&
+           (sentence_buffer.gps_buffer[19] == '0'))
+  {
+    gps_pair_status |= GPS_PAIR_067_MATCH;
+  }
+}
+
+/* Used before global interrupts are enabled and during the existing waits. */
+static void gps_wait_for_pair_reply(uint16_t timeout_ms){
+
+  bool rx_interrupt_was_enabled = RX_IE;
+
+  RX_IE = FALSE;
+
+  while(timeout_ms > 0u)
+  {
+    while(RX_IF == TRUE)
+    {
+      values_to_gps_rx_buffer(RCREG);
+    }
+
+    __delay_ms(1);
+    timeout_ms--;
+  }
+
+  while(RX_IF == TRUE)
+  {
+    values_to_gps_rx_buffer(RCREG);
+  }
+
+  RX_IE = rx_interrupt_was_enabled;
+}
+
 
 
 #if 1
@@ -1581,9 +1674,7 @@ static void sentence_handler(uint8_t sentence_id){
       RESET();
     break;
     case 5:
-      UART_GPS_FLG.rtc_test_first_run = FALSE;
-      UART_GPS_FLG.gsa_position_is_good = FALSE;
-      UART_GPS_FLG.rmc_time_is_good = FALSE;
+      process_pair_sentence();
     break;
     case 6:
     
@@ -1624,6 +1715,9 @@ static void sentence_handler(uint8_t sentence_id){
     break;
     case 4:
       RESET();
+    break;
+    case GPS_PAIR_SENTENCE_ID:
+      process_pair_sentence();
     break;
     default:
       assert(false);
