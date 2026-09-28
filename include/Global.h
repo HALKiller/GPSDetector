@@ -54,11 +54,11 @@ err
 #endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 66
+#define PCB_VERSION 69
 
 
 // The actual Version as string...
-#define FW_VERSION_STR "28"
+#define FW_VERSION_STR "29"
 
 
 // to get better adc readings...

@@ -608,6 +608,7 @@ static void try_reconfigure_gps(void){
 }
 
 #else
+  
 // this works perfectly !!  --> prepared for 9600Baud recfg
 static void try_reconfigure_gps(void){
   

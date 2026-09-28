@@ -163,7 +163,7 @@ static void msg_position(uint8_t resend);
 static void msg_no_gps(void);
 
 
-static void insert_msg_header(void);
+static void insert_msg_header(uint8_t invert);
 static void insert_bat_error(uint8_t slot);
 static void insert_baterie(void);
 static void insert_bat_charge_count(void);
@@ -224,7 +224,7 @@ static void msg_activation(void){
 
   uint8_t d_pnt = 0;
 
-  insert_msg_header();
+  insert_msg_header(false);
   
   strcpy ( (char*)(sentence_buffer.gps_buffer + 23u), gMensajeActivandose_new );
   
@@ -254,7 +254,7 @@ static void msg_activation(void){
 static void msg_position(uint8_t resend)
 {
 
-  insert_msg_header();
+  insert_msg_header(resend);
   
   sentence_buffer.gps_buffer[34] =  '>';
   sentence_buffer.gps_buffer[50] =  '>';
@@ -378,7 +378,7 @@ static void msg_no_gps(void){
   char t_char = 0;
   
   
-  insert_msg_header();
+  insert_msg_header(false);
   
   strcpy((char*)sentence_buffer.gps_buffer + 23, msg_gps_error);
 
@@ -407,7 +407,7 @@ static void msg_no_gps(void){
 
 
 
-static void insert_msg_header(void)
+static void insert_msg_header(uint8_t invert)
 {
   
   // DB_PRINT("msg_header\r\n");
@@ -433,7 +433,13 @@ static void insert_msg_header(void)
   sentence_buffer.gps_buffer[21] =  '<';
   sentence_buffer.gps_buffer[16] =  '.';
   sentence_buffer.gps_buffer[19] =  'V';
-  sentence_buffer.gps_buffer[20] =  'B';
+  sentence_buffer.gps_buffer[20] =  'B';  
+  if(invert == true)
+  {
+    sentence_buffer.gps_buffer[19] =  'B';
+    sentence_buffer.gps_buffer[20] =  'V';    
+  }
+
   sentence_buffer.gps_buffer[22] =  ' ';
   
 }
