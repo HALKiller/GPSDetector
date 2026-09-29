@@ -54,7 +54,7 @@ err
 #endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 67
+#define PCB_VERSION 69
 
 
 // The actual Version as string...
@@ -239,7 +239,7 @@ err
 #define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 0
 #define USE_BB_UART_AS_GPS_INPUT 0
-#define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
+#define DO_TRANSMIT_RF 0  // when reset(0) we do not transmit over radio
 
 #define LETTER_REPLACER "D"
 
@@ -249,7 +249,7 @@ err
 
 //************************
 // when set the LED really iluminates, otherwise we skpip one instruction
-#define USE_PWM_LED 1
+#define USE_PWM_LED 0
 
 //********************
 // so that the tilt sensor is not 
@@ -499,12 +499,12 @@ extern const uint16_t shifts[16];
 #define        FILE_TILT_SENSOR_DB_ENABLED 0
 #define             FILE_TIMERS_DB_ENABLED 0
 #define          FILE_GD_STATES_DB_ENABLED 0
-#define                FILE_GPS_DB_ENABLED 0
+#define                FILE_GPS_DB_ENABLED 1
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
-#define              FILE_E_RTC_DB_ENABLED 1
+#define              FILE_E_RTC_DB_ENABLED 0
 #define             FILE_EEPROM_DB_ENABLED 0
-#define                FILE_DDS_DB_ENABLED 1
-#define           FILE_MESSAGES_DB_ENABLED 1
+#define                FILE_DDS_DB_ENABLED 0
+#define           FILE_MESSAGES_DB_ENABLED 0
 #define    FILE_BIT_BANGED_UART_DB_ENABLED 0
 #define           FILE_DETECTOR_DB_ENABLED 0
 
