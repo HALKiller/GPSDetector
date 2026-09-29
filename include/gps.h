@@ -87,6 +87,12 @@ typedef enum fromto_cpy_type{
 }fromto_t;
 
 
+#if GLONASS_BUG
+
+uint8_t get_talker_id(void);
+uint8_t get_t_id_err(void);
+#endif
+
 void gps_init(void);
 
 void gps_first_run(void);
@@ -127,7 +133,7 @@ uint8_t gps_buffer_get_len(void);
 
 void copy_position_from_to(fromto_t fromto);
 
-bool gps_pair_configuration_is_verified(void);
+uint8_t gps_pair_configuration_status(void);
 
 
 

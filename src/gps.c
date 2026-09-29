@@ -77,6 +77,7 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
+#define N_DB_PRINT UART_GPS_SEND
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -179,7 +180,8 @@ const uint8_t c_GNRMC[] = "$GNRMC";
 const uint8_t c_GPGSA[] = "$GPGSA";
 const uint8_t c_GNGSA[] = "$GNGSA";
 const uint8_t c_EERES[] = "$EESLf"; // Reset MCU
-const uint8_t c_PAIR[] = "$PAIR0";
+const uint8_t c_PAIR[] =  "$PAIR0";
+// const uint8_t c_GLONASS[] = "$GL";
 
 const uint8_t *const sentences[] = {
   
@@ -187,14 +189,18 @@ const uint8_t *const sentences[] = {
   c_GNRMC,
   c_GPGSA,
   c_GNGSA,
-   c_EERES,
-   c_PAIR
+  c_EERES,
+  c_PAIR
+  
 };
 
 #endif
 
 
-
+#if GLONASS_BUG      
+static uint8_t talker_id = 0xFF;
+static uint8_t t_id_err = 0u;
+#endif
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
@@ -222,9 +228,6 @@ static uint8_t endbyte_cnt = 2;
 /* One byte only: acknowledgements and the PAIR067 read-back result. */
 static uint8_t gps_pair_status = 0u;
 
-// static uint32_t gps_lock_timer_start = 0u;
-
-// static uint32_t gps_lock_timer_end = 0u;
 
 
 
@@ -283,6 +286,23 @@ static void gps_wait_for_pair_reply(uint16_t timeout_ms);
   
   
 
+#if GLONASS_BUG
+
+uint8_t get_talker_id(void){
+  
+  return talker_id;
+  
+}
+
+
+uint8_t get_t_id_err(void){
+  
+  uint8_t ret_val = t_id_err;
+  t_id_err = false;
+  return ret_val;
+}
+
+#endif
 
 
 
@@ -421,9 +441,9 @@ void gps_reinit(void){
   // save the time for the moment...
   gps_module.lock_time_start = eRTC_get_second_cnt();
 
-  UART_GPS_SEND("$PAIR067*3B\r\n");
+  // UART_GPS_SEND("$PAIR067*3B\r\n");
   
-	DB_PRINT("$PAIR067*3B\r\n");
+	// DB_PRINT("$PAIR067*3B\r\n");
 	
   __delay_ms(100);
  
@@ -500,13 +520,9 @@ void gps_calculate_lock_time(void){
   
 }
 
-bool gps_pair_configuration_is_verified(void){
+uint8_t gps_pair_configuration_status(void){
 
-#if DISABLE_GLONASS
-  return gps_pair_status == (GPS_PAIR_066_ACK | GPS_PAIR_067_ACK | GPS_PAIR_067_MATCH);
-#else
-  return true;
-#endif
+  return gps_pair_status;
 }
 
 
@@ -702,15 +718,15 @@ static void try_reconfigure_gps(void){
   reset_uart_handler_flags();
   UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
 
-  gps_wait_for_pair_reply(500u);
+  gps_wait_for_pair_reply(1500u);
   
   UART_GPS_SEND("$PAIR067*3B\r\n");
 
-  gps_wait_for_pair_reply(100u);
+  gps_wait_for_pair_reply(1500u);
 
   if (gps_pair_status != (GPS_PAIR_066_ACK | GPS_PAIR_067_ACK | GPS_PAIR_067_MATCH))
   {
-    DB_PRINT("PAIR cfg err\r\n");
+    N_DB_PRINT(" Pce ");
   }
 
 #elif DISABLE_NOT_GLONASS
@@ -1039,11 +1055,22 @@ static uint8_t check_against_header(const char *t_buffer){
       break;
     }
   }
+#if GLONASS_BUG  
+
+  if(gps_module.sentence_id == GPS_PAIR_SENTENCE_ID)
+  {
+    N_DB_PRINT(" P ");
+  }
   
+
   if(ret_value == false)
   {
-    
+    if((t_buffer[1] == 'G') && (t_buffer[2] == 'L'))
+    {
+      t_id_err = true;
+    }
   }
+#endif
 
   return ret_value;
   
@@ -1057,6 +1084,9 @@ static uint8_t check_against_header(const char *t_buffer){
 static void process_pair_sentence(void){
 
   // && 01,
+  
+  
+  
   if ((sentence_buffer.gps_buffer[6] == '0') &&
       (sentence_buffer.gps_buffer[7] == '1') &&
       (sentence_buffer.gps_buffer[8] == ',') &&
@@ -1068,12 +1098,14 @@ static void process_pair_sentence(void){
         (sentence_buffer.gps_buffer[11] == '6'))
     {
       gps_pair_status |= GPS_PAIR_066_ACK;
+      N_DB_PRINT(" A ");
     }
     else if ((sentence_buffer.gps_buffer[9] == '0') &&
              (sentence_buffer.gps_buffer[10] == '6') &&
              (sentence_buffer.gps_buffer[11] == '7'))
     {
       gps_pair_status |= GPS_PAIR_067_ACK;
+      N_DB_PRINT(" B ");
     }
   }
   else if ((sentence_buffer.gps_buffer[6] == '6') &&
@@ -1092,6 +1124,7 @@ static void process_pair_sentence(void){
            (sentence_buffer.gps_buffer[19] == '0'))
   {
     gps_pair_status |= GPS_PAIR_067_MATCH;
+    N_DB_PRINT(" C ");
   }
 }
 
@@ -1101,14 +1134,32 @@ static void gps_wait_for_pair_reply(uint16_t timeout_ms){
   bool rx_interrupt_was_enabled = RX_IE;
 
   uint16_t ov_cnt = timeout_ms * 20;
-
+  
+  uint8_t db_p[2];
+  
+  db_p[1] = NULL_TERMINATOR;
+  
   RX_IE = FALSE;
 
   while(ov_cnt > 0u)
   {
     while(RX_IF == TRUE)
     {
+      if(RCSTAbits.OERR == TRUE)
+      {
+        RCSTAbits.CREN = FALSE;
+        asm ("nop");
+        RCSTAbits.CREN = TRUE;
+      }
+      
       values_to_gps_rx_buffer(RCREG);
+#if 0      
+      db_p[0] = RCREG;
+      values_to_gps_rx_buffer(db_p[0]);
+#endif      
+      // N_DB_PRINT(db_p);
+      // STATUS_LED_RED_SWAP();
+      // STATUS_LED_GREEN_SWAP();
     }
 
     __delay_us(50);
@@ -1119,6 +1170,7 @@ static void gps_wait_for_pair_reply(uint16_t timeout_ms){
   while(RX_IF == TRUE)
   {
     values_to_gps_rx_buffer(RCREG);
+    
   }
 
   RX_IE = rx_interrupt_was_enabled;
@@ -1253,12 +1305,17 @@ static void sentence_handler(uint8_t sentence_id){
   
 static void sentence_handler(uint8_t sentence_id){
   
+  
+  
   switch(sentence_id)
   {
     
     case 0:
     case 1:
       process_rmc_sentence();
+#if GLONASS_BUG      
+      talker_id = sentence_id;
+#endif      
       // DB_PRINT("\r\n rmc\r\n");
     break;
     
@@ -1271,7 +1328,9 @@ static void sentence_handler(uint8_t sentence_id){
       RESET();
     break;
     case GPS_PAIR_SENTENCE_ID:
+      
       process_pair_sentence();
+      // STATUS_LED_GREEN_SWAP();
     break;
     default:
       assert(false);

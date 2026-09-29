@@ -226,22 +226,8 @@ void messages_before_transmission(void){
 // e_Activation
 static char get_startup_status_letter(void){
 
-  if(CFG_HAS_ERROR == true)
-  {
-    if(gps_pair_configuration_is_verified() == true)
-    {
-      return 'E';
-    }
-
-    return 'B';
-  }
-
-  if(gps_pair_configuration_is_verified() == false)
-  {
-    return 'G';
-  }
-
-  return LETTER_REPLACER[0];
+  /* A through H encode the three PAIR confirmation bits (0 through 7). */
+  return (char)('A' + (gps_pair_configuration_status() & 0x07u));
 }
 
 static void msg_activation(void){
@@ -280,6 +266,15 @@ static void msg_activation(void){
 static void msg_position(uint8_t resend)
 {
 
+#if GLONASS_BUG
+  uint8_t t_id = get_talker_id();
+  
+  if(get_t_id_err() == true)
+  {
+    t_id = 3;
+  }
+  
+#endif
   insert_msg_header(resend);
   
   sentence_buffer.gps_buffer[34] =  '>';
@@ -312,13 +307,36 @@ static void msg_position(uint8_t resend)
     sentence_buffer.gps_buffer[35] = 'S';
   }
 
-   
+#if GLONASS_BUG
+
+
+  switch(t_id)
+  {
+    case 0:
+      sentence_buffer.gps_buffer[51] = 'P';
+    break;
+    case 1:
+      sentence_buffer.gps_buffer[51] = 'N';
+    break;
+ 
+    default:
+      sentence_buffer.gps_buffer[51] = 'R';
+    break;
+    
+    
+  }
+
+
+#else
+  
   sentence_buffer.gps_buffer[51] = 'E';
   
   if ( rmc_sentence.LongDirection == eWEST )
   {
     sentence_buffer.gps_buffer[51] = 'W';
   }
+  
+#endif
  
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 23, rmc_sentence.Latitude.Grados        , 2, false );
   DecimalUint8ToA ( sentence_buffer.gps_buffer + 26, rmc_sentence.Latitude.Minutos       , 2, false );

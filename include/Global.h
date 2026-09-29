@@ -14,6 +14,11 @@
 //  * * * * * * * * * * * * *  g l o b a l  a b r e v i a t i o n s   r e l a t e d     * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  g l o b a l  a b r e v i a t i o n s   r e l a t e d     * * * * * * * * * * * * *  //
 
+// for debugging the GLONASS related inconsistency
+#define GLONASS_BUG 1
+
+
+
 // To free TMR6 completely we can use actually
 // TMR2 for the TILT Sensor Timing
 #define USE_TMR2_AS_TILT_SENS_TMR 1
@@ -39,10 +44,10 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 1
+#define COMPILE_FOR_RELEASE 0
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 0
+#define COMPILE_FOR_TEST 1
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -184,7 +189,7 @@ err
 #define SEND_LOCK_TIME_DECIMAS_LATITUDE 0
 
 // all DB_FILE ANBLED are swoffed
-#define SWOFF_ALL_DB_FILE_ENABLED 0
+#define SWOFF_ALL_DB_FILE_ENABLED 1
 
 
 // ---------------------------------------------------------  COMPILE FOR INTERNAL TEST  -------------------------  //
