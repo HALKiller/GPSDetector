@@ -715,7 +715,9 @@ static void try_reconfigure_gps(void){
    * restart, then verify both the PAIR067 acknowledgement and read-back.
    */
   gps_pair_status = 0u;
+  
   reset_uart_handler_flags();
+  
   UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
 
   gps_wait_for_pair_reply(1500u);
@@ -1083,10 +1085,7 @@ static uint8_t check_against_header(const char *t_buffer){
  */
 static void process_pair_sentence(void){
 
-  // && 01,
-  
-  
-  
+
   if ((sentence_buffer.gps_buffer[6] == '0') &&
       (sentence_buffer.gps_buffer[7] == '1') &&
       (sentence_buffer.gps_buffer[8] == ',') &&
