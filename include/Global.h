@@ -44,10 +44,10 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 1
+#define COMPILE_FOR_RELEASE 0
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 0
+#define COMPILE_FOR_TEST 1
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -104,7 +104,7 @@ err
 // there is a time offset 
 #define DISABLE_GLONASS 1
 #define DISABLE_NOT_GLONASS 0
-
+#define DISABLE_ALL 1
 // this define creates a version were we do not swoff the GPS --> 
 // we keep it on until the tx moment has come -->
 #define RUN_GPS_TILL_TX 1
@@ -159,7 +159,7 @@ err
 #define DEBUGGING_IS_ON 0
 #define DEBUGGING_BB_IS_ON 0  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
-#define COMPILE_WITH_RX_LUZ 1
+#define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 1
 #define USE_BB_UART_AS_GPS_INPUT 0
 #define DO_TRANSMIT_RF 1  // when reset(0) we do not transmit over radio
@@ -531,6 +531,8 @@ extern const uint16_t shifts[16];
 
 #if COMPILE_FOR_DEBUG&&0
 #define MIPS 8u //1u
+#elif COMPILE_FOR_TEST
+#define MIPS 8u
 #else
 #define MIPS 1u //1u
 #endif

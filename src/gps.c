@@ -700,9 +700,11 @@ static void try_reconfigure_gps(void){
   
   //give a delay to 
   __delay_ms(100);
-  
+
+#if DISABLE_ALL  
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
+#endif
 
   __delay_ms(100);
   // and try again --> we call taht from the calling function now...
@@ -717,8 +719,11 @@ static void try_reconfigure_gps(void){
   gps_pair_status = 0u;
   
   reset_uart_handler_flags();
-  
+#if DISABLE_ALL
+  UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
+#else  
   UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
+#endif
 
   gps_wait_for_pair_reply(1500u);
   
@@ -868,10 +873,24 @@ static void gps_uart_stop(void){
 /* Consume one UART byte. A new '$' always abandons an incomplete sentence. */
 void values_to_gps_rx_buffer(uint8_t n_char){
 
+#if GLONASS_BUG
+  unsigned char t_str[2];
+  t_str[1] = NULL_TERMINATOR;
+#endif
+  
+
   if(UART_GPS_FLG.gps_stop_debug_flg == true)
   {
     return;
   }
+
+#if GLONASS_BUG
+
+  t_str[0] = n_char;
+  send_bb_string(t_str);
+  
+#endif
+  
 
   UART_GPS_FLG.receiving_chars_is_good = TRUE;
 
@@ -1083,6 +1102,54 @@ static uint8_t check_against_header(const char *t_buffer){
  * No additional receive buffer is used.  The indices below are fixed by the
  * two PAIR sentences and are reached only after their NMEA checksums pass.
  */
+#if DISABLE_ALL
+ 
+static void process_pair_sentence(void){
+
+
+  if ((sentence_buffer.gps_buffer[6] == '0') &&
+      (sentence_buffer.gps_buffer[7] == '1') &&
+      (sentence_buffer.gps_buffer[8] == ',') &&
+      (sentence_buffer.gps_buffer[12] == ',') &&
+      (sentence_buffer.gps_buffer[13] == '0'))
+  {
+    if ((sentence_buffer.gps_buffer[9] == '0') &&
+        (sentence_buffer.gps_buffer[10] == '6') &&
+        (sentence_buffer.gps_buffer[11] == '6'))
+    {
+      gps_pair_status |= GPS_PAIR_066_ACK;
+      N_DB_PRINT(" A ");
+    }
+    else if ((sentence_buffer.gps_buffer[9] == '0') &&
+             (sentence_buffer.gps_buffer[10] == '6') &&
+             (sentence_buffer.gps_buffer[11] == '7'))
+    {
+      gps_pair_status |= GPS_PAIR_067_ACK;
+      N_DB_PRINT(" B ");
+    }
+  }
+  else if ((sentence_buffer.gps_buffer[6] == '6') &&
+           (sentence_buffer.gps_buffer[7] == '7') &&
+           (sentence_buffer.gps_buffer[8] == ',') &&
+           (sentence_buffer.gps_buffer[9] == '1') &&
+           (sentence_buffer.gps_buffer[10] == ',') &&
+           (sentence_buffer.gps_buffer[11] == '0') &&
+           (sentence_buffer.gps_buffer[12] == ',') &&
+           (sentence_buffer.gps_buffer[13] == '0') &&
+           (sentence_buffer.gps_buffer[14] == ',') &&
+           (sentence_buffer.gps_buffer[15] == '0') &&
+           (sentence_buffer.gps_buffer[16] == ',') &&
+           (sentence_buffer.gps_buffer[17] == '0') &&
+           (sentence_buffer.gps_buffer[18] == ',') &&
+           (sentence_buffer.gps_buffer[19] == '0'))
+  {
+    gps_pair_status |= GPS_PAIR_067_MATCH;
+    N_DB_PRINT(" C ");
+  }
+}
+
+#else
+  
 static void process_pair_sentence(void){
 
 
@@ -1126,6 +1193,9 @@ static void process_pair_sentence(void){
     N_DB_PRINT(" C ");
   }
 }
+
+#endif
+
 
 /* Used before global interrupts are enabled and during the existing waits. */
 static void gps_wait_for_pair_reply(uint16_t timeout_ms){

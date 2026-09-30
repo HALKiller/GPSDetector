@@ -93,8 +93,8 @@
 
 // BALIZA
 #define BLID_0 '0'
-#define BLID_1 '0'
-#define BLID_2 '6'
+#define BLID_1 '1'
+#define BLID_2 '9'
 
 // DETECTOR CONFIG
 #define TX_DURATION         0x06

@@ -124,10 +124,15 @@ void init_all(void){
   tilt_sensor_init();
   
 	init_wdt();
-
+#if !GLONASS_BUG
   gps_first_run();
+#endif
   
   startup();
+
+#if GLONASS_BUG
+  gps_first_run();
+#endif
   
 #if 0
 // for testing consumptioon in LPM tilt sensor setup
