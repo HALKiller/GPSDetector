@@ -71,7 +71,7 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
-
+#define DEFAULT_BAUD (B115200)
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -211,6 +211,7 @@ static uint8_t temp_buff_pnt_cnt = MAX_DATA_LENGTH_GPS_SENTENCE;  // cMax_Senten
 
 static uint8_t endbyte_cnt = 2;
 
+static void process_gps_position(void);
 // static uint32_t gps_lock_timer_start = 0u;
 
 // static uint32_t gps_lock_timer_end = 0u;
@@ -343,7 +344,7 @@ void gps_startup_initializer(void){
 #if COMPILE_FOR_DEBUG&&0
   uart_init_cfg(B115200);
 #else
-  uart_init_cfg(B9600);   
+  uart_init_cfg(DEFAULT_BAUD);   
 #endif  
   // UART_on();
   
@@ -407,9 +408,9 @@ void gps_reinit(void){
   // save the time for the moment...
   gps_module.lock_time_start = eRTC_get_second_cnt();
 
-  UART_GPS_SEND("$PAIR067*3B\r\n");
+  // UART_GPS_SEND("$PAIR067*3B\r\n");
   
-	DB_PRINT("$PAIR067*3B\r\n");
+	// DB_PRINT("$PAIR067*3B\r\n");
 	
   __delay_ms(100);
  
@@ -606,6 +607,133 @@ static void try_reconfigure_gps(void){
   
   
 }
+#elif USE_115K_BAUD
+
+// overworking it so that we receive for the time being with 115200
+// this works perfectly !!  --> prepared for 9600Baud recfg
+static void try_reconfigure_gps(void){
+  
+  // this one increases whenever we are having looper 
+  // over all gps settings in the array and there was no good sentece...
+  static uint8_t maximum_reconfigure_cnt = 0;
+  
+  uint8_t hlooper = 0;
+  uint8_t setter = B9600;
+  
+  maximum_reconfigure_cnt++;
+  
+  // so speed first up for matching the GPS...
+  // uart_init_cfg(B115200);
+  for(hlooper = 0; hlooper < 2; hlooper++)
+  {
+    switch(hlooper)
+    {
+      case 0:
+        setter = B9600;
+      break;
+      case 1:
+        setter = B57600;
+      break;
+      // case 1:
+        // setter = B115200;
+      // break;
+      
+    }
+  
+    uart_init_cfg(setter);
+    
+    //give a delay to stabilize the baud rate generator...lets start with a 100ms...
+    __delay_ms(100);
+    
+    // now set the GPS to xy baud
+  #if 1 // COMPILE_FOR_DEBUG&&0
+
+    UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
+    // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
+      
+    send_bb_string("$PAIR864,0,0,115200*1B\r\n"); // ("\r\nMSG: $PAIR864,0,0,57600*28\r\n");
+    
+  #else
+    
+    UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");   
+    DB_PRINT("$PAIR864,0,0,9600*13\r\n");  
+    
+  #endif   
+    
+    
+      //give a delay to 
+    __delay_ms(100);
+    
+    // swoff --> reboot
+    GPS_VALIM = FALSE;
+    
+        //give a delay to 
+    __delay_ms(100);
+    
+    // swon --> reboot
+    GPS_VALIM = TRUE;
+    
+    __delay_ms(500);
+    
+  }
+
+  uart_init_cfg(DEFAULT_BAUD);  // (B57600);
+
+  //give a delay to 
+  __delay_ms(100);
+
+#if !DISABLE_ALL  
+  // now send the reduction of sentences from the GPS
+  send_recfg_gps_sentences();
+#endif
+
+  __delay_ms(100);
+  // and try again --> we call taht from the calling function now...
+  // gps_reinit();
+  
+#if DISABLE_GLONASS
+
+  // swoff glonass
+  UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
+  
+  __delay_ms(500);
+  
+  UART_GPS_SEND("$PAIR067*3B\r\n");
+  
+  __delay_ms(100);
+
+#elif DISABLE_NOT_GLONASS
+
+  // swoff glonass
+  UART_GPS_SEND("$PAIR066,0,1,0,0,0,0*3B\r\n");
+  
+  DB_PRINT("$PAIR066,0,1,0,0,0,0*3B\r\n");
+  
+  __delay_ms(500);
+  
+  UART_GPS_SEND("$PAIR067*3B\r\n");
+  
+  __delay_ms(100);  
+  
+#endif    
+  
+  
+  // now send the reduction of sentences from the GPS
+#if !DISABLE_ALL  
+  // now send the reduction of sentences from the GPS
+  send_recfg_gps_sentences();
+#endif
+  
+  
+  DB_PRINT("\r\ncfg_sent\r\nb");
+  
+  
+}
+
+
+
+
+
 
 #else
 // this works perfectly !!  --> prepared for 9600Baud recfg
@@ -814,6 +942,195 @@ static void gps_uart_stop(void){
 
 
 #if RUN_GPS_TILL_TX // DEBUGGING_IS_ON// using a db_flg to indicate that the gps is switched off...theoretically...
+
+
+
+#if USE_115K_BAUD
+
+/* Consume one UART byte. A new '$' always abandons an incomplete sentence. */
+void values_to_gps_rx_buffer(uint8_t n_char){
+
+#if GLONASS_BUG
+  unsigned char t_str[2];
+  t_str[1] = NULL_TERMINATOR;
+#endif
+  
+
+  if(UART_GPS_FLG.gps_stop_debug_flg == true)
+  {
+    return;
+  }
+
+#if GLONASS_BUG
+
+  t_str[0] = n_char;
+  send_bb_string(t_str);
+  
+#endif
+  
+
+  UART_GPS_FLG.receiving_chars_is_good = TRUE;
+
+  if(n_char == '$')
+  {
+    reset_uart_handler_flags();
+    UART_GPS_FLG.startbyte_found = TRUE;
+    *temp_buff_pnt++ = n_char;
+    temp_buff_pnt_cnt--;
+    return;
+  }
+
+  if(UART_GPS_FLG.startbyte_found == FALSE)
+  {
+    return;
+  }
+
+  *temp_buff_pnt++ = n_char;
+  temp_buff_pnt_cnt--;
+
+  if(UART_GPS_FLG.endbyte_found)
+  {
+    endbyte_cnt--;
+    if(endbyte_cnt == 0u)
+    {
+      if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt) == TRUE)
+      {
+        UART_GPS_FLG.gps_sentence_is_good = TRUE;
+#if DEBUGGING_BB_IS_ON
+        /* The buffer may be completely full; do not write past its end. */
+        if(temp_buff_pnt_cnt > 0u)
+        {
+          *temp_buff_pnt = NULL_TERMINATOR;
+        }
+#endif
+        sentence_handler(gps_module.sentence_id);
+      }
+#if DEBUGGING_IS_ON
+      else
+      {
+        if(gps_module.sentence_id > 3)
+        {
+          sentence_handler(gps_module.sentence_id);
+        }
+        DB_PRINT("Cerr\r\n");
+      }
+#endif
+      reset_uart_handler_flags();
+      process_gps_position();
+      return;
+    }
+  }
+  else if(UART_GPS_FLG.startword_found)
+  {
+    if(n_char == '*')
+    {
+      UART_GPS_FLG.endbyte_found = TRUE;
+    }
+  }
+  else if(temp_buff_pnt_cnt == (MAX_DATA_LENGTH_GPS_SENTENCE - const_STARTWORDCOUNT_LEN))
+  {
+    *temp_buff_pnt = NULL_TERMINATOR;
+    if(check_against_header((const char *)src_buff_pnt) == TRUE)
+    {
+      UART_GPS_FLG.startword_found = TRUE;
+      UART_GPS_FLG.valid_header_received = TRUE;
+    }
+    else
+    {
+      reset_uart_handler_flags();
+    }
+  }
+
+  if(temp_buff_pnt_cnt == 0u)
+  {
+    reset_uart_handler_flags();
+  }
+}
+
+
+/* Position flags can change only when a complete sentence is processed. */
+static void process_gps_position(void){
+#if DEBUGGING_IS_ON
+  if((UART_GPS_FLG.rtc_test_first_run == FALSE) &&
+     (UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
+#else
+  if((UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
+#endif
+  {
+
+#if USE_POSITION_CNT_VALIDATION
+
+    UART_GPS_FLG.gsa_position_is_good = FALSE;
+
+    UART_GPS_FLG.rmc_time_is_good = FALSE;
+
+    valid_position_cnt++;
+
+    if(valid_position_cnt >= POSITION_CNT_BEFORE_VALID)
+    {
+
+#if RUN_GPS_TILL_TX
+      // avoid overflow
+      valid_position_cnt--;
+
+      if(UART_GPS_FLG.gps_has_first_lock == false)
+      {
+        DB_PRINT("\r\nSync\r\n");
+
+        UART_GPS_FLG.rtc_test_first_run = TRUE;
+
+        // this sets the time when we got a valid lock time...
+        stop_gps_lock_time_cnt();
+
+        // that was inside the actual handler...
+        gps_calculate_lock_time();
+
+        UART_GPS_FLG.gps_has_first_lock = true;
+
+
+      }
+
+#else
+      DB_PRINT("\r\nSync\r\n");
+      UART_GPS_FLG.rtc_test_first_run = TRUE;
+      stop_gps_lock_time_cnt();
+#endif
+      // convert_utc_to_gps_rtc_time();
+      eRTC_clock_sync_to_gps(gps_rtc_time);
+
+      // set the handler flag...
+      handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
+
+    }
+
+
+#else
+
+    DB_PRINT("\r\nSync\r\n");
+
+    UART_GPS_FLG.rtc_test_first_run = TRUE;
+
+    stop_gps_lock_time_cnt();
+
+
+    // convert_utc_to_gps_rtc_time();
+    eRTC_clock_sync_to_gps(gps_rtc_time);
+
+    // gd_states_set_next_state(E_TRANSMISSION_STATE);
+    handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
+
+    UART_GPS_FLG.gsa_position_is_good = FALSE;
+    UART_GPS_FLG.rmc_time_is_good = FALSE;
+
+#endif
+
+  }
+
+}
+
+
+
+#else
 
 // UART_GPS_FLG.gps_stop_debug_flg
 
@@ -1035,6 +1352,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   
 }
 
+#endif
 
 
 void stop_gps_lock_time_cnt(void){

@@ -35,6 +35,14 @@
 //  * * * * * * * * * * * * *  D E V E L O P I N G  r e l a t e d     * * * * * * * * * * * * *  //
 #define OV_PWM_LUZ 1
 
+// This define activates the overworking of the GPSModule for 
+// 115200 Baud setting// furthermore do we need to increase the MCU SPeed
+// so that we can get the 115kBaud into the system
+#define USE_115K_BAUD 1
+
+// to find the root of the problem of the GLONASS --> adding it for zthe time being but as off
+#define GLONASS_BUG 0
+
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
@@ -54,11 +62,11 @@ err
 #endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 66
+#define PCB_VERSION 69
 
 
 // The actual Version as string...
-#define FW_VERSION_STR "28"
+#define FW_VERSION_STR "30"
 
 
 // to get better adc readings...
@@ -527,7 +535,7 @@ extern const uint16_t shifts[16];
 #if COMPILE_FOR_DEBUG&&0
 #define MIPS 8u //1u
 #else
-#define MIPS 1u //1u
+#define MIPS 4u //1u
 #endif
 
 #define SLOW_CLCK LOW_500KHZ
@@ -575,23 +583,6 @@ error again --> that MIPS is not standard so far --> write it extra out
 
 
 #define US_PER_SECOND 1000000
-
-#if 0
-#if MIPS==8
-
-#define TMR2_OF_125US 0
-#define TMR2_OF_200US 1
-#define TMR2_OF_250US 0	
-	
-	
-#define TMR2_OF_CNT_POR_SECOND 	5000
-#define TICKS_POR_MINUTE 300000	// that is	TMR2_OF_CNT_POR_SECOND x 60 
-
-#else
-	// FAIL compilation
-#endif
-#endif
-
 
 
 #define CHARS_TO_RECEIVE	35u	// 34 config bytes + 1 chcksum

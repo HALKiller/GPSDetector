@@ -39,7 +39,17 @@
 
 #define START_CONVERSION	ADCON0bits.GO
 
+#if MIPS==1
+#define ADC_SET 0x10
+#elif MIPS==4
+#define ADC_SET 0x20
+#elif MIPS==8
+#define ADC_SET 0x60
+#else
+  
+wat?
 
+#endif
 
 
 #if USE_OLD_ADC_IMPLEMENTATION
@@ -74,7 +84,12 @@ uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal){
   ADCON1bits.ADPREF = 0; // Se selecciona AVDD = VDD
   ADCON1bits.ADNREF = 0; // Se selecciona AVSS = VSS
 #else
-  ADCON1 = 0x10;
+  
+
+
+  ADCON1 = ADC_SET; // 0x10;
+  
+  
 #endif
 
   ADCON1bits.ADFM = JustificacionOrdenBits;
@@ -143,6 +158,7 @@ uint16_t ConversionAdc(bool JustificacionOrdenBits, uint8_t canal){
   return ret_value;
 
 }
+
 
 #elif 1
 
@@ -305,6 +321,7 @@ while(s_looper > 0)
 
 
 #endif
+
 uint16_t calculate_mV_from_ADC(uint16_t ADC_value){
 const uint16_t const_Vref_value = 8204; // 2048;
 uint32_t temp_ADC_value = ADC_value;
@@ -406,10 +423,21 @@ static uint16_t ADC_Vref = 0;
 void init_ADC(void){
 	
 	ADC_ON = FALSE;
+  
+  // that is a strange setting but it is corrct --> different to other tmr presaclaer
+  // this one is not with each bit doubles the prescaler setting check datashett p.159
 #if MIPS==1	
-	ADCON1bits.ADCS = 5u;	// FOSC/16 --> 4MHz Fosc Internal	1TAD = 4us(datasheet)
+	
+  ADCON1bits.ADCS = 5u;	// FOSC/16 --> 4MHz Fosc Internal	1TAD = 4us(datasheet)
+
+#elif MIPS==4
+
+  ADCON1bits.ADCS = 2u;	// FOSC/32 --> 16MHz Fosc Internal	1TAD = 2us(datasheet)
+  
 #elif MIPS==8
-	ADCON1bits.ADCS = 6u;	// FOSC/64 --> 32MHz Fosc Internal	1TAD = 2us(datasheet)
+	
+  ADCON1bits.ADCS = 6u;	// FOSC/64 --> 32MHz Fosc Internal	1TAD = 2us(datasheet)
+
 #else
 	MISSING
 #endif	
