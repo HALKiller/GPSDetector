@@ -80,6 +80,9 @@
 
 #define N_DB_PRINT UART_GPS_SEND
 
+
+#define DEFAULT_BAUD (B57600)
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -329,7 +332,7 @@ void gps_init(void){
 
 void gps_first_run(void){
   
-  uart_init_cfg(B115200);
+  uart_init_cfg(DEFAULT_BAUD); // (B115200);
   
   UART_on();  // the Peripheric UART
   
@@ -376,7 +379,7 @@ void gps_startup_initializer(void){
 
   DB_PRINT("\r\ngps_startup\r\n");
 #if OV_011026 // COMPILE_FOR_DEBUG&&0
-  uart_init_cfg(B115200);
+  uart_init_cfg(DEFAULT_BAUD);  // ))(B115200);
 #else
   uart_init_cfg(B9600);   
 #endif  
@@ -669,18 +672,18 @@ static void try_reconfigure_gps(void){
       case 0:
         setter = B9600;
       break;
-      case 1:
-        setter = B115200;
-      break;
       case 2:
         setter = B57600;
+      break;
+      case 1:
+        setter = B115200;
       break;
       
     }
     
     
   
-    // uart_init_cfg(B9600);
+    uart_init_cfg(setter);
     //give a delay to stabilize the baud rate generator...lets start with a 100ms...
     __delay_ms(100);
     
@@ -716,7 +719,7 @@ static void try_reconfigure_gps(void){
   }
   // so slow down again to matching the GPS...
 #if 1 // COMPILE_FOR_DEBUG&&0
-  uart_init_cfg(B57600);
+  uart_init_cfg(DEFAULT_BAUD);  // (B57600);
 #else
   uart_init_cfg(B9600);   
 #endif 
@@ -724,7 +727,7 @@ static void try_reconfigure_gps(void){
   //give a delay to 
   __delay_ms(100);
 
-#if DISABLE_ALL  
+#if !DISABLE_ALL  
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
 #endif
@@ -776,7 +779,10 @@ static void try_reconfigure_gps(void){
   
   
   // now send the reduction of sentences from the GPS
+#if !DISABLE_ALL  
+  // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
+#endif
   
   
   DB_PRINT("\r\ncfg_sent\r\nb");

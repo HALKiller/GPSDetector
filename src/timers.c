@@ -50,6 +50,8 @@
  
 #define TMR1_2_SECOND_OF_CNT 30u  // (uint8_t)MIPS*4u	
 #define TMR1_4_SECOND_OF_CNT 60u  // (uint8_t)MIPS*8u	
+#define TMR1_8_SECOND_OF_CNT 120u
+
 #define TMR1_10_SECOND_OF_CNT 150u  // (uint8_t)MIPS*8u	
 
 
@@ -58,7 +60,7 @@
 static const uint8_t timeout_setter[3] = {
   
   TMR1_2_SECOND_OF_CNT,
-  TMR1_4_SECOND_OF_CNT,
+  TMR1_8_SECOND_OF_CNT, // TMR1_4_SECOND_OF_CNT,
   TMR1_10_SECOND_OF_CNT,
   
 };
