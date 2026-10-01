@@ -71,7 +71,7 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
-#define DEFAULT_BAUD (B115200)
+#define DEFAULT_BAUD (B9600)  // (B115200)
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -642,8 +642,8 @@ static void try_reconfigure_gps(void){
   
     uart_init_cfg(setter);
     
-    //give a delay to stabilize the baud rate generator...lets start with a 100ms...
-    __delay_ms(100);
+    // give a delay to stabilize the baud rate generator...lets start with a 100ms...
+    // __delay_ms(100);
     
     // now set the GPS to xy baud
   #if 1 // COMPILE_FOR_DEBUG&&0
@@ -651,7 +651,7 @@ static void try_reconfigure_gps(void){
     UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
     // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
       
-    send_bb_string("$PAIR864,0,0,115200*1B\r\n"); // ("\r\nMSG: $PAIR864,0,0,57600*28\r\n");
+    send_bb_string("\r\n115200\r\n"); // ("\r\nMSG: $PAIR864,0,0,57600*28\r\n");
     
   #else
     
@@ -662,13 +662,13 @@ static void try_reconfigure_gps(void){
     
     
       //give a delay to 
-    __delay_ms(100);
+    __delay_ms(400);
     
     // swoff --> reboot
     GPS_VALIM = FALSE;
     
         //give a delay to 
-    __delay_ms(100);
+    __delay_ms(200);
     
     // swon --> reboot
     GPS_VALIM = TRUE;
@@ -680,14 +680,14 @@ static void try_reconfigure_gps(void){
   uart_init_cfg(DEFAULT_BAUD);  // (B57600);
 
   //give a delay to 
-  __delay_ms(100);
+  // __delay_ms(100);
 
 #if 0 // !DISABLE_ALL  
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
 #endif
 
-  __delay_ms(100);
+  // __delay_ms(100);
   // and try again --> we call taht from the calling function now...
   // gps_reinit();
   
@@ -759,12 +759,12 @@ static void try_reconfigure_gps(void){
 #if COMPILE_FOR_DEBUG&&0
 
   UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
-  DB_PRINT("$PAIR864,0,0,115200*1B\r\n");
+  // DB_PRINT("$PAIR864,0,0,115200*1B\r\n");
   
 #else
   
   UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");   
-  DB_PRINT("$PAIR864,0,0,9600*13\r\n");  
+  // DB_PRINT("$PAIR864,0,0,9600*13\r\n");  
   
 #endif   
   

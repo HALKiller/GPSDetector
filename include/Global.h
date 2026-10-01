@@ -41,16 +41,16 @@
 #define USE_115K_BAUD 1
 
 // to find the root of the problem of the GLONASS --> adding it for zthe time being but as off
-#define GLONASS_BUG 0
+#define GLONASS_BUG 1
 
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 1
+#define COMPILE_FOR_RELEASE 0
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 0
+#define COMPILE_FOR_TEST 1
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -66,7 +66,7 @@ err
 
 
 // The actual Version as string...
-#define FW_VERSION_STR "30"
+#define FW_VERSION_STR "31"
 
 
 // to get better adc readings...
@@ -160,7 +160,7 @@ err
 
 
 #define DEBUGGING_IS_ON 0
-#define DEBUGGING_BB_IS_ON 0  // Bit Banged UART
+#define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
 #define COMPILE_WITH_RX_LUZ 1
 #define COMPILE_WITH_PWM_LUZ 1
@@ -494,25 +494,25 @@ extern const uint16_t shifts[16];
 #else
 
 #define               FILE_MAIN_DB_ENABLED 0
-#define           FILE_INIT_ALL_DB_ENABLED 1
+#define           FILE_INIT_ALL_DB_ENABLED 0
 #define               FILE_UART_DB_ENABLED 1  // the UART_int is not working otherwise of course...
 #define              FILE_CLOCK_DB_ENABLED 0
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 1
+#define           FILE_HANDLERS_DB_ENABLED 0
 #define        FILE_RING_BUFFER_DB_ENABLED 0
 #define             FILE_RX_LUZ_DB_ENABLED 0
 #define          FILE_MY_ASSERT_DB_ENABLED 0
 #define        FILE_TILT_SENSOR_DB_ENABLED 0
 #define             FILE_TIMERS_DB_ENABLED 0
 #define          FILE_GD_STATES_DB_ENABLED 0
-#define                FILE_GPS_DB_ENABLED 0
+#define                FILE_GPS_DB_ENABLED 1
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
-#define              FILE_E_RTC_DB_ENABLED 1
+#define              FILE_E_RTC_DB_ENABLED 0
 #define             FILE_EEPROM_DB_ENABLED 0
-#define                FILE_DDS_DB_ENABLED 1
-#define           FILE_MESSAGES_DB_ENABLED 1
+#define                FILE_DDS_DB_ENABLED 0
+#define           FILE_MESSAGES_DB_ENABLED 0
 #define    FILE_BIT_BANGED_UART_DB_ENABLED 0
 #define           FILE_DETECTOR_DB_ENABLED 0
 
@@ -535,7 +535,7 @@ extern const uint16_t shifts[16];
 #if COMPILE_FOR_DEBUG&&0
 #define MIPS 8u //1u
 #else
-#define MIPS 4u //1u
+#define MIPS 8u //1u
 #endif
 
 #define SLOW_CLCK LOW_500KHZ

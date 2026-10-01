@@ -90,7 +90,7 @@ void init_all(void){
 	// __delay_ms(5u);
 
 
-#if !COMPILE_FOR_RELEASE
+#if !COMPILE_FOR_RELEASE || 1
 // we are using this timer also with SPI_TILT_SENSOR --> NOT ANYMORE! 06112025
   init_TMR_bitbang_uart(NORMAL_CLOCK);
 #endif
@@ -99,6 +99,17 @@ void init_all(void){
 	
 
 #if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)||1
+
+
+
+	send_bb_string("\r\n--- RESET  BUILD: ");
+	send_bb_string(__DATE__);
+	send_bb_string("  ");
+	send_bb_string(__TIME__);
+	send_bb_string("\r\n");
+	// DB_PRINT("\r\nMIPS: ");
+  // UART_CRLF;
+
 
 	DB_PRINT("\r\nBUILD: ");
 	DB_PRINT(__DATE__);

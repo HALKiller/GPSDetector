@@ -94,17 +94,32 @@ static volatile __near uint8_t bb_asm_count;
 
 #elif MIPS==4
 
-#define BB_PR	104 // 
 
+
+//BB_BAUD 166667
+#define BB_PR	24 // 
+#define BB_PSA  TMR6_01_PRESCALER 
+#define BB_POST TMR6_01_POSTSCALER
+
+// BAUD 76
+#if 0
+#define BB_PR	104 // 
 #define BB_PSA  TMR6_04_PRESCALER 
 #define BB_POST TMR6_02_POSTSCALER
+#endif
 
 #elif MIPS==8
 
-#define BB_PR	52 // 76923 //9600    // 153600
+// 250000 Baudrate
+#define BB_PR	32 // 76923 //9600    // 153600
+#define BB_PSA  TMR6_01_PRESCALER 
+#define BB_POST TMR6_01_POSTSCALER
 
+#if 0
+#define BB_PR	52 // 76923 //9600    // 153600
 #define BB_PSA  TMR6_01_PRESCALER 
 #define BB_POST TMR6_02_POSTSCALER
+#endif
 
 #if 0
 #define BB_PR	208 // 
