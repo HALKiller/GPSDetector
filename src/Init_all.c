@@ -100,13 +100,14 @@ void init_all(void){
 
 #if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)||1
 
-	DB_PRINT("\r\nBUILD: ");
+  DB_PRINT("\r\n--- RESET ");
+	DB_PRINT("BUILD: ");
 	DB_PRINT(__DATE__);
 	DB_PRINT("  ");
 	DB_PRINT(__TIME__);
 	// DB_PRINT("\r\n");
-	DB_PRINT("\r\nMIPS: ");
-  UART_CRLF;
+	// DB_PRINT("\r\nMIPS: ");
+  // UART_CRLF;
   
 #endif
 

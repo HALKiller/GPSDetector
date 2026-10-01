@@ -466,7 +466,7 @@ static void rtc_1000ms_handler(void){
     
     gd.rtc_alarm--;
     
-#if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON    
+#if 0 // DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON    
   
     DB_PRINT(".");
     sec_cnt--;
@@ -570,7 +570,7 @@ static void rtc_alarm_handler(void){
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
 #endif      
 
-      DB_PRINT("No pos.\r\n");
+      DB_PRINT("\r\nNo pos.\r\n");
 
 
     break;

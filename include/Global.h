@@ -157,7 +157,7 @@ err
 
 
 #define DEBUGGING_IS_ON 0
-#define DEBUGGING_BB_IS_ON 0  // Bit Banged UART
+#define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
 #define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 1
@@ -189,7 +189,7 @@ err
 #define SEND_LOCK_TIME_DECIMAS_LATITUDE 0
 
 // all DB_FILE ANBLED are swoffed
-#define SWOFF_ALL_DB_FILE_ENABLED 1
+#define SWOFF_ALL_DB_FILE_ENABLED 0
 
 
 // ---------------------------------------------------------  COMPILE FOR INTERNAL TEST  -------------------------  //
@@ -492,23 +492,23 @@ extern const uint16_t shifts[16];
 
 #define               FILE_MAIN_DB_ENABLED 0
 #define           FILE_INIT_ALL_DB_ENABLED 1
-#define               FILE_UART_DB_ENABLED 1  // the UART_int is not working otherwise of course...
+#define               FILE_UART_DB_ENABLED 0  // the UART_int is not working otherwise of course...
 #define              FILE_CLOCK_DB_ENABLED 0
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 1
+#define           FILE_HANDLERS_DB_ENABLED 0
 #define        FILE_RING_BUFFER_DB_ENABLED 0
 #define             FILE_RX_LUZ_DB_ENABLED 0
 #define          FILE_MY_ASSERT_DB_ENABLED 0
 #define        FILE_TILT_SENSOR_DB_ENABLED 0
 #define             FILE_TIMERS_DB_ENABLED 0
 #define          FILE_GD_STATES_DB_ENABLED 0
-#define                FILE_GPS_DB_ENABLED 1
+#define                FILE_GPS_DB_ENABLED 0
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
 #define              FILE_E_RTC_DB_ENABLED 0
 #define             FILE_EEPROM_DB_ENABLED 0
-#define                FILE_DDS_DB_ENABLED 0
+#define                FILE_DDS_DB_ENABLED 1
 #define           FILE_MESSAGES_DB_ENABLED 0
 #define    FILE_BIT_BANGED_UART_DB_ENABLED 0
 #define           FILE_DETECTOR_DB_ENABLED 0

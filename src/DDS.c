@@ -272,7 +272,9 @@ void Transmite(bool TransmiteRadiogonio){
   
   DB_PRINT(sentence_buffer.gps_buffer);
   
-  UART_CRLF;
+  DB_PRINT("\r\nMSG END\r\n");
+  
+  // DB_PRINT("\r\n");
   
 #elif COMPILE_FOR_TEST&&0
 
@@ -281,8 +283,17 @@ void Transmite(bool TransmiteRadiogonio){
   
   UART_GPS_SEND(sentence_buffer.gps_buffer);
   
-  UART_GPS_SEND("\r\n");;
+  UART_GPS_SEND("\r\n");
+  
+#elif GLONASS_BUG
 
+  send_bb_string("\r\nMSG: ");
+  
+  send_bb_string(sentence_buffer.gps_buffer);
+  
+  send_bb_string("\r\n");
+  
+  
 #else
   
   // NOthing
