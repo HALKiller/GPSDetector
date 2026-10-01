@@ -56,6 +56,7 @@
 #endif
 // - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
+#define OV_011026 1
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
@@ -374,13 +375,12 @@ uint16_t gps_get_last_lock_time(void){
 void gps_startup_initializer(void){
 
   DB_PRINT("\r\ngps_startup\r\n");
-#if COMPILE_FOR_DEBUG&&0
+#if OV_011026 // COMPILE_FOR_DEBUG&&0
   uart_init_cfg(B115200);
 #else
   uart_init_cfg(B9600);   
 #endif  
-  // UART_on();
-  
+
   gps_module.baudslot = 0u;
   
   gps_reinit();
@@ -645,6 +645,147 @@ static void try_reconfigure_gps(void){
   
   
 }
+
+#elif OV_011026
+// overworking it so that we receive for the time being with 115200
+// this works perfectly !!  --> prepared for 9600Baud recfg
+static void try_reconfigure_gps(void){
+  
+  // this one increases whenever we are having looper 
+  // over all gps settings in the array and there was no good sentece...
+  static uint8_t maximum_reconfigure_cnt = 0;
+  
+  uint8_t hlooper = 0;
+  uint8_t setter = B9600;
+  
+  maximum_reconfigure_cnt++;
+  
+  // so speed first up for matching the GPS...
+  // uart_init_cfg(B115200);
+  for(hlooper = 0; hlooper < 3; hlooper++)
+  {
+    switch(hlooper)
+    {
+      case 0:
+        setter = B9600;
+      break;
+      case 1:
+        setter = B115200;
+      break;
+      case 2:
+        setter = B57600;
+      break;
+      
+    }
+    
+    
+  
+    // uart_init_cfg(B9600);
+    //give a delay to stabilize the baud rate generator...lets start with a 100ms...
+    __delay_ms(100);
+    
+    // now set the GPS to xy baud
+  #if 1 // COMPILE_FOR_DEBUG&&0
+
+    // UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
+    UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
+      
+    send_bb_string("\r\nMSG: $PAIR864,0,0,57600*28\r\n");
+    
+  #else
+    
+    UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");   
+    DB_PRINT("$PAIR864,0,0,9600*13\r\n");  
+    
+  #endif   
+    
+    
+      //give a delay to 
+    __delay_ms(100);
+    
+    // swoff --> reboot
+    GPS_VALIM = FALSE;
+    
+        //give a delay to 
+    __delay_ms(500);
+    
+    // swon --> reboot
+    GPS_VALIM = TRUE;
+    
+    __delay_ms(500);
+  }
+  // so slow down again to matching the GPS...
+#if 1 // COMPILE_FOR_DEBUG&&0
+  uart_init_cfg(B57600);
+#else
+  uart_init_cfg(B9600);   
+#endif 
+  
+  //give a delay to 
+  __delay_ms(100);
+
+#if DISABLE_ALL  
+  // now send the reduction of sentences from the GPS
+  send_recfg_gps_sentences();
+#endif
+
+  __delay_ms(100);
+  // and try again --> we call taht from the calling function now...
+  // gps_reinit();
+  
+#if DISABLE_GLONASS
+
+  /*
+   * PAIR066 restarts the receiver.  Consume replies while waiting for that
+   * restart, then verify both the PAIR067 acknowledgement and read-back.
+   */
+  gps_pair_status = 0u;
+  
+  reset_uart_handler_flags();
+#if DISABLE_ALL
+  UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
+#else  
+  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
+#endif
+
+  gps_wait_for_pair_reply(1500u);
+  
+  UART_GPS_SEND("$PAIR067*3B\r\n");
+
+  gps_wait_for_pair_reply(1500u);
+
+  if (gps_pair_status != (GPS_PAIR_066_ACK | GPS_PAIR_067_ACK | GPS_PAIR_067_MATCH))
+  {
+    N_DB_PRINT(" Pce ");
+  }
+
+#elif DISABLE_NOT_GLONASS
+
+  // swoff glonass
+  UART_GPS_SEND("$PAIR066,0,1,0,0,0,0*3B\r\n");
+  
+  DB_PRINT("$PAIR066,0,1,0,0,0,0*3B\r\n");
+  
+  __delay_ms(500);
+  
+  UART_GPS_SEND("$PAIR067*3B\r\n");
+  
+  __delay_ms(100);  
+  
+#endif    
+  
+  
+  // now send the reduction of sentences from the GPS
+  send_recfg_gps_sentences();
+  
+  
+  DB_PRINT("\r\ncfg_sent\r\nb");
+  
+  
+}
+
+
+
 
 #else
   

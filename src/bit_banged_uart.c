@@ -93,7 +93,7 @@ static const uint8_t const_max_str_length = 96;
 
 #elif MIPS==8
 
-#define BB_PR	52 // 76923 //9600    // 153600
+#define BB_PR	52  // // 52 == 76923 //9600    // 153600
 
 #define BB_PSA  TMR6_01_PRESCALER 
 #define BB_POST TMR6_02_POSTSCALER

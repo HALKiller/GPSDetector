@@ -497,7 +497,7 @@ extern const uint16_t shifts[16];
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 0
+#define           FILE_HANDLERS_DB_ENABLED 1
 #define        FILE_RING_BUFFER_DB_ENABLED 0
 #define             FILE_RX_LUZ_DB_ENABLED 0
 #define          FILE_MY_ASSERT_DB_ENABLED 0

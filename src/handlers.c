@@ -1350,7 +1350,7 @@ static void f_setup_sleep_before_search(void){
     gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
   }
 
-#if DEBUGGING_BB_IS_ON  
+#if DEBUGGING_BB_IS_ON&&0  
 
   DB_PRINT("S_2_tx: ");
   UART_int(gd.seconds_until_next_tx);
