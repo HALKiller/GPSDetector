@@ -682,7 +682,7 @@ static void try_reconfigure_gps(void){
   //give a delay to 
   __delay_ms(100);
 
-#if !DISABLE_ALL  
+#if 0 // !DISABLE_ALL  
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
 #endif
@@ -693,14 +693,19 @@ static void try_reconfigure_gps(void){
   
 #if DISABLE_GLONASS
 
+
+#if 1
+  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
+
+#else
   // swoff glonass
   UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
-  
+#endif  
   __delay_ms(500);
   
   UART_GPS_SEND("$PAIR067*3B\r\n");
   
-  __delay_ms(100);
+  // __delay_ms(100);
 
 #elif DISABLE_NOT_GLONASS
 
@@ -718,11 +723,10 @@ static void try_reconfigure_gps(void){
 #endif    
   
   
-  // now send the reduction of sentences from the GPS
-#if !DISABLE_ALL  
+
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
-#endif
+
   
   
   DB_PRINT("\r\ncfg_sent\r\nb");
@@ -904,39 +908,7 @@ static  uint8_t gps_out_sentence_chck[] = {
 #endif
 
 
-#if 0
-// becasue we are onmly reconfiguring the baudrate and dont
- // want the GPS to startt all over again...
-static void gps_uart_stop(void){
-  
-  static uint8_t rnd_cnt = 0;
-  
-  // //DB_PRINT("D:\r\n")
-    
-  // TODO:
-// Stop UART
-// Swoff GPS  
-    
-  // deinit_uart(GPS_UART);  
-  
-  // //DB_PRINT("E:\r\n")
-  
-  if(rnd_cnt == 3)
-  {
-    // _BKPT();
-    // TODO:
-    
-    // R_BSP_SoftwareDelay(250, BSP_DELAY_UNITS_MILLISECONDS);
-  }  
 
-   rnd_cnt++; 
-   
-  
-   
-   
-}
-
-#endif
 
 
 

@@ -201,6 +201,9 @@ void get_the_next_handler(void){
     
     handler_id = 0u;
     
+    // to avoid a WDT in cae there is so much work to do...
+    CLRWDT();
+    
     while(Handler_FLGS == 0u)
     {
       

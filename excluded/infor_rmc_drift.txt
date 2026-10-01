@@ -1,0 +1,15 @@
+This is the UART_log from the Detector readback over bit_banged_UART --> 
+that prints all received chars from the GPS over bit banged and a few messages --> 
+  * the tx_msg namely
+  * BUILD on reset
+  
+RMC time drifts line numbers of interest:
+
+7: PAIR066 ACK
+18: PAIR067 ACK
+19: PAIR067 constelation readback --> only GPS ctiv but...
+29: GLONASS GNSA sentnece received...
+
+first lock time:
+
+2514: 1 second diff
