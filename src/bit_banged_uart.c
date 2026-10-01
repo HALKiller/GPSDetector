@@ -49,6 +49,14 @@
 
 static const uint8_t const_max_str_length = 96;
 
+#if BB_UART_USE_ASM
+// Common RAM permits context save/restore without changing the incoming bank.
+// Used only with GIE disabled; send_bb_string is not reentrant.
+static volatile __near uint8_t bb_asm_w;
+static volatile uint8_t bb_asm_context[5]; // Swapped STATUS/BSR, FSR0L/H, PCLATH
+static volatile __near uint8_t bb_asm_count;
+#endif
+
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
  
 // #define NULL_TERMINATOR '\0'
@@ -186,7 +194,12 @@ void send_bb_string(const unsigned char *str_pnt){
   uint8_t lencnt = 0;
 	uint8_t r_shifter = 0x01;
 	uint8_t hlooper = 0;
+#if BB_UART_USE_ASM
+  volatile uint8_t bitwise[10]; // Consumed by assembly, not by C expressions.
+#else
 	uint8_t bitwise[10];
+  const uint8_t *bit_pnt;
+#endif
   char temp_char;
   
   uint8_t t_GIE;
@@ -229,23 +242,85 @@ void send_bb_string(const unsigned char *str_pnt){
 
     BB_TMR_ON = false;
     BB_TMR = 0;
+
+#if !BB_UART_USE_ASM
+    bit_pnt = bitwise;
+    hlooper = sizeof(bitwise);
+#endif
     
     t_GIE = GIE;
     GIE = false;
     
     BB_TMR_IF = false;
+#if BB_UART_USE_ASM
+    // XC8 1.x inline assembly does not declare register clobbers. Preserve all
+    // changed CPU registers, including the program-page selector PCLATH.
+    // XC8 places this function within one program page, including both labels.
+    // This path is tied to RB6 TX and Timer6/PIR3 bit 3, as defined above.
+    // Continuing bit: 14 instruction cycles + 3 per unsuccessful timer poll.
+    asm("movwf _bb_asm_w");
+    asm("swapf BSR,w");
+    asm("banksel _bb_asm_context");
+    asm("movwf (_bb_asm_context+1) & 0x7f");
+    asm("swapf STATUS,w");
+    asm("movwf _bb_asm_context & 0x7f");
+    asm("movf FSR0L,w");
+    asm("movwf (_bb_asm_context+2) & 0x7f");
+    asm("movf FSR0H,w");
+    asm("movwf (_bb_asm_context+3) & 0x7f");
+    asm("movf PCLATH,w");
+    asm("movwf (_bb_asm_context+4) & 0x7f");
+    asm("movlw low(send_bb_string@bitwise)");
+    asm("movwf FSR0L");
+    asm("movlw high(send_bb_string@bitwise)");
+    asm("movwf FSR0H");
+    asm("movlw 10");
+    asm("movwf _bb_asm_count");
+    asm("pagesel bb_uart_asm_bit");
+    asm("banksel T6CON");
+    asm("bsf T6CON & 0x7f,2");
+    asm("bb_uart_asm_bit:");
+    asm("moviw FSR0++");
+    asm("rrf WREG,w");
+    asm("banksel LATB");
+    asm("btfss STATUS,0");
+    asm("bcf LATB & 0x7f,6");
+    asm("btfsc STATUS,0");
+    asm("bsf LATB & 0x7f,6");
+    asm("banksel PIR3");
+    asm("bcf PIR3 & 0x7f,3");
+    asm("bb_uart_asm_wait:");
+    asm("btfss PIR3 & 0x7f,3");
+    asm("goto bb_uart_asm_wait");
+    asm("decfsz _bb_asm_count,f");
+    asm("goto bb_uart_asm_bit");
+    asm("banksel _bb_asm_context");
+    asm("movf (_bb_asm_context+2) & 0x7f,w");
+    asm("movwf FSR0L");
+    asm("movf (_bb_asm_context+3) & 0x7f,w");
+    asm("movwf FSR0H");
+    asm("movf (_bb_asm_context+4) & 0x7f,w");
+    asm("movwf PCLATH");
+    asm("swapf _bb_asm_context & 0x7f,w");
+    asm("movwf STATUS");
+    asm("swapf (_bb_asm_context+1) & 0x7f,w");
+    asm("movwf BSR");
+    asm("swapf _bb_asm_w,f");
+    asm("swapf _bb_asm_w,w");
+#else
     BB_TMR_ON = true;
 
-    for(hlooper = 0; hlooper < 10; hlooper++)
+    do
     {
       
-      BB_TX_UART = bitwise[hlooper];
+      BB_TX_UART = *bit_pnt++;
 
       BB_TMR_IF = false;
       
       while(BB_TMR_IF == false);
 
-    }
+    } while(--hlooper != 0);
+#endif
     
     BB_TMR_ON = false;
     BB_TMR_IF = false;

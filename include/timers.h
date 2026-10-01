@@ -111,7 +111,7 @@ wat
 
 
 
-#if MIPS == 8
+#if MIPS==8
 
 #define TMR2_300BAUD_PRE   TMR2_16_PRESCALER;
 #define TMR2_300BAUD_POST  TMR2_07_POSTSCALER;
@@ -142,7 +142,7 @@ wat
 #define TMR2_3072US_PR    96u
 
 
-#elif MIPS == 4
+#elif MIPS==4
 
 #define TMR2_300BAUD_PRE   TMR2_04_PRESCALER;
 #define TMR2_300BAUD_POST  TMR2_14_POSTSCALER;
@@ -175,7 +175,7 @@ wat
 
 
 
-#elif MIPS == 2
+#elif MIPS==2
 
 #define TMR2_300BAUD_PRE   TMR2_04_PRESCALER;
 #define TMR2_300BAUD_POST  TMR2_07_POSTSCALER;
@@ -207,7 +207,7 @@ wat
 
 
 
-#elif MIPS == 1
+#elif MIPS==1
 
 #define TMR2_300BAUD_PRE   TMR2_01_PRESCALER;
 #define TMR2_300BAUD_POST  TMR2_14_POSTSCALER;
