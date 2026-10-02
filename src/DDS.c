@@ -272,7 +272,7 @@ void Transmite(bool TransmiteRadiogonio){
   
   DB_PRINT(sentence_buffer.gps_buffer);
   
-  UART_CRLF;
+  DB_PRINT("\r\n");
   
 #elif COMPILE_FOR_TEST&&0
 

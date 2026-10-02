@@ -222,6 +222,8 @@ void uart_init_cfg(baudrate_t baudrate){
   
 void uart_init_cfg(baudrate_t baudrate){
   
+  char ts[2];
+  
   
   SYNC = FALSE;
   
@@ -253,7 +255,12 @@ void uart_init_cfg(baudrate_t baudrate){
       SPBRGH = SPBRGH_9600_LCKL_VAL;
       SPBRG = SPBRGL_9600_LCKL_VAL;    
     break;
-    
+    default:
+      DB_PRINT("Unknown: ");
+      ts[1] = NULL_TERMINATOR;
+      ts[0] = baudrate + 0x30;
+      DB_PRINT(ts);
+    break;
   }
   
  send_bb_string("\r\n");

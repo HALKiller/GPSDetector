@@ -88,6 +88,18 @@
 #define USE_THE_GENERIC 0
 
 #define DEBUG_BAUDRATE B9600
+
+#if 1
+typedef enum {
+  
+  B9600 = 0,
+  B57600 = 1,
+  B115200 = 2,
+  B9600_low_clk,
+  
+}baudrate_t;
+#else
+  
 typedef enum {
   
   B9600 = 96,
@@ -96,7 +108,7 @@ typedef enum {
   B9600_low_clk,
   
 }baudrate_t;
-
+#endif
 
 void uart_init_cfg(baudrate_t baudrate);
 

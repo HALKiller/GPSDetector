@@ -133,7 +133,7 @@ static volatile __near uint8_t bb_asm_count;
 wat
 #endif
 
-#define BB_SLOW	12
+#define BB_SLOW	32  //  3906  BAUD 500kHz 1 PSA 1 Post
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //

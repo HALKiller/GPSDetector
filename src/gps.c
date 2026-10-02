@@ -71,7 +71,8 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
-#define DEFAULT_BAUD (B9600)  // (B115200)
+#define DEFAULT_BAUD (B115200)  // (B9600)  //(B57600)  // 
+#define D_BAUD 1
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -618,13 +619,13 @@ static void try_reconfigure_gps(void){
   static uint8_t maximum_reconfigure_cnt = 0;
   
   uint8_t hlooper = 0;
-  uint8_t setter = B9600;
+  uint16_t setter = B9600;
   
   maximum_reconfigure_cnt++;
   
   // so speed first up for matching the GPS...
   // uart_init_cfg(B115200);
-  for(hlooper = 0; hlooper < 2; hlooper++)
+  for(hlooper = 0; hlooper < 3; hlooper++)
   {
     switch(hlooper)
     {
@@ -634,9 +635,9 @@ static void try_reconfigure_gps(void){
       case 1:
         setter = B57600;
       break;
-      // case 1:
-        // setter = B115200;
-      // break;
+      case 2:
+        setter = B115200;
+      break;
       
     }
   
@@ -646,19 +647,23 @@ static void try_reconfigure_gps(void){
     // __delay_ms(100);
     
     // now set the GPS to xy baud
-  #if 1 // COMPILE_FOR_DEBUG&&0
+#if D_BAUD==1
 
     UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
     // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
       
     send_bb_string("\r\n115200\r\n"); // ("\r\nMSG: $PAIR864,0,0,57600*28\r\n");
-    
-  #else
-    
+#elif  D_BAUD==2   
+    // UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
+    UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
+      
+    send_bb_string("\r\n57600\r\n"); // ("\r\nMSG: $PAIR864,0,0,57600*28\r\n");    
+#else
+    wat
     UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");   
-    DB_PRINT("$PAIR864,0,0,9600*13\r\n");  
+    send_bb_string("$PAIR864,0,0,9600*13\r\n");  
     
-  #endif   
+#endif   
     
     
       //give a delay to 
@@ -933,7 +938,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     return;
   }
 
-#if GLONASS_BUG
+#if GLONASS_BUG&&0
 
   t_str[0] = n_char;
   send_bb_string(t_str);
@@ -968,13 +973,15 @@ void values_to_gps_rx_buffer(uint8_t n_char){
       if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt) == TRUE)
       {
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
-#if DEBUGGING_BB_IS_ON
+#if DEBUGGING_BB_IS_ON&&0
         /* The buffer may be completely full; do not write past its end. */
         if(temp_buff_pnt_cnt > 0u)
         {
           *temp_buff_pnt = NULL_TERMINATOR;
+          send_bb_string(sentence_buffer.gps_buffer);
         }
 #endif
+        
         sentence_handler(gps_module.sentence_id);
       }
 #if DEBUGGING_IS_ON
@@ -1860,11 +1867,13 @@ static void sentence_handler(uint8_t sentence_id){
     case 0:
     case 1:
       process_rmc_sentence();
+      send_bb_string("\r\n rmc\r\n");
     break;
     
     case 2:   
     case 3:
       process_gsa_sentence();
+      send_bb_string("\r\n gsa\r\n");
     break;
     case 4:
       RESET();
@@ -1903,13 +1912,13 @@ static void sentence_handler(uint8_t sentence_id){
     case 0:
     case 1:
       process_rmc_sentence();
-      // DB_PRINT("\r\n rmc\r\n");
+      send_bb_string("\r\n rmc\r\n");
     break;
     
     case 2:   
     case 3:
       process_gsa_sentence();
-      // DB_PRINT("\r\n gsa\r\n");
+      send_bb_string("\r\n gsa\r\n");
     break;
     case 4:
       RESET();
