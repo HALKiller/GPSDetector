@@ -85,6 +85,8 @@ void init_clock(void){
   // datasheet --> switching to the PLL can take +- 2ms --> 
 	__delay_ms(5u);
   
+  
+  
 }
 
 

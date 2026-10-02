@@ -76,6 +76,7 @@ static void empty_function(void);
 static void f_setup_sleep_before_search(void);
 
 static void rtc_alarm_handler(void);
+static void set_rtc_alarm(uint16_t settime);
 
 #if DEBUGGING_IS_ON
 static void local_up_f1(void);
@@ -100,12 +101,10 @@ static const HandlersHandlerType Handler_arr[] =
   { e_gd_off_h,                         f_gd_off },	  
 	{ e_switch_clock_handler,             fn_clock_switching },	
   { e_1000ms_h,                         rtc_1000ms_handler },	
-  
-  // { e_200ms_h,                          empty_function },  
+
   { e_200ms_h,                          rtc_200ms_handler }, 
   { e_gps_has_full_position_h,          f_gps_has_position },  
 	{ e_ring_buffer_handler,              process_next_char_from_input },
-
   { e_gps_on_h,                         f_gps_on },
   { e_prepare_msg_h,                    f_prepare_msg },
   
@@ -181,10 +180,13 @@ void get_the_next_handler(void){
   // Create a mask by shifting 1 to the left by n_bit positions
   uint16_t mask = 1u; //  << n_bit;
   
-
+  char handler_string[4];
   // because we are not returning from this function ever we can reset the Stack Pointer to
   // its reset value and have the full 16 level Hardware stack available again
   STKPTR = 0x1Fu;
+  handler_string[0] = ' ';
+  handler_string[2] = ' ';
+  handler_string[3] = NULL_TERMINATOR;
 
 #if DEBUGGING_IS_ON&&0
   DB_PRINT("\r\nBRGH: ");
@@ -226,6 +228,10 @@ void get_the_next_handler(void){
     
     (*Handler_arr[handler_id].func)();
     
+    handler_string[1] = handler_id + 65;
+    
+    DB_PRINT(handler_string);
+    
     if(handler_id != e_ring_buffer_handler)
     {
       reset_handler_FLG(handler_id);
@@ -235,117 +241,7 @@ void get_the_next_handler(void){
 }
 
 #else
-  
-void get_the_next_handler(void){
-
-  uint8_t handler_id = 0;	
-	
-  uint16_t temp_handler_FLGS = 0u;  // Handler_FLGS;
-
-  // Create a mask by shifting 1 to the left by n_bit positions
-  uint16_t mask = 1u; //  << n_bit;
-  
-
-  // because we are not returning from this function ever we can reset the Stack Pointer to
-  // its reset value and have the full 16 level Hardware stack available again
-  
-  // STKPTR = 0x1Fu;
-
-#if DEBUGGING_IS_ON
-  DB_PRINT("\r\nBRGH: ");
-  UART_int(SPBRGH);
-  DB_PRINT("\r\nBRG: ");
-  UART_int(SPBRG);
-  UART_CRLF;
-#endif
-
-  while(1)
-  {
-
-    mask = 1u;
-    
-    handler_id = 0u;
-    
-    while(Handler_FLGS == 0u)
-    {
-      
-      CLRWDT();
-      DB_LED1_SWAP;
-      
-    }
-
-    temp_handler_FLGS = Handler_FLGS;
-    
-    while((temp_handler_FLGS & mask) == 0)
-    {
-      
-      mask = mask << 1;
-      
-      handler_id++;
-      
-    }
-    
-    
-    
-    assert(handler_id < NUM_HANDLERS);
-    
-    
-    switch(handler_id)
-      {
-        
-
-        case e_gd_off_h:                      
-          f_gd_off();
-        break;
-        case e_switch_clock_handler:             
-          fn_clock_switching();
-        break;
-        case e_ring_buffer_handler:              
-          process_next_char_from_input();
-        break;
-        case e_tilt_sensor_h:	                  
-          f_tilt_sensor_to_check();
-        break;
-        case e_200ms_h:                          
-          rtc_200ms_handler();
-        break;
-        case e_gps_on_h:                         
-          f_gps_on();
-        break;
-        case e_prepare_msg_h:                    
-          f_prepare_msg();
-        break;
-        case e_rx_luz_com_h:                     
-          f_rx_luz_com_handler();
-        break;
-        case e_startup_h:                        
-          f_gd_on();
-        break;
-        case e_gps_has_full_position_h:          
-          f_gps_has_position();
-        break;
-        case e_ertc_handler_start:               
-          empty_function();
-        break;
-        case e_errhandler:                       
-          empty_function();
-        break;
-        case e_gps_test_reception:               
-          f_gps_test_rx();
-        break;
-
-      }
-
-    // (*Handler_arr[handler_id].func)();
-    
-    if(handler_id != e_ring_buffer_handler)
-    {
-      reset_handler_FLG(handler_id);
-    }
-
-  }
-}
-
+wat
 #endif
 
 
@@ -563,7 +459,7 @@ static void rtc_alarm_handler(void){
       
 #if GPS_OFF_BEFORE_TX
       
-      gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
+      set_rtc_alarm(GPS_OFF_TIME_SAFE_SYNC);  // gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
       
       gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
       
@@ -592,7 +488,7 @@ static void rtc_alarm_handler(void){
       {
         DB_PRINT("\r\nCLCK_2\r\n");
         SWITCH_CLOCK = true;
-        gd.rtc_alarm = SLEEP_BEFORE_TX_SWAP_BACK_TIME;
+        set_rtc_alarm(SLEEP_BEFORE_TX_SWAP_BACK_TIME);  // gd.rtc_alarm = SLEEP_BEFORE_TX_SWAP_BACK_TIME;
         RTC_ALARM_ON = true;
       }
       
@@ -658,7 +554,7 @@ static void process_next_char_from_input(void){
 // E_SEARCH_POSITION_STATE handler here
 static void f_gps_on(void){
   
-  DB_PRINT("GPS_ON\r\n");
+  // DB_PRINT("GPS_ON\r\n");
   
   if(RTC_TIME_IS_GOOD == true)
   {
@@ -666,21 +562,30 @@ static void f_gps_on(void){
     
     if(gd.seconds_until_next_tx > GPS_OFF_TIME_SAFE_SYNC)
     {
-      gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
+      set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC);  // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     }
     // TODO: we need to set here somthing...
     RTC_ALARM_ON = true;
   }
   else
   {
-#if DB_V69_PCB
-    gd.seconds_until_next_tx = 240u;  //gd.time_between_tx;
-    gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
+#if DB_02102026
+    gd.seconds_until_next_tx = 240;  //gd.time_between_tx;
+    set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
+    
+     DB_PRINT(" GPS_ON 240\r\n");
+    
+#elif DB_V69_PCB
+    gd.seconds_until_next_tx = 240u;  //gd.time_between_tx;
+    set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
+    RTC_ALARM_ON = true;
+    DB_PRINT(" GPS_ON 240\r\n");
 #else   
     gd.seconds_until_next_tx = 600u;  //gd.time_between_tx;
-    gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
+    set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
+    DB_PRINT(" GPS_ON 600\r\n");
 #endif    
   }
   
@@ -748,7 +653,7 @@ static void f_gps_has_position(void){
     if(gd.seconds_until_next_tx >= (2 * SLEEP_BEFORE_TX_SWAP_BACK_TIME))
     {
       
-      gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
+      set_rtc_alarm(gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME); // gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
 
     }
     else
@@ -756,7 +661,7 @@ static void f_gps_has_position(void){
       
       gps_stop();
       DB_PRINT("GPS_OFF\r\n");
-      gd.rtc_alarm = gd.seconds_until_next_tx;
+      set_rtc_alarm(gd.seconds_until_next_tx);  // ngd.rtc_alarm = gd.seconds_until_next_tx;
       RTC_ALARM_ON = true;
       set_message_for_tx(e_send_position);
       gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
@@ -789,13 +694,14 @@ static void f_gps_has_position(void){
    
     if(gd.seconds_until_next_tx >= (2u * SLEEP_BEFORE_TX_SWAP_BACK_TIME))
     {
-      gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
+      
+      set_rtc_alarm(gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME);  // gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
       DB_PRINT("\r\nCLCK_3\r\n");
       SWITCH_CLOCK = true;
     }
     else
     {
-      gd.rtc_alarm = gd.seconds_until_next_tx;
+      set_rtc_alarm(gd.seconds_until_next_tx);  // gd.rtc_alarm = gd.seconds_until_next_tx;
     }
     
     RTC_ALARM_ON = true;
@@ -1339,7 +1245,7 @@ static void f_setup_sleep_before_search(void){
   if(gd.seconds_until_next_tx > locker)
   {
     
-    gd.rtc_alarm = gd.seconds_until_next_tx - locker; 
+    set_rtc_alarm(gd.seconds_until_next_tx - locker);  //  gd.rtc_alarm = gd.seconds_until_next_tx - locker; 
 
     DB_PRINT("\r\nCLCK_4\r\n");
     SWITCH_CLOCK = true;
@@ -1349,7 +1255,7 @@ static void f_setup_sleep_before_search(void){
   }
   else
   {
-    gd.rtc_alarm = gd.seconds_until_next_tx;
+    set_rtc_alarm(gd.seconds_until_next_tx);  // gd.rtc_alarm = gd.seconds_until_next_tx;
     gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
   }
 
@@ -1373,7 +1279,15 @@ static void f_setup_sleep_before_search(void){
 
 }
 
-
+static void set_rtc_alarm(uint16_t settime){
+  
+  
+  gd.rtc_alarm = settime;
+  
+  DB_PRINT("\r\nAS: ");
+  UART_int(settime);
+  
+}
 
 static void err_handler_output(void){
 	

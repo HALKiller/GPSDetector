@@ -296,7 +296,7 @@ void gps_init(void){
 
 void gps_first_run(void){
   
-  uart_init_cfg(B115200);
+  uart_init_cfg(DEFAULT_BAUD);
   
   UART_on();  // the Peripheric UART
   

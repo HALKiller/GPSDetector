@@ -40,6 +40,8 @@
 // so that we can get the 115kBaud into the system
 #define USE_115K_BAUD 1
 
+#define DB_02102026 1
+
 // to find the root of the problem of the GLONASS --> adding it for zthe time being but as off
 #define GLONASS_BUG 1
 
@@ -61,6 +63,9 @@
 err
 #endif
 
+#if COMPILE_FOR_RELEASE+DB_02102026==2
+err
+#endif
 // depending on that define we compile different pcb versions
 #define PCB_VERSION 69
 
