@@ -1012,16 +1012,16 @@ static void measure_ilumination(void){
   // we are not measring the LED actually
   // easiest solution is to give a 30ms delay
   
-  // __delay_ms(30);
+  // my_delay_ms(30);
   
   if(FAST_CLOCK == false)  
   {
-    __delay_ms(4);
+    my_delay_ms(4);
 
   }
   else
   {
-    __delay_ms(32);
+    my_delay_ms(32);
   
   }
   

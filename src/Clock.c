@@ -7,6 +7,8 @@
 
 #include "Global.h"
 
+#include "timers.h"
+
 #include "io_port_sfr_names.h"
 
 #include "generic_union_flgs.h"
@@ -83,7 +85,7 @@ void init_clock(void){
   FAST_CLOCK = TRUE;
 	
   // datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5u);
+	my_delay_ms(5u);
   
   
   
@@ -115,7 +117,7 @@ void init_clock(void){
   FAST_CLOCK = TRUE;
 	
   // datasheet --> switching to the PLL can take +- 2ms --> 
-	__delay_ms(5u);
+	my_delay_ms(5u);
   
 }
 

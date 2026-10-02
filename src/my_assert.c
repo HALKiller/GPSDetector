@@ -33,6 +33,8 @@
 
 #include "Global.h"
 
+#include "timers.h"
+
 #include "UART.h"
 
 // #include "xc.h"
@@ -121,7 +123,7 @@ void assertion_failure(char* expr, char* file, uint16_t linenum) {
     while (1)
     {
     
-      __delay_ms(2500);
+      my_delay_ms(2500);
       RESET();
       
       
@@ -280,7 +282,7 @@ void assertion_failure(char* expr, char* file, uint16_t linenum) {
   while (1)
   {
     
-    __delay_ms(2500);
+    my_delay_ms(2500);
     RESET();
 
   }

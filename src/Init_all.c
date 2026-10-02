@@ -87,7 +87,7 @@ void init_all(void){
 
 
 // datasheet --> switching to the PLL can take +- 2ms --> 
-	// __delay_ms(5u);
+	// my_delay_ms(5u);
 
 
 #if !COMPILE_FOR_RELEASE || 1
@@ -98,7 +98,7 @@ void init_all(void){
 	init_tmr1();
 	
 
-#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)||1
+#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)
 
 
 

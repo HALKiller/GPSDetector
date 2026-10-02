@@ -212,7 +212,7 @@ void check_on_rx_luz(void){
   DB_PRINT_L("\r\nReset\r\n");
 
 	tx_luz(SENSOR_LDR_IDENTIFYER);
-  __delay_ms(200);
+  my_delay_ms(200);
   // this is just an enum into the fuinction basically...
   tx_config_data(SEND_RX_SPEED);
 

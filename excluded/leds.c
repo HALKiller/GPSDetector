@@ -8,6 +8,8 @@
 #include "leds.h"
 #include "io_port_sfr_names.h"
 #include "Global.h"
+
+#include "timers.h"
 #include "my_assert.h"
 #include "UART.h"
 #include "device_driver_config.h"
@@ -78,9 +80,9 @@ void init_leds(void){
 		leds_update_shadow_led(e_LED_ON_OFF, hlooper);
 		
 #if DEBUGGING_IS_ON
-    __delay_ms(75);
+    my_delay_ms(75);
 #else    
-		__delay_ms(75);
+		my_delay_ms(75);
 #endif
 		
 		

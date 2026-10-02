@@ -180,21 +180,16 @@ void get_the_next_handler(void){
   // Create a mask by shifting 1 to the left by n_bit positions
   uint16_t mask = 1u; //  << n_bit;
   
-  char handler_string[4];
+  // char handler_string[4];
   // because we are not returning from this function ever we can reset the Stack Pointer to
   // its reset value and have the full 16 level Hardware stack available again
   STKPTR = 0x1Fu;
+#if 0  
   handler_string[0] = ' ';
   handler_string[2] = ' ';
   handler_string[3] = NULL_TERMINATOR;
-
-#if DEBUGGING_IS_ON&&0
-  DB_PRINT("\r\nBRGH: ");
-  UART_int(SPBRGH);
-  DB_PRINT("\r\nBRG: ");
-  UART_int(SPBRG);
-  UART_CRLF;
 #endif
+
 
   while(1)
   {
@@ -227,11 +222,11 @@ void get_the_next_handler(void){
     assert(handler_id < NUM_HANDLERS);
     
     (*Handler_arr[handler_id].func)();
-    
+#if 0    
     handler_string[1] = handler_id + 65;
     
     DB_PRINT(handler_string);
-    
+#endif    
     if(handler_id != e_ring_buffer_handler)
     {
       reset_handler_FLG(handler_id);
@@ -416,12 +411,12 @@ static void rtc_1000ms_handler(void){
 
 static void rtc_alarm_handler(void){
   
-  
+  DB_PRINT("\r\n");
   switch(gd_states_get_state())
   {
     case E_SLEEP_BEFORE_SEARCH_STATE:
  
-      DB_PRINT("\r\nCLCK_1\r\n");
+      DB_PRINT("C1");
       SWITCH_CLOCK = true;
 
       gd_states_switch_to_next_state(E_SEARCH_POSITION_STATE);
@@ -469,7 +464,7 @@ static void rtc_alarm_handler(void){
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
 #endif      
 
-      DB_PRINT("No pos.\r\n");
+      DB_PRINT("NP");
 
 
     break;
@@ -486,7 +481,7 @@ static void rtc_alarm_handler(void){
       }
       else
       {
-        DB_PRINT("\r\nCLCK_2\r\n");
+        DB_PRINT("C2");
         SWITCH_CLOCK = true;
         set_rtc_alarm(SLEEP_BEFORE_TX_SWAP_BACK_TIME);  // gd.rtc_alarm = SLEEP_BEFORE_TX_SWAP_BACK_TIME;
         RTC_ALARM_ON = true;
@@ -500,6 +495,7 @@ static void rtc_alarm_handler(void){
     
   }
 
+  DB_PRINT("\r\n");
   
   
 }
@@ -574,7 +570,7 @@ static void f_gps_on(void){
     set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
     
-     DB_PRINT(" GPS_ON 240\r\n");
+     DB_PRINT(" G24 ");
     
 #elif DB_V69_PCB
     gd.seconds_until_next_tx = 240u;  //gd.time_between_tx;
@@ -585,7 +581,7 @@ static void f_gps_on(void){
     gd.seconds_until_next_tx = 600u;  //gd.time_between_tx;
     set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
-    DB_PRINT(" GPS_ON 600\r\n");
+    DB_PRINT(" G600\r\n");
 #endif    
   }
   
@@ -660,7 +656,7 @@ static void f_gps_has_position(void){
     {
       
       gps_stop();
-      DB_PRINT("GPS_OFF\r\n");
+      DB_PRINT("GOFF\r\n");
       set_rtc_alarm(gd.seconds_until_next_tx);  // ngd.rtc_alarm = gd.seconds_until_next_tx;
       RTC_ALARM_ON = true;
       set_message_for_tx(e_send_position);
@@ -781,7 +777,7 @@ static void f_prepare_msg(void){
     // calculate the sleep before search time depending on alöl the possible things and then set it up
   }
 
-#if DEBUGGING_BB_IS_ON 
+#if DEBUGGING_BB_IS_ON&&0 
 
   ertc_convert_to_real_time(eRTC_get_second_cnt());
   ertc_convert_to_str();
@@ -813,10 +809,10 @@ static void f_rx_luz_com_handler(void){
     {
       CLRWDT();
       // DB_PRINT("High\r\n");
-      // __delay_ms(1000);
+      // my_delay_ms(1000);
     }
     DB_PRINT("LOW\r\n");
-    __delay_ms(2000);
+    my_delay_ms(2000);
     
     
     
@@ -876,16 +872,16 @@ static void f_rx_luz_com_handler(void){
     
     detector_status_led_cnt_on(LED_RED_ON);
     CLRWDT();
-    __delay_ms(1000);
+    my_delay_ms(1000);
     
     
     detector_status_led_cnt_on(LED_GREEN_ON);
     CLRWDT();
-    __delay_ms(1000);
+    my_delay_ms(1000);
     
       detector_status_led_cnt_on(ALL_LED_OFF);
     CLRWDT();
-    __delay_ms(1000);
+    my_delay_ms(1000);
 
   }
 #endif
@@ -932,7 +928,7 @@ static void f_gd_on(void){
   
   startup();
 
-  DB_PRINT("GD_startup");
+  DB_PRINT("GD_s\r\n");
   
 
 }
@@ -950,7 +946,7 @@ static void f_gd_off(void){
   // because the WDT clock is so unreliable that we are not further bothered...
   // --> that is going to be taken care of by the watch dog timer and sleep instruction...
 
-  DB_PRINT("GD OFF\r\n");
+  DB_PRINT("GD_O\r\n");
 
   if(FAST_CLOCK == true)
   {
@@ -1125,7 +1121,7 @@ static void f_always_transmit(void){
     measure_bat_for_batcnt(E_TRANSMISSION_STATE);
    
     CLRWDT();
-    __delay_ms(100);
+    my_delay_ms(100);
     
     measure_bat_for_batcnt(E_STARTUP_STATE);
     
@@ -1150,7 +1146,7 @@ static void f_always_transmit(void){
     
     CLRWDT();
     
-    __delay_ms(1000);
+    my_delay_ms(1000);
     
     measure_bat_for_batcnt(E_TRANSMISSION_STATE);
     
@@ -1165,7 +1161,7 @@ static void f_always_transmit(void){
     
     CLRWDT();
     
-    __delay_ms(1000);
+    my_delay_ms(1000);
     
     measure_bat_for_batcnt(E_STARTUP_STATE);
     
@@ -1186,7 +1182,7 @@ static void fn_clock_switching(void){
   {
   
 #if DEBUGGING_BB_IS_ON
-    DB_PRINT("\r\nCLCK_L\r\n");
+    DB_PRINT("\r\nC3\r\n");
 #endif       
 
     set_slow_clock();
@@ -1247,7 +1243,7 @@ static void f_setup_sleep_before_search(void){
     
     set_rtc_alarm(gd.seconds_until_next_tx - locker);  //  gd.rtc_alarm = gd.seconds_until_next_tx - locker; 
 
-    DB_PRINT("\r\nCLCK_4\r\n");
+    DB_PRINT("\r\nC4\r\n");
     SWITCH_CLOCK = true;
     
     gd_states_set_next_state(E_SEARCH_POSITION_STATE);
@@ -1261,10 +1257,10 @@ static void f_setup_sleep_before_search(void){
 
 #if DEBUGGING_BB_IS_ON  
 
-  DB_PRINT("S_2_tx: ");
+  DB_PRINT("S2tx: ");
   UART_int(gd.seconds_until_next_tx);
   UART_CRLF;
-  DB_PRINT("S_locker: ");
+  DB_PRINT("S_lock: ");
   UART_int(locker);
   UART_CRLF;
   DB_PRINT("rtc_alarm: ");

@@ -370,7 +370,7 @@ static uint8_t get_tilt_data(void){
   }
   else
   {
-    __delay_ms(DELAY_TIME_FAST_1);
+    my_delay_ms(DELAY_TIME_FAST_1);
     
     SPI_TILT_TMR_PRESCALER = SPI_TILT_TMR_PSA;
     SPI_TILT_TMR_POSTSCALER = SPI_TILT_TMR_POST;
@@ -392,7 +392,7 @@ static uint8_t get_tilt_data(void){
   }
   else
   {
-    __delay_ms(5);
+    my_delay_ms(5);
    
     PR6 = 250;  // gives 4ms...
     

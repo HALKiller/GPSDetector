@@ -241,7 +241,7 @@ void check_on_rx_luz(void){
 // send identifyer
 
 	tx_luz(SENSOR_LDR_IDENTIFYER);
-  __delay_ms(200);
+  my_delay_ms(200);
   tx_config_data(SEND_RX_SPEED);
 
 	

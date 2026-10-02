@@ -233,7 +233,7 @@ void uart_init_cfg(baudrate_t baudrate){
   BRG16 = 1u;
   BRGH  = 1u;
   
-  send_bb_string("\r\nUART_CFG ");
+  DB_PRINT("\r\nUART_CFG ");
   
   switch(baudrate)
   {
@@ -266,7 +266,7 @@ void uart_init_cfg(baudrate_t baudrate){
     break;
   }
   
- send_bb_string("\r\n");
+ DB_PRINT("\r\n");
  
 #if 0
 

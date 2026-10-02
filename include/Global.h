@@ -40,7 +40,7 @@
 // so that we can get the 115kBaud into the system
 #define USE_115K_BAUD 1
 
-#define DB_02102026 1
+#define DB_02102026 0
 
 // to find the root of the problem of the GLONASS --> adding it for zthe time being but as off
 #define GLONASS_BUG 1
@@ -49,10 +49,10 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 0
+#define COMPILE_FOR_RELEASE 1
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 1
+#define COMPILE_FOR_TEST 0
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -505,7 +505,7 @@ extern const uint16_t shifts[16];
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 0
+#define           FILE_HANDLERS_DB_ENABLED 1
 #define        FILE_RING_BUFFER_DB_ENABLED 0
 #define             FILE_RX_LUZ_DB_ENABLED 0
 #define          FILE_MY_ASSERT_DB_ENABLED 0
@@ -537,7 +537,7 @@ extern const uint16_t shifts[16];
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  O S C I L A T O R   r e l a t e d    * * * * * * * * * * * * *  //
 
-#if COMPILE_FOR_DEBUG&&0
+#if DEBUGGING_BB_IS_ON
 #define MIPS 8u //1u
 #else
 #define MIPS 8u //1u

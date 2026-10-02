@@ -581,7 +581,7 @@ static void measure_ilumination(void){
   // and now we need a delay to assure that 
   // we are not measring the LED actually
   // easiest solution is to give a 30ms delay
-  __delay_ms(30);
+  my_delay_ms(30);
   
 #if PWM_LUZ_DEBUG
   LED_SIMUL_OFF;

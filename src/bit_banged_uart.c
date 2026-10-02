@@ -96,8 +96,8 @@ static volatile __near uint8_t bb_asm_count;
 
 
 
-//BB_BAUD 166667
-#define BB_PR	24 // 
+//BB_BAUD 125000
+#define BB_PR	32 // 
 #define BB_PSA  TMR6_01_PRESCALER 
 #define BB_POST TMR6_01_POSTSCALER
 

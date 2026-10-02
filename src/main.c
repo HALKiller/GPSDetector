@@ -110,9 +110,9 @@ void main(void)
   {
     LED = true;
     // DB_PRINT(&SW_version[0]);
-    // __delay_ms(500);
+    // my_delay_ms(500);
     // LED = !LED;
-    // __delay_ms(500);
+    // my_delay_ms(500);
   }
 
 

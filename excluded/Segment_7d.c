@@ -7,6 +7,8 @@
 
 #include "Segment_7d.h"
 #include "Global.h"
+
+#include "timers.h"
 #include "io_port_sfr_names.h"
 // #include "SM.h"
 #include "UART.h"
@@ -139,7 +141,7 @@ void seg_7d_debugger(void){
 		UART_int(hlooper);
 		UWT("\r\n");
 		
-		__delay_ms(150);
+		my_delay_ms(150);
 		
 		Seg_7d.value_to_display = const_seg_7d_dark_value;
 		
@@ -147,7 +149,7 @@ void seg_7d_debugger(void){
 	
 		update_IO_ports_with_bcd_values(seg_7d_pnt);
 		
-		__delay_ms(250);
+		my_delay_ms(250);
 		
 	}
 	
@@ -763,7 +765,7 @@ static void seg7_d_debugger(void){
     
     outdata = outdata * 2;
   
-  __delay_ms(150);
+  my_delay_ms(150);
   }
   
 

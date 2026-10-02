@@ -236,7 +236,7 @@ void Transmite(bool TransmiteRadiogonio){
 
   VCC_TLV_ON();
   
-  __delay_ms(10);
+  my_delay_ms(10);
   
 #endif    
   
@@ -249,13 +249,13 @@ void Transmite(bool TransmiteRadiogonio){
   // we can set up here the tmr1 overflower...
   for ( uint8_t i = 0; i < sync_time; i++ )
   {
-    __delay_ms(1000);
+    my_delay_ms(1000);
   }
 #else
   // we can set up here the tmr1 overflower...
   for ( uint8_t i = 0; i < sync_time; i++ )
   {
-    __delay_ms(1200);
+    my_delay_ms(1200);
   }
 #endif  
 
@@ -731,9 +731,9 @@ static void AD9954Enciende(void){
 
 
 #if 0
-  __delay_ms(250u); // give a reaaaally long time here and check if the while thing of not transmitting dissapears...
+  my_delay_ms(250u); // give a reaaaally long time here and check if the while thing of not transmitting dissapears...
 #else  
-  __delay_ms(110u);  // that should get handled by a timer but that creates overhead...
+  my_delay_ms(110u);  // that should get handled by a timer but that creates overhead...
 #endif  
   RESET_AD9954 = false;
   
