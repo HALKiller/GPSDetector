@@ -478,6 +478,8 @@ void init_tmr1(void);
 
 void init_wdt(void);
 
+void my_delay_ms(uint16_t ms_cnt);
+
 extern volatile uint8_t tmr4_200ms_of;
 
 

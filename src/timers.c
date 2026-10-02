@@ -321,5 +321,56 @@ static void tmr1_timeout_handler(void){
   
 }
 
+static void compiler_delay_us(uint32_t delay_us){
+  /* The delay built-in accepts constants only. */
+  while(delay_us >= 1000UL)
+  {
+    __delay_us(1000u);
+    delay_us -= 1000UL;
+  }
+
+  while(delay_us >= 100UL)
+  {
+    __delay_us(100u);
+    delay_us -= 100UL;
+  }
+
+  while(delay_us >= 10UL)
+  {
+    __delay_us(10u);
+    delay_us -= 10UL;
+  }
+
+  while(delay_us != 0UL)
+  {
+    __delay_us(1u);
+    delay_us--;
+  }
+}
+
+void my_delay_ms(uint16_t ms_cnt){
+  
+  uint32_t delay_us = (uint32_t)ms_cnt * 1000UL;
+
+  if(FAST_CLOCK == FALSE)
+  {
+    /* Convert real microseconds to the compiler-calibrated slow-clock value. */
+    delay_us = (delay_us + (SLOW_CLCK_DIVIDER / 2u)) / SLOW_CLCK_DIVIDER;
+  }
+
+  compiler_delay_us(delay_us);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // EOF

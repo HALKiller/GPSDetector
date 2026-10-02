@@ -505,7 +505,7 @@ extern const uint16_t shifts[16];
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 1
+#define           FILE_HANDLERS_DB_ENABLED 0
 #define        FILE_RING_BUFFER_DB_ENABLED 0
 #define             FILE_RX_LUZ_DB_ENABLED 0
 #define          FILE_MY_ASSERT_DB_ENABLED 0
@@ -544,6 +544,13 @@ extern const uint16_t shifts[16];
 #endif
 
 #define SLOW_CLCK LOW_500KHZ
+
+/*
+ * __delay_ms() is generated for _XTAL_FREQ.  The low oscillator is expressed
+ * in kHz above, so this converts a requested real-time delay into the value
+ * that the compiler-calibrated delay routine must receive while clocked slow.
+ */
+#define SLOW_CLCK_DIVIDER (_XTAL_FREQ / (SLOW_CLCK * 1000UL))
 
 #define LOW_CLOCK_FREQ 31250
 

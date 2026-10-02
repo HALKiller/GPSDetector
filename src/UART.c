@@ -24,6 +24,9 @@
 
 #include "string.h"
 
+#include "timers.h"
+
+
 #include <stdint.h>
 
 #include "xc.h"
@@ -205,7 +208,7 @@ void uart_init_cfg(baudrate_t baudrate){
 #endif
   
   
-  __delay_ms(100);
+  my_delay_ms(100);
   
 #if DEBUGGING_IS_ON&&0
   DB_PRINT("\r\nBRGH: ");
@@ -275,7 +278,7 @@ void uart_init_cfg(baudrate_t baudrate){
 
 #endif
 
-  __delay_ms(100);
+  my_delay_ms(100);
   
 #if DEBUGGING_IS_ON&&0
 
