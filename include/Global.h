@@ -69,7 +69,7 @@ err
 err
 #endif
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 69
+#define PCB_VERSION 66
 
 
 // The actual Version as string...
@@ -511,14 +511,14 @@ extern const uint16_t shifts[16];
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 0
+#define           FILE_HANDLERS_DB_ENABLED 1
 #define        FILE_RING_BUFFER_DB_ENABLED 0
 #define             FILE_RX_LUZ_DB_ENABLED 1
 #define          FILE_MY_ASSERT_DB_ENABLED 0
 #define        FILE_TILT_SENSOR_DB_ENABLED 0
 #define             FILE_TIMERS_DB_ENABLED 0
 #define          FILE_GD_STATES_DB_ENABLED 0
-#define                FILE_GPS_DB_ENABLED 0
+#define                FILE_GPS_DB_ENABLED 1
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
 #define              FILE_E_RTC_DB_ENABLED 0
 #define             FILE_EEPROM_DB_ENABLED 0

@@ -72,7 +72,7 @@ static void init_IO_PORTS(void);
 // this is the keeper of the reset output...
 static uint8_t t_status __at(0x16F); // (0xA0);
 
-
+extern const char gMensajeVersion_new[];
 
 void init_all(void){
 
@@ -106,6 +106,8 @@ void init_all(void){
 	send_bb_string(__DATE__);
 	send_bb_string("  ");
 	send_bb_string(__TIME__);
+  send_bb_string("  V. ");
+  send_bb_string(&gMensajeVersion_new);
 	send_bb_string("\r\n");
 	// DB_PRINT("\r\nMIPS: ");
   // UART_CRLF;

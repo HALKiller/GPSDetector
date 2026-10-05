@@ -177,6 +177,11 @@ static void insert_batcharged_cnt(uint8_t d_pnt);
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
 
+#if DEBUGGING_BB_IS_ON
+
+
+#endif
+
 void set_message_for_tx(msg_t next_msg){
   
   msg_id = next_msg;
