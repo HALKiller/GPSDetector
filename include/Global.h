@@ -18,7 +18,9 @@
 // TMR2 for the TILT Sensor Timing
 #define USE_TMR2_AS_TILT_SENS_TMR 1
 
-#define USE_RX_CLOCK 0
+// 051102026 --> independnet clock for rx_luz --> becaeu 8MIPS does not wanna worked
+// therefore lets use the 1MIPS clock for the time being
+#define USE_RX_CLOCK 1
 
 
 #define NULL_TERMINATOR	(char)'\0'
@@ -49,10 +51,10 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 0
+#define COMPILE_FOR_RELEASE 1
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 1
+#define COMPILE_FOR_TEST 0
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -520,7 +522,7 @@ extern const uint16_t shifts[16];
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
 #define              FILE_E_RTC_DB_ENABLED 0
 #define             FILE_EEPROM_DB_ENABLED 0
-#define                FILE_DDS_DB_ENABLED 0
+#define                FILE_DDS_DB_ENABLED 1
 #define           FILE_MESSAGES_DB_ENABLED 0
 #define    FILE_BIT_BANGED_UART_DB_ENABLED 0
 #define           FILE_DETECTOR_DB_ENABLED 0

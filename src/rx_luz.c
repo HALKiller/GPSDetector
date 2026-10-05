@@ -155,9 +155,25 @@ const uint8_t eeprom_addresses[] =
 
 #define CHARS_TO_RECEIVE	35	// 34 config bytes + 1 chcksum
 
+#if USE_RX_CLOCK
+// the rx_luz tmr2 cfg
+#define RXL_T2_15MS_PRE     TMR2_04_PRESCALER
+#define RXL_T2_15MS_POST    TMR2_15_POSTSCALER
+#define RXL_T2_15MS_PR      250u
 
-// #define M_RX_LUZ_INIT_TMR2_CFG 
+#define RXL_T2_1MS_PRE      TMR2_04_PRESCALER
+#define RXL_T2_1MS_POST     TMR2_01_POSTSCALER
+#define RXL_T2_1MS_PR       250u
 
+#define RXL_T2_500US_PRE    TMR2_04_PRESCALER
+#define RXL_T2_500US_POST   TMR2_01_POSTSCALER
+#define RXL_T2_500US_PR     125u
+
+#define RXL_T2_3072US_PRE   TMR2_04_PRESCALER
+#define RXL_T2_3072US_POST  TMR2_08_POSTSCALER
+#define RXL_T2_3072US_PR    96u
+
+#endif
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
 
@@ -216,7 +232,16 @@ void check_on_rx_luz(void){
   // DB_PRINT_L("\r\nReset\r\n");
 
 	tx_luz(SENSOR_LDR_IDENTIFYER);
+#if USE_RX_CLOCK 
+ 
+  my_delay_ms(25);
+  
+#else
+
   my_delay_ms(200);
+
+#endif
+
   // this is just an enum into the fuinction basically...
   tx_config_data(SEND_RX_SPEED);
 
@@ -303,6 +328,11 @@ void check_on_rx_luz(void){
   TMR1_IE = false;
 
 	TMR2_ON = false;
+
+#if USE_RX_CLOCK
+  init_clock();
+#endif
+ 
 
 }
 
@@ -836,6 +866,65 @@ inline static void t2_reset(void){
 }
 
 
+#if USE_RX_CLOCK
+
+static void rx_luz_configure_tmr2(uint8_t timeout_setter){
+  
+  t2_reset();
+  
+  
+  switch(timeout_setter)
+  {
+    case TMR_15ms_OF_TIME:
+      
+      // 15ms
+      TMR2_PRESCALER = RXL_T2_15MS_PRE;
+      TMR2_POSTSCALER = RXL_T2_15MS_POST;
+      PR2 = RXL_T2_15MS_PR;
+      
+    break;
+    
+    case TMR_1ms_OF_TIME:
+      
+      // 1ms
+      TMR2_PRESCALER = RXL_T2_1MS_PRE;
+      TMR2_POSTSCALER = RXL_T2_1MS_POST;
+      PR2 = RXL_T2_1MS_PR;
+      
+    break;
+    case TMR_500us_OF_TIME:
+#if 1
+      TMR2_PRESCALER = RXL_T2_500US_PRE;
+      PR2 = RXL_T2_500US_PR;  // 125;
+      TMR2_POSTSCALER = RXL_T2_500US_POST;  // TMR2_01_POSTSCALER;    
+    
+#else
+  
+      TMR2_PRESCALER = RXL_T2_01_PRESCALER;
+      PR2 = 250;
+      TMR2_POSTSCALER = RXL_T2_02_POSTSCALER;
+      
+#endif      
+    break;
+
+    case TMR_3072us_OF_TIME:
+    
+      TMR2_PRESCALER = RXL_T2_3072US_PRE;
+      PR2 = RXL_T2_3072US_PR;
+      TMR2_POSTSCALER = RXL_T2_3072US_POST;
+    
+    break;
+    
+    default:
+    break;
+    
+  }
+
+}
+
+
+#else
+
 static void rx_luz_configure_tmr2(uint8_t timeout_setter){
   
   t2_reset();
@@ -890,6 +979,7 @@ static void rx_luz_configure_tmr2(uint8_t timeout_setter){
 
 }
 
+#endif
 
 static void tx_luz(uint8_t tx_data){
 

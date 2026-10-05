@@ -47,8 +47,12 @@
 
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
- 
+#if USE_RX_CLOCK  
+#define TMR1_2_SECOND_OF_CNT 4u  // (uint8_t)MIPS*4u	
+#else
 #define TMR1_2_SECOND_OF_CNT 30u  // (uint8_t)MIPS*4u	
+#endif
+
 #define TMR1_4_SECOND_OF_CNT 60u  // (uint8_t)MIPS*8u	
 #define TMR1_10_SECOND_OF_CNT 150u  // (uint8_t)MIPS*8u	
 
