@@ -50,8 +50,8 @@
 
 #define REDUCE_MEM_USAGE 1
 
-// #define DB_PRINT_L(str) send_bb_string((const unsigned char *)(str))
-#define DB_PRINT_L(str)   // send_bb_string((const unsigned char *)(str))
+#define DB_PRINT_L(str) send_bb_string((const unsigned char *)(str))
+// #define DB_PRINT_L(str)   // send_bb_string((const unsigned char *)(str))
 
 union udt_flags{
 	uint8_t reg;
@@ -200,16 +200,20 @@ void check_on_rx_luz(void){
 	uint8_t hlooper = 0;
 #endif
 
+#if USE_RX_CLOCK
+  set_rx_clock();
+#endif
+
 	Inicio_uart_luz();
 
-#if DB_UART_ON
+// #if DB_UART_ON
 
 
-  DB_PRINT_L("\r\nReset\r\n");
+  DB_PRINT_L("\r\nRX_LUZ\r\n");
 
-#endif	
+// #endif	
 
-  DB_PRINT_L("\r\nReset\r\n");
+  // DB_PRINT_L("\r\nReset\r\n");
 
 	tx_luz(SENSOR_LDR_IDENTIFYER);
   my_delay_ms(200);

@@ -18,6 +18,8 @@ void init_clock_2(void);
 
 void set_slow_clock(void);
   
+void set_rx_clock(void);  
+  
 uint8_t clock_slowdown(void);
 
 #define CLOCK_3125KHZ_MF_CLOCK 0x02u

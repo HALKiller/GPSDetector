@@ -144,6 +144,34 @@ void set_slow_clock(void){
 }
 
 
+void set_rx_clock(void){
+  
+  	// The PLL needs this setup
+	OSCCONbits.SCS = 0u;  // false;
+	// internal with PLL to get 32MHz
+	OSCCONbits.IRCF = CLOCK_4_MHZ_HF_CLOCK;
+	
+	// PLL Enabled
+	OSCCONbits.SPLLEN = 0;
+	
+  while(OSCSTATbits.HFIOFR == 0u)
+  {
+    // just wait till it is locked
+  }
+  
+	while(OSCSTATbits.HFIOFL == 0u)
+  {
+    // just wait till it is stable
+  }
+  
+  FAST_CLOCK = TRUE;
+	
+  // datasheet --> switching to the PLL can take +- 2ms --> 
+	my_delay_ms(1u);
+  
+  
+  
+}
 
 #endif
 
