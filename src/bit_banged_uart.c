@@ -75,7 +75,7 @@ static volatile __near uint8_t bb_asm_count;
 // #define ICSPDAT 			  LATBbits.LATB7
 
 #define BB_TX_UART           LATBbits.LATB6// LATAbits.LATA7 // 
-#define BB_RX_UART           LATBbits.LATB7// LATAbits.LATA7 // 
+#define BB_TX_FLEX           LATBbits.LATB7// LATAbits.LATA7 // 
 
 
 #if MIPS == 1
@@ -192,11 +192,11 @@ void init_TMR_bitbang_uart(uint8_t clockspeed){
 	BB_TMR_IF = false;
 	
 	TRISBbits.TRISB6 = false; // the UART__BB
-  TRISBbits.TRISB7 = true;  // the RX_Pin
+  TRISBbits.TRISB7 = false;  // 
 	// set_bb_uart(true);	// because UART TX is idle high
 	
   BB_TX_UART = true;
-  
+  BB_TX_FLEX = true;
   
   
 }

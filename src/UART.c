@@ -228,6 +228,8 @@ void uart_init_cfg(baudrate_t baudrate){
   char ts[2];
   
   
+  RCSTAbits.CREN = FALSE;
+  
   SYNC = FALSE;
   
   BRG16 = 1u;
@@ -278,7 +280,12 @@ void uart_init_cfg(baudrate_t baudrate){
 
 #endif
 
-  my_delay_ms(100);
+// avoid OERR error overflow error
+  RCSTAbits.CREN = TRUE;
+  
+  my_delay_ms(1);
+  // my_delay_ms(100);
+  
   
 #if DEBUGGING_IS_ON&&0
 

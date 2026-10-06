@@ -83,6 +83,29 @@ void init_all(void){
 
   CLRWDT();
 
+#if 1
+// swoff al isr
+	// TMR0_IF = FALSE;
+	TMR0_IE = FALSE;
+
+	PERIPHERIC_IE = TRUE;
+	GLOBAL_IE = FALSE;
+  // TMR4_IF = FALSE;
+  TMR4_IE = FALSE;
+  // TMR4_ON = FALSE;
+  // TMR1_ON = FALSE;
+  TMR1_IE = FALSE;
+  // TMR1_IF = FALSE;
+  RX_IE = FALSE;
+  TMR2_IE = FALSE;
+#endif
+
+
+
+
+
+
+
   init_clock();
 
 
