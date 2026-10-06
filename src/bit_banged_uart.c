@@ -191,7 +191,7 @@ void init_TMR_bitbang_uart(uint8_t clockspeed){
 	BB_TMR_IF = false;
 	
 	TRISBbits.TRISB6 = false; // the UART__BB
-  TRISBbits.TRISB7 = true;  // the RX_Pin
+  TRISBbits.TRISB7 = false;  // the RX_Pin
 	// set_bb_uart(true);	// because UART TX is idle high
 	
   BB_TX_UART = true;

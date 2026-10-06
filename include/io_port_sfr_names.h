@@ -98,8 +98,8 @@ wat
 
 #if USE_BB_LED_OUTPUT
 
-#define DB_LED_1 ICSPDAT 
-#define DB_LED_2 ICSPCLCK // BB_UART
+#define DB_LED_1 ICSPDAT   // 
+#define DB_LED_2 ICSPCLCK // BB_TX_UART
 
 #else
   

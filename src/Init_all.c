@@ -85,9 +85,11 @@ void init_all(void){
 
   init_clock();
 
-
+LED = true;
 // datasheet --> switching to the PLL can take +- 2ms --> 
 	// my_delay_ms(5u);
+
+init_IO_PORTS();
 
 
 #if !COMPILE_FOR_RELEASE || 1
@@ -130,7 +132,7 @@ void init_all(void){
   
   init_detector_config();
 	
-	init_IO_PORTS();
+	// init_IO_PORTS();
  
   configure_tmr4();
   
@@ -138,7 +140,7 @@ void init_all(void){
   
 	init_wdt();
 
-  gps_first_run();
+  // gps_first_run();
   
   startup();
   

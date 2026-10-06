@@ -339,6 +339,36 @@ uint16_t gps_get_last_lock_time(void){
 }
 
 
+#if 1
+
+void gps_startup_initializer(void){
+
+  uint16_t r_cnt = 0;
+  
+
+  DB_PRINT("\r\ngps_startup\r\n");
+UART_off();
+  GPS_VALIM = TRUE;
+  TRISBbits.TRISB7 = 0;
+  while(1)
+  {
+    r_cnt++;
+    if(r_cnt = 0xFFFF)
+    {
+      CLRWDT();
+      DB_PRINT("A\r\n");
+      // LATBbits.LATB7 = !LATBbits.LATB7;
+    }
+    LATBbits.LATB7  = UART_RX_PC;
+    
+    
+  }
+
+ 
+}
+
+#else
+
 void gps_startup_initializer(void){
 
   DB_PRINT("\r\ngps_startup\r\n");
@@ -355,7 +385,7 @@ void gps_startup_initializer(void){
  
 }
 
-
+#endif
 
 // we are switchng on and await the time out time to get information if we are actually receiving something usefull...
 void gps_reinit(void){
@@ -687,11 +717,11 @@ static void try_reconfigure_gps(void){
     
     
     
-    while(ov_cnt < 65535)
-    {
-      __delay_us(5);
+    // while(ov_cnt < 65535)
+    // {
+      // __delay_us(5);
       
-    }
+    // }
     
     
     my_delay_ms(500);

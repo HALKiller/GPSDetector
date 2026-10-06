@@ -69,7 +69,7 @@ err
 err
 #endif
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 66
+#define PCB_VERSION 69
 
 
 // The actual Version as string...
@@ -202,7 +202,7 @@ err
 
 // all DB_FILE ANBLED are swoffed
 #define SWOFF_ALL_DB_FILE_ENABLED 0
-#define COMPILE_ONLY_RX_LUZ 1
+#define COMPILE_ONLY_RX_LUZ 0
 
 // ---------------------------------------------------------  COMPILE FOR INTERNAL TEST  -------------------------  //
 #elif COMPILE_FOR_INTERNAL_TEST
@@ -504,8 +504,8 @@ extern const uint16_t shifts[16];
 
 #else
 
-#define               FILE_MAIN_DB_ENABLED 0
-#define           FILE_INIT_ALL_DB_ENABLED 0
+#define               FILE_MAIN_DB_ENABLED 1
+#define           FILE_INIT_ALL_DB_ENABLED 1
 #define               FILE_UART_DB_ENABLED 1  // the UART_int is not working otherwise of course...
 #define              FILE_CLOCK_DB_ENABLED 0
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0

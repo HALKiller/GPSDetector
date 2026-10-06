@@ -53,6 +53,7 @@
 
 #include "my_assert.h"
 
+#include "timers.h"
 
 
 // - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //
@@ -105,14 +106,15 @@ void main(void)
 
 
 	init_all();
-
+GPS_VALIM = TRUE;
   while(1)
   {
     LED = true;
-    // DB_PRINT(&SW_version[0]);
-    // my_delay_ms(500);
-    // LED = !LED;
-    // my_delay_ms(500);
+    DB_PRINT(&SW_version[0]);
+    send_bb_string("\r\n--- RESET  BUILD: ");
+    my_delay_ms(500);
+    LED = !LED;
+    my_delay_ms(500);
   }
 
 

@@ -343,19 +343,49 @@ void check_on_rx_luz(void){
 // that is for a reduction of code and therefore for debugging 
 void check_on_rx_luz(void){
 	
-	Inicio_uart_luz();
+	// Inicio_uart_luz();
 
 #if DEBUGGING_IS_ON
 
-  UART_Write_Text("\r\nReset\r\n");
+  // UART_Write_Text("\r\nReset\r\n");
 
 #endif	
 	
-	LED = true;
-	TMR2ON = true;
-	wait_for_tmr_expires(RX_LUZ_HALFBIT_TIME_OF_CNT);	// 45ms
-	LED = false;
+	// LED = true;
+	// TMR2ON = true;
+	// wait_for_tmr_expires(RX_LUZ_HALFBIT_TIME_OF_CNT);	// 45ms
+	// LED = false;
 	
+  
+  
+  
+  
+  
+  
+  	Inicio_uart_luz();
+
+// #if DB_UART_ON
+
+
+  DB_PRINT_L("\r\nRX_LUZ\r\n");
+
+// #endif	
+
+  // DB_PRINT_L("\r\nReset\r\n");
+
+	tx_luz(SENSOR_LDR_IDENTIFYER);
+#if USE_RX_CLOCK 
+ 
+  my_delay_ms(25);
+  
+#else
+
+  my_delay_ms(200);
+
+#endif
+
+  // this is just an enum into the fuinction basically...
+  tx_config_data(SEND_RX_SPEED);
 	
 	
 }
