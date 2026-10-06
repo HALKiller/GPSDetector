@@ -352,13 +352,13 @@ UART_off();
   TRISBbits.TRISB7 = 0;
   while(1)
   {
-    r_cnt++;
-    if(r_cnt = 0xFFFF)
-    {
-      CLRWDT();
-      DB_PRINT("A\r\n");
+    // r_cnt++;
+    // if(r_cnt = 0xFFFF)
+    // {
+      // CLRWDT();
+      // DB_PRINT("A\r\n");
       // LATBbits.LATB7 = !LATBbits.LATB7;
-    }
+    // }
     LATBbits.LATB7  = UART_RX_PC;
     
     
