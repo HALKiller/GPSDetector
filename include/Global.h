@@ -51,10 +51,10 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 1
+#define COMPILE_FOR_RELEASE 0
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 0
+#define COMPILE_FOR_TEST 1
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -69,7 +69,7 @@ err
 err
 #endif
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 69
+#define PCB_VERSION 66
 
 
 // The actual Version as string...
@@ -171,7 +171,7 @@ err
 #define DEBUGGING_IS_ON 0
 #define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
-#define COMPILE_WITH_RX_LUZ 1
+#define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 0
 #define USE_BB_UART_AS_GPS_INPUT 0
 #define DO_TRANSMIT_RF 0  // when reset(0) we do not transmit over radio

@@ -26,6 +26,7 @@
   #define FREE_RB5 	    LATBbits.LATB5
   #define ICSPCLCK 			LATBbits.LATB6
   #define ICSPDAT 			LATBbits.LATB7
+  // #define BB_DIRECT 		LATBbits.LATB7
   // #define ICSPDAT 			PORTBbits.RB7
 
 

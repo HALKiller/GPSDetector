@@ -84,7 +84,7 @@ wat
 
 
 
-
+#define BB_DIRECT 		LATBbits.LATB7
 // --------   DEBUGGING  ---------------
 #if DEBUGGING_BB_IS_ON
 
