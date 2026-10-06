@@ -140,7 +140,7 @@ init_IO_PORTS();
   
 	init_wdt();
 
-  // gps_first_run();
+  gps_first_run();
   
   startup();
   

@@ -71,7 +71,7 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
-#define DEFAULT_BAUD (B115200)  // (B9600)  //(B57600)  // 
+#define DEFAULT_BAUD (B9600)  //(B57600)  // (B115200)  // 
 #define D_BAUD 1
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -296,6 +296,7 @@ void gps_init(void){
 
 void gps_first_run(void){
   
+#if 1  
   uart_init_cfg(DEFAULT_BAUD);
   
   UART_on();  // the Peripheric UART
@@ -309,7 +310,7 @@ void gps_first_run(void){
   GPS_VALIM = FALSE;
   
   // UART_off();
-  
+#endif  
 }
 
 uint32_t gps_rtc_get_second_cnt(void){
@@ -346,24 +347,28 @@ void gps_startup_initializer(void){
   uint16_t r_cnt = 0;
   
 
-  DB_PRINT("\r\ngps_startup\r\n");
-UART_off();
+  DB_PRINT("\r\ngps_bitbanged\r\n");
+  // UART_off();
   GPS_VALIM = TRUE;
   TRISBbits.TRISB7 = 0;
-  while(1)
+  
+  timers_set_tmr1_id(GPS_UART_TIMEOUT);
+  reset_timeout_timer();
+
+  TMR1_IE = TRUE;
+  TMR1_ON = TRUE;
+  
+  
+  while(TIMEOUT_FLG == false)
   {
-    // r_cnt++;
-    // if(r_cnt = 0xFFFF)
-    // {
-      // CLRWDT();
-      // DB_PRINT("A\r\n");
-      // LATBbits.LATB7 = !LATBbits.LATB7;
-    // }
-    LATBbits.LATB7  = UART_RX_PC;
+
+    DB_LED_1  = UART_RX_PC;
     
     
   }
-
+  TMR1_ON = FALSE;
+  reset_timeout_timer();
+  
  
 }
 

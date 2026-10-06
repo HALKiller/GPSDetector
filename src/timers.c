@@ -296,7 +296,7 @@ static void tmr1_timeout_handler(void){
     case GPS_UART_TIMEOUT:
     
       handlers_generic_set_handler_FLG(e_gps_test_reception);
-      
+      TIMEOUT_FLG = TRUE;
     break;
     
     case STATUS_LED_TIMEOUT:
