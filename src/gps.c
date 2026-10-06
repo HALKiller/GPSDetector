@@ -1961,7 +1961,7 @@ static void process_gsa_sentence(void){
 
  
   
-  if( r_cnt >= 10)
+  if( r_cnt >= 11)
   {
     r_cnt = 0;
     send_bb_string("\r\n");
