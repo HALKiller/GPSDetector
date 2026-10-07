@@ -5,10 +5,10 @@
 #line 6 "gps.c"
 
 //  * * * * * * *      C O M M E N T   B L O C K     * * * * * * * * * * * * * * * * * * * * * *  //
-
-
-
-
+ // this version works as it should do...
+// $PQTMVER,MODULE_LC86GPANR01A02S,2023/06/14,09:12:59*6C
+// ... and this one does not
+// $PQTMVER,1,MODULE,LC86GPANR01A05S,2025/09/02,10:50:51*0D
 //   * * * * * *      I N C L U D E S   B L O C K     * * * * * * * * * * * * * * * * * * * * *  //
 
 #include "gps.h"
@@ -234,7 +234,7 @@ static void try_reconfigure_gps(void);
 
 static void send_recfg_gps_sentences(void);
  
-
+static void disable_constelations(void);
 // static void gps_uart_stop(void);
 
 static uint8_t check_against_header(const char *t_buffer);
@@ -382,10 +382,10 @@ void gps_reinit(void){
   // switch on the gps valim pin
   GPS_VALIM = TRUE;
   
-  my_delay_ms(500);
+  
 
 #endif  
-  
+  my_delay_ms(1000);
   // reset the position_cnt...
   valid_position_cnt = 0;
   
@@ -409,9 +409,14 @@ void gps_reinit(void){
   // save the time for the moment...
   gps_module.lock_time_start = eRTC_get_second_cnt();
 
-  // UART_GPS_SEND("$PAIR067*3B\r\n");
+#if 1
+
+  my_delay_ms(1500);
+  disable_constelations();
   
-	// DB_PRINT("$PAIR067*3B\r\n");
+  send_recfg_gps_sentences();
+  
+#endif
 	
   my_delay_ms(100);
  
@@ -424,17 +429,14 @@ void gps_stop(void){
  
   DB_PRINT("\r\ngps_stop\r\n");
  
-#if DEBUGGING_IS_ON  
-
   GPS_VALIM = FALSE;
-
+  
+#if DEBUGGING_IS_ON 
   // and switch off the valim_pin for the UART_CRLF
   UART_GPS_FLG.gps_stop_debug_flg = true;
   
 #else
   
-  GPS_VALIM = FALSE;
-
   RX_IE = FALSE;
   
   // UART_off();
@@ -700,16 +702,23 @@ static void try_reconfigure_gps(void){
 
 
 #if 1
-  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
 
-#else
-  // swoff glonass
-  UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
-#endif  
+  disable_constelations();
+  
+#elif 1
+
+  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
   my_delay_ms(500);
   
   UART_GPS_SEND("$PAIR067*3B\r\n");
+#else
+  // swoff glonass
+  UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
+ 
+  my_delay_ms(500);
   
+  UART_GPS_SEND("$PAIR067*3B\r\n");
+ #endif  
   // my_delay_ms(100);
 
 #elif DISABLE_NOT_GLONASS
@@ -739,7 +748,19 @@ static void try_reconfigure_gps(void){
   
 }
 
-
+static void disable_constelations(void){
+  
+  
+  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
+  
+  // UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
+  
+  my_delay_ms(50);
+  
+  UART_GPS_SEND("$PAIR067*3B\r\n");
+  
+  
+}
 
 
 
@@ -905,6 +926,8 @@ static  uint8_t gps_out_sentence_chck[] = {
     my_delay_ms(100);
     
   }
+
+  // my_delay_ms(100);
 
   DB_PRINT("\r\nSent cfg\r\n");
   
