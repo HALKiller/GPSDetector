@@ -741,7 +741,7 @@ static void try_reconfigure_gps(void){
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
 
-  
+   UART_GPS_SEND("$PAIR513*3D\r\n");
   
   DB_PRINT("\r\ncfg_sent\r\nb");
   
@@ -758,6 +758,8 @@ static void disable_constelations(void){
   my_delay_ms(50);
   
   UART_GPS_SEND("$PAIR067*3B\r\n");
+  
+ 
   
   
 }
