@@ -73,7 +73,7 @@ err
 
 
 // The actual Version as string...
-#define FW_VERSION_STR "31"
+#define FW_VERSION_STR "32"
 
 
 // to get better adc readings...

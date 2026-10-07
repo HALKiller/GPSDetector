@@ -566,7 +566,7 @@ static void f_gps_on(void){
   else
   {
 #if 1 // DB_07102026
-    gd.seconds_until_next_tx = 120;  //gd.time_between_tx;
+    gd.seconds_until_next_tx = 600;  //gd.time_between_tx;
     set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
     
