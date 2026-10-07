@@ -11,6 +11,9 @@
 
 #include "bit_banged_uart.h"
 
+//  * * * * * * * * * * * * *  T O D O  L I S T     * * * * * * * * * * * * *  //
+// eliminate the super low once an hour --> just doubling time
+
 //  * * * * * * * * * * * * *  g l o b a l  a b r e v i a t i o n s   r e l a t e d     * * * * * * * * * * * * *  //
 //  * * * * * * * * * * * * *  g l o b a l  a b r e v i a t i o n s   r e l a t e d     * * * * * * * * * * * * *  //
 

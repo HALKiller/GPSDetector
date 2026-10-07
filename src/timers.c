@@ -53,17 +53,20 @@
 #define TMR1_2_SECOND_OF_CNT 30u  // (uint8_t)MIPS*4u	
 #endif
 
+#define TMR1_1_SCOND_OF_CNT   15u
 #define TMR1_4_SECOND_OF_CNT 60u  // (uint8_t)MIPS*8u	
 #define TMR1_10_SECOND_OF_CNT 150u  // (uint8_t)MIPS*8u	
-
+#define TMR1_3_SECOND_OF_CNT 45
+#define TMR1_5_SECOND_OF_CNT 75
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
 
-static const uint8_t timeout_setter[3] = {
+static const uint8_t timeout_setter[4] = {
   
   TMR1_2_SECOND_OF_CNT,
   TMR1_4_SECOND_OF_CNT,
   TMR1_10_SECOND_OF_CNT,
+  TMR1_5_SECOND_OF_CNT,
   
 };
 
@@ -103,8 +106,6 @@ void timers_set_tmr1_id(tmr1_id_t t_id){
 #endif  
 
 
-
-
   if(TMR1_ON == TRUE)
   {
   
@@ -115,7 +116,6 @@ void timers_set_tmr1_id(tmr1_id_t t_id){
 
     TMR1_ON = false;
 
-    
   }
 
 
@@ -141,6 +141,23 @@ void timers_tmr1_decreaser(void){
 }
 
 
+// reset all flgs and tmr to 0
+void start_timeout_tmr(void){
+  
+  reset_timeout_timer();
+  
+  TMR1_IE = true;
+	TMR1_ON = true;
+  
+}
+
+// stop tmr 1 and its IE
+void stop_timeout_tmr(void){
+  
+  TMR1_ON = false;
+  TMR1_IE = false;
+	
+}
 
 
 

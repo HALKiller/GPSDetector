@@ -462,6 +462,11 @@ typedef enum tmr1_id_e{
 }tmr1_id_t;
 
 
+void start_timeout_tmr(void);
+
+void stop_timeout_tmr(void);
+
+
 void timers_tmr1_decreaser(void);
 
 void timers_set_tmr1_id(tmr1_id_t t_id);
