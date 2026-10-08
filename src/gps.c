@@ -9,6 +9,11 @@
 // $PQTMVER,MODULE_LC86GPANR01A02S,2023/06/14,09:12:59*6C
 // ... and this one does not
 // $PQTMVER,1,MODULE,LC86GPANR01A05S,2025/09/02,10:50:51*0D
+
+// Furthermore is there on the v66 the possibility that the module is actually a L86
+// these modules have a slightly different instruction set and needs adressing 
+// specifically in that case
+
 //   * * * * * *      I N C L U D E S   B L O C K     * * * * * * * * * * * * * * * * * * * * *  //
 
 #include "gps.h"
@@ -93,13 +98,18 @@ union	udt_UART_GPS_FLGS {
 		unsigned rmc_time_is_good		      : 1;  // this one is used
     unsigned gsa_position_is_good     : 1;
 
-    unsigned timeout_tmr_is_running   : 1;
+    // unsigned timeout_tmr_is_running   : 1;
     unsigned rtc_test_first_run       : 1;  // for resetting with the uart for debugging and developing
     unsigned gps_stop_debug_flg       : 1;
     unsigned gps_has_first_lock       : 1;  // that gets set on the first valid lock position --> reset on startup  
-		unsigned free										  : 2;		
+		unsigned use_rmc_time             : 1;
+    unsigned free										  : 2;	
 	};
 };
+#define RMC_TIME_IS_VALID  UART_GPS_FLG.use_rmc_time
+
+
+
 
 static union udt_UART_GPS_FLGS UART_GPS_FLG;
 
@@ -112,9 +122,7 @@ typedef struct udt_gps_type{
   uint16_t lock_times[LOCK_TIME_COUNTER];
   uint16_t average_lock_time;
   uint16_t last_lock_time;  // this is only used for testing transmissions
-  union udt_UART_GPS_FLGS UART_GPS_FLG;
   gps_state_t state;
-  uint8_t baudslot;
   uint8_t sentence_id;
   int8_t lock_indexer;
   
@@ -149,6 +157,12 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
 
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
+// * * * * * * *    L 8 6   M O D U L E   S E N T N C E S   * * * * * * * * * * * * *   // 
+
+const uint8_t c_set_115Baud_L86[] = "$PMTK251,115200*1F\r\n";
+const uint8_t c_cfg_constelation_L86[] = "$PMTK353,1,0,1,1,1*2B\r\n";
+const uint8_t c_cfg_sentences_L86[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
+
 
  
 #if 0
@@ -339,13 +353,10 @@ uint16_t gps_get_last_lock_time(void){
 void gps_startup_initializer(void){
 
   DB_PRINT("\r\ngps_startup\r\n");
-#if COMPILE_FOR_DEBUG&&0
-  uart_init_cfg(B115200);
-#else
+
   uart_init_cfg(DEFAULT_BAUD);   
-#endif  
-  
-  gps_module.baudslot = 0u;
+ 
+  // gps_module.baudslot = 0u;
   
   gps_reinit();
  
@@ -403,7 +414,7 @@ void gps_reinit(void){
   // TMR1_IE = TRUE;
   // TMR1_ON = TRUE;
   
-  UART_GPS_FLG.timeout_tmr_is_running = TRUE;
+  // UART_GPS_FLG.timeout_tmr_is_running = TRUE;
 
   // save the time for the moment...
   gps_module.lock_time_start = eRTC_get_second_cnt();
@@ -474,7 +485,7 @@ void gps_reinit(void){
   // TMR1_IE = TRUE;
   // TMR1_ON = TRUE;
   
-  UART_GPS_FLG.timeout_tmr_is_running = TRUE;
+  // UART_GPS_FLG.timeout_tmr_is_running = TRUE;
 
   // save the time for the moment...
   gps_module.lock_time_start = eRTC_get_second_cnt();
@@ -569,9 +580,10 @@ void gps_calculate_lock_time(void){
 gps_state_t gps_check_gps_error_status(void){
   
 
-  TMR1_ON = FALSE;
+  stop_timeout_tmr();
+  // TMR1_ON = FALSE;
   
-  UART_GPS_FLG.timeout_tmr_is_running = FALSE;
+  // UART_GPS_FLG.timeout_tmr_is_running = FALSE;
   
   if(UART_GPS_FLG.gps_sentence_is_good)
   {
@@ -1271,7 +1283,11 @@ static void process_gps_position(void){
 
         UART_GPS_FLG.gps_has_first_lock = true;
 
-
+        // reset this as the last valid received rmc 
+        // time with full lock for subtraction...
+        reset_rmc_valid_time_cnt();
+        
+        
       }
 
 #else
@@ -1770,6 +1786,10 @@ static void process_rmc_sentence(void){
 #endif  
   // $GPRMC,102736.420,A,4245.033333,N,02045.033333,W,1.62,125,211124,1,E,A*23
   
+
+  
+  
+  
   // selectortrama = 0x10; // 0b0001 0000
   search_pnt = Uint8_tStrchr( sentence_buffer.gps_buffer, ',' ) + 1;
   // opimising...
@@ -1781,6 +1801,17 @@ static void process_rmc_sentence(void){
   rmc_sentence.UtcOfPosition.Horas    = AToUint8_t( search_pnt, 2 );
   rmc_sentence.UtcOfPosition.Minutos  = AToUint8_t( search_pnt + 2, 2 );
   rmc_sentence.UtcOfPosition.Segundos = AToUint8_t( search_pnt + 4, 2 );
+
+  // because the rmc time quite often is very accurate even without a proper 
+  // lock we can check on that in case...
+  // RMC_TIME_IS_VALID
+  
+  if(RMC_TIME_IS_VALID == true)
+  {
+    
+  }
+
+
 
   // Haya o no haya posición, siempre estará un indicador sobre el estado:
   search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
@@ -1862,7 +1893,7 @@ static void process_rmc_sentence(void){
   {
     convert_utc_to_gps_rtc_time();
 #if DB_V69_PCB    
-UART_CRLF;
+    UART_CRLF;
     DB_PRINT(sentence_buffer.gps_buffer);
     UART_CRLF;
     r_cnt = 0;

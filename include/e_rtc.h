@@ -30,6 +30,8 @@ extern my_time_t ertc;
 
 void eRTC_clock_incrementer(void);
 
+void reset_rmc_valid_time_cnt(void);
+
 void eRTC_clock_reset(void);
 
 void ertc_convert_to_real_time(uint32_t in_time);

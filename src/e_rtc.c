@@ -60,13 +60,17 @@ my_time_t ertc;
 volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
 volatile static uint32_t eRTC_second_cnt = 0u;
 volatile static uint8_t rtc_decimo_cnt = 0;
+
+volatile static uint16_t rmc_valid_time_cnt = RMC_VALID_TIME_SETTING;
+
+
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
 
 //  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
 #define TRANSMISSION_TIME_OFFSET 15u 
-
+#define RMC_VALID_TIME_SETTING 21600u // 60 * 60 * 6 sec min hours
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
@@ -106,6 +110,18 @@ void eRTC_clock_incrementer(void){
   
 }
 
+void reset_rmc_valid_time_cnt(void){
+  
+  uint8_t t_gie = GIE;
+  
+  GIE = false;
+  
+  rmc_valid_time_cnt = RMC_VALID_TIME_SETTING;
+  
+  GIE = t_gie
+  
+  
+}
 
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //

@@ -36,48 +36,7 @@ typedef enum gps_state_type {
   
 }gps_state_t;
 
-#if 0
-typedef struct rmc_sentence_type {
-  
-  sUtcOfPosition    UtcOfPosition;       /**< El formato de la hora UTC es * 154002.000 -> 15:40:02 */
-  enum  eStatus     Status;              /**< Indicador de validez de la trama*/
-  bool              HayLatitud;          /**< Indica si hay valor de latitud.* Si no hay, tampoco hay valor de* dirección en la latitud */
-  sAngulo           Latitude;            /**< Formato de la latitud recibida:* 4154.2366 >> formato de la latitud* interna: 41º 54.2366' */
-  enum  eLatitude   LatiDirection;       /**< N norte o S sur */
-  bool              HayLongitud;         /**< Indica si hay valor de longitud.* Si no hay, tampoco hay valor de* dirección en la longitud */
-  sAngulo           Longitude;           /**< Formato de la longitud recibida:* 00852.6716 >> Formato de la longitud* interna: 008º 52.6716' */
-  enum  eLongitude  LongDirection;       /**< E este o W oeste */
-  sComaFija         SpeedOvertheGround;  /**< Velocidad. Medida en Nudos */
-  sComaFija         Degrees;             /**< Seguimiento correcto realizado * en grados verdaderos */
-  sFecha            Date;                /**< La fecha de la trama recibida */
 
-  enum eIndicator   ModeIndicator;       /**< Indicador del modo de posición* del sistema */
-  
-}RMC_sentence_t;
-
-
-typedef struct gps_gsa_sentence_type{
-  sUtcOfPosition    UtcOfPosition;       /**< El formato de la hora UTC es* 154002.000 -> 15:40:02 */
-  bool              HayLatitud;          /**< Indica si hay valor de latitud.* Si no hay, tampoco hay valor de* dirección en la latitud */
-  sAngulo           Latitude;            /**< Formato de la latitud recibida* 4154.2366 >> formato de la latitud* interna: 41º 54.2366' */
-  enum  eLatitude   LatiDirection;       /**< N norte o S sur */
-  bool              HayLongitud;          /**< Indica si hay valor de longitud. * Si no hay, tampoco hay valor de* dirección en la longitud */
-  sAngulo           Longitude;           /**< Formato de la longitud recibida:* 00852.6716 >> Formato de la longitud* interna: 008º 52.6716' */
-  enum  eLongitude  LongDirection;       /**< E este o W oeste */
-  enum  eGpsQuality GpsQuality;          /**< Indicador de la calidad del GPS */
-  int               NumberOfSatellites;  /**< Número de satélites en uso para el
-                                          * cálculo de la posición */
-  /*float             HorizontalDilution;  *//**< Parámetro HDOP. No se usa */ 
-  /*float             AntennaAltitude;     *//**< Altitud de la antena, en
-                                          * metros. No se usa */
-  /* M */
-  /*float             GeoidalSeparation;   *//**< Separación geoidal en metros.
-                                          * No se usa */
-  /* M */
-  /* Campos 13 y 14 desestimados, no se aprecian en las tramas recibidas */
-}GSA_sentence_t;
-
-#endif
 
 typedef enum fromto_cpy_type{
   
