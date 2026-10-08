@@ -36,7 +36,7 @@
 #define MEASURE_ILUM_FLG    dFLAGS.b3
 #define RMC_TIME_IS_VALID   dFLAGS.b2
 #define GPS_HAS_SYNCED      dFLAGS.b1
-#define FREE_ERRFLG0        dFLAGS.b0
+#define VALID_POS_RECEIVED  dFLAGS.b0
 
 
 

@@ -21,9 +21,14 @@
 // TMR2 for the TILT Sensor Timing
 #define USE_TMR2_AS_TILT_SENS_TMR 1
 
-// 051102026 --> independnet clock for rx_luz --> becaeu 8MIPS does not wanna worked
+// THE GLONASS SWOFF REWORK RELATED DEFINES
+// 051002026 --> independnet clock for rx_luz --> becaeu 8MIPS does not wanna worked
 // therefore lets use the 1MIPS clock for the time being
 #define USE_RX_CLOCK 1
+#define NO_SLEEP_TILL_BROOKLYN 1
+
+
+
 
 
 #define NULL_TERMINATOR	(char)'\0'

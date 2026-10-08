@@ -459,8 +459,48 @@ static void rtc_alarm_handler(void){
       // becasue of that we are adding here the next rtc_alarm because that has to be the correct time for tx
       // messages_before_transmission();
       // TODO: we still would need to switch off all the stuff we dont need...
-
+      
+      
       gps_stop();
+            
+#if NO_SLEEP_TILL_BROOKLYN   
+   
+      if(VALID_POS_RECEIVED == true)
+      {
+        
+        // gps_calculate_lock_time();
+        copy_position_from_to(RECOVERPOSITION);
+        set_message_for_tx(e_send_position);
+        
+      }
+      else
+      {
+        set_max_lock_time();
+      
+        gps_calculate_lock_time();
+     
+        if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) && (COPY_POS_IS_VALID == true))
+        {
+          
+          // copy old position and create set it up for transmission...
+          copy_position_from_to(RECOVERPOSITION);
+          set_message_for_tx(e_resend_position);
+        }
+        else
+        {
+          set_message_for_tx(e_No_gps);
+          COPY_POS_IS_VALID = false;
+        }
+        
+        gd.no_position_cnt++;
+      
+      }
+      
+      
+#else 
+
+  
+
       
       set_max_lock_time();
       
@@ -481,14 +521,27 @@ static void rtc_alarm_handler(void){
       
       gd.no_position_cnt++;
       
-#if GPS_OFF_BEFORE_TX
       
+      
+#endif      
+#if GPS_OFF_BEFORE_TX
+#if NO_SLEEP_TILL_BROOKLYN
+
       set_rtc_alarm(GPS_OFF_TIME_SAFE_SYNC);  // gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
       
       gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
       
       RTC_ALARM_ON = true;
-
+      
+#else      
+  
+      set_rtc_alarm(GPS_OFF_TIME_SAFE_SYNC);  // gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
+      
+      gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+      
+      RTC_ALARM_ON = true;
+      
+#endif
 #else         
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
 #endif      
@@ -503,7 +556,12 @@ static void rtc_alarm_handler(void){
     // if fast --> times up actually and we are going to transmission state
     // if slow --> we set the clock switcher and the alarm gets set again for beeping in the 
     // define Threshold time
-    
+#if NO_SLEEP_TILL_BROOKLYN
+
+      gd_states_switch_to_next_state(E_TRANSMISSION_STATE); 
+      
+#else
+  
       if(FAST_CLOCK == true)
       {
         gd_states_switch_to_next_state(E_TRANSMISSION_STATE); 
@@ -515,6 +573,7 @@ static void rtc_alarm_handler(void){
         set_rtc_alarm(SLEEP_BEFORE_TX_SWAP_BACK_TIME);  // gd.rtc_alarm = SLEEP_BEFORE_TX_SWAP_BACK_TIME;
         RTC_ALARM_ON = true;
       }
+#endif
       
     break;
     default:
@@ -576,11 +635,14 @@ static void process_next_char_from_input(void){
 
 #if 1
 
+// VALID_POS_RECEIVED
+
 // E_SEARCH_POSITION_STATE handler here
 static void f_gps_on(void){
   
   // DB_PRINT("GPS_ON\r\n");
-  
+  VALID_POS_RECEIVED = false;
+ 
   if(RTC_TIME_IS_GOOD == true)
   {
     eRTC_calculate_time_until_tx();
@@ -660,7 +722,53 @@ static void f_gps_test_rx(void){
   
 }
 
-#if RUN_GPS_TILL_TX
+#if NO_SLEEP_TILL_BROOKLYN
+
+static void f_gps_has_position(void){
+
+  DB_PRINT(" F ");
+
+  if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
+  {
+    
+    eRTC_calculate_time_until_tx();
+
+    gd.no_position_cnt = 0;
+  
+    copy_position_from_to(SAVEPOSITION);
+    
+    VALID_POS_RECEIVED = true;
+    
+   // TODO: check on 0 and transmit state i think actually
+    if(gd.seconds_until_next_tx > (GPS_OFF_TIME_SAFE_SYNC))
+    {
+      
+      set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
+
+    }
+    else
+    {
+      
+      gps_stop();
+      DB_PRINT("GOFF\r\n");
+      if(gd.seconds_until_next_tx == 0)
+      {
+        set_message_for_tx(e_send_position);
+        gd_states_switch_to_next_state(E_TRANSMISSION_STATE);        
+      }
+      else
+      {
+        set_rtc_alarm(gd.seconds_until_next_tx);  // ngd.rtc_alarm = gd.seconds_until_next_tx;
+        RTC_ALARM_ON = true;
+        set_message_for_tx(e_send_position);
+        gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);        
+      }
+    }
+  }
+}
+
+
+#elif RUN_GPS_TILL_TX
 
 static void f_gps_has_position(void){
 
