@@ -213,9 +213,6 @@ static uint8_t temp_buff_pnt_cnt = MAX_DATA_LENGTH_GPS_SENTENCE;  // cMax_Senten
 static uint8_t endbyte_cnt = 2;
 
 static void process_gps_position(void);
-// static uint32_t gps_lock_timer_start = 0u;
-
-// static uint32_t gps_lock_timer_end = 0u;
 
 
 
@@ -230,8 +227,6 @@ static void process_gps_position(void);
 static void configure_gps(void);
 
 static void try_reconfigure_gps(void);
-
-// static void gps_reconfigure_uart(uint8_t slotter);
 
 static void send_recfg_gps_sentences(void);
  
@@ -306,16 +301,11 @@ void gps_first_run(void){
   UART_on();  // the Peripheric UART
   
   GPS_VALIM = TRUE; // gps gest energy
-  
-  // my_delay_ms(500);
-  
+
   configure_gps();
-  
-  // try_reconfigure_gps();
-  
+ 
   GPS_VALIM = FALSE;
   
-  // UART_off();
   
 }
 
@@ -354,7 +344,6 @@ void gps_startup_initializer(void){
 #else
   uart_init_cfg(DEFAULT_BAUD);   
 #endif  
-  // UART_on();
   
   gps_module.baudslot = 0u;
   
