@@ -268,7 +268,36 @@ void handlers_generic_set_handler_FLG(uint8_t handler_set){
   
 }
 
+void f_gps_has_time(void){
 
+  DB_PRINT(" H ");
+
+  if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
+  {
+    
+    eRTC_calculate_time_until_tx();
+   
+    if(gd.seconds_until_next_tx >= (2 * SLEEP_BEFORE_TX_SWAP_BACK_TIME))
+    {
+      
+      set_rtc_alarm(gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME); // gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
+
+    }
+    else
+    {
+      
+      gps_stop();
+      DB_PRINT("GOFF\r\n");
+      set_rtc_alarm(gd.seconds_until_next_tx);  // ngd.rtc_alarm = gd.seconds_until_next_tx;
+      RTC_ALARM_ON = true;
+      set_message_for_tx(e_send_position);
+      gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+
+    }
+
+  }
+  
+}
 
 //  **********************  PRIVATE FUNCTIONS BODY  ************************  //
 
@@ -637,13 +666,13 @@ static void f_gps_has_position(void){
 
   DB_PRINT(" F ");
 
-  eRTC_calculate_time_until_tx();
-
-  gd.no_position_cnt = 0;
-  
   if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
   {
     
+    eRTC_calculate_time_until_tx();
+
+    gd.no_position_cnt = 0;
+  
     copy_position_from_to(SAVEPOSITION);
    
     if(gd.seconds_until_next_tx >= (2 * SLEEP_BEFORE_TX_SWAP_BACK_TIME))

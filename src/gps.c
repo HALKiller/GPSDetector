@@ -1271,12 +1271,6 @@ static void process_gps_position(void){
 
         UART_GPS_FLG.gps_has_first_lock = true;
         
-        // RMC_TIME_IS_VALID = true;
-        // reset this as the last valid received rmc 
-        // time with full lock for subtraction...
-        
-        
-        
       }
 
 #else
@@ -1284,6 +1278,7 @@ static void process_gps_position(void){
       UART_GPS_FLG.rtc_test_first_run = TRUE;
       stop_gps_lock_time_cnt();
 #endif
+
       if(GPS_HAS_SYNCED == false)
       {
         // convert_utc_to_gps_rtc_time();

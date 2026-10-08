@@ -12,7 +12,7 @@ void get_the_next_handler(void);
 
 void handlers_generic_set_handler_FLG(uint8_t handler_set);
 
-
+void f_gps_has_time(void);
 
 void reset_ring_buffer_handler_FLG(void);
 
