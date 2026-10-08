@@ -651,6 +651,10 @@ static void f_gps_on(void){
     {
       set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC);  // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     }
+    else
+    {
+      set_rtc_alarm(gd.time_between_tx + gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC);
+    }
     // TODO: we need to set here somthing...
     RTC_ALARM_ON = true;
   }
@@ -753,6 +757,7 @@ static void f_gps_has_position(void){
       DB_PRINT("GOFF\r\n");
       if(gd.seconds_until_next_tx == 0)
       {
+        RTC_ALARM_ON = false;
         set_message_for_tx(e_send_position);
         gd_states_switch_to_next_state(E_TRANSMISSION_STATE);        
       }

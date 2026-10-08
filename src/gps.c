@@ -504,11 +504,18 @@ void gps_stop(void){
 #if DEBUGGING_IS_ON 
   // and switch off the valim_pin for the UART_CRLF
   UART_GPS_FLG.gps_stop_debug_flg = true;
+  flush_ring_buffer();
   
+  reset_uart_handler_flags();  
 #else
   
   RX_IE = FALSE;
   
+  flush_ring_buffer();
+  
+  reset_uart_handler_flags();
+  
+
   // UART_off();
   
 #endif  
