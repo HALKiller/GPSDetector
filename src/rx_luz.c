@@ -343,6 +343,15 @@ void check_on_rx_luz(void){
 // that is for a reduction of code and therefore for debugging 
 void check_on_rx_luz(void){
 	
+#if 1
+  
+  return;
+  
+  
+#else
+
+  
+  
 	Inicio_uart_luz();
 
 #if DEBUGGING_IS_ON
@@ -356,6 +365,7 @@ void check_on_rx_luz(void){
 	wait_for_tmr_expires(RX_LUZ_HALFBIT_TIME_OF_CNT);	// 45ms
 	LED = false;
 	
+#endif
 	
 	
 }

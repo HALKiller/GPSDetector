@@ -89,7 +89,7 @@ wat
 #if DEBUGGING_BB_IS_ON
 
 #define USE_BB_LED_OUTPUT 1
-
+#define BB_DIRECT LATBbits.LATB7
 #else
   
 #define USE_BB_LED_OUTPUT 0

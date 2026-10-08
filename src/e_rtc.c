@@ -46,7 +46,10 @@
 
 
 
+//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
+#define TRANSMISSION_TIME_OFFSET 15u 
+#define RMC_VALID_TIME_SETTING 21600u // 60 * 60 * 6 sec min hours
 
 
 
@@ -55,6 +58,7 @@
 
 
 my_time_t ertc;
+
 
 
 volatile uint8_t tmr4_of_cnt = (uint8_t)10u;
@@ -67,10 +71,7 @@ volatile static uint16_t rmc_valid_time_cnt = RMC_VALID_TIME_SETTING;
 //   * * * * * * *      C O N S T A N T   E X P R E S S I O N S     * * * * * * * * * * * * *   // 
  
 
-//  * * * * * * *      M A C R O   D E F I N I T I O N S      * * * * * * * * * * * * // 
 
-#define TRANSMISSION_TIME_OFFSET 15u 
-#define RMC_VALID_TIME_SETTING 21600u // 60 * 60 * 6 sec min hours
 
 
 //   * * * * * *     S T A T I C   D A T A   D E C L A R A T I O N S     * * * * * * * * * * *   //
@@ -99,6 +100,11 @@ void eRTC_clock_incrementer(void){
     
     eRTC_second_cnt++;
     
+    if(--rmc_valid_time_cnt == 0)
+    {
+      RMC_TIME_IS_VALID = false;
+    }
+    
     if(eRTC_second_cnt >= SECONDS_PER_DAY)
     {
       // because we could be transmitting exactly over that 
@@ -118,7 +124,7 @@ void reset_rmc_valid_time_cnt(void){
   
   rmc_valid_time_cnt = RMC_VALID_TIME_SETTING;
   
-  GIE = t_gie
+  GIE = t_gie;
   
   
 }
@@ -152,6 +158,8 @@ void eRTC_clock_reset(void){
   
   tmr4_of_cnt = (uint8_t)10u;
 
+  RMC_TIME_IS_VALID = false;
+  
 }
 
 

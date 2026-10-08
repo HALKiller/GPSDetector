@@ -34,8 +34,8 @@
 #define TILT_SENSOR_ERR     dFLAGS.b5
 #define PWM_LUZ_START       dFLAGS.b4
 #define MEASURE_ILUM_FLG    dFLAGS.b3
-#define FREE_ERRFLG2        dFLAGS.b2
-#define FREE_ERRFLG1        dFLAGS.b1
+#define RMC_TIME_IS_VALID   dFLAGS.b2
+#define GPS_HAS_SYNCED      dFLAGS.b1
 #define FREE_ERRFLG0        dFLAGS.b0
 
 

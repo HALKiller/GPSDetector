@@ -174,7 +174,7 @@ err
 #define DEBUGGING_IS_ON 0
 #define DEBUGGING_BB_IS_ON 1  // Bit Banged UART
 #define G_ENABLE_ASSERT 0     // to reduce ROM --> set to 0 no asserts
-#define COMPILE_WITH_RX_LUZ 1
+#define COMPILE_WITH_RX_LUZ 0
 #define COMPILE_WITH_PWM_LUZ 0
 #define USE_BB_UART_AS_GPS_INPUT 0
 #define DO_TRANSMIT_RF 0  // when reset(0) we do not transmit over radio
@@ -190,7 +190,7 @@ err
 
 // so that the tilt sensor is not 
 // activating/deactivating the detector but is always on
-#define TILT_IS_ALWAYS_ON 0
+#define TILT_IS_ALWAYS_ON 1
 
 // we are using the readback functionality of the DDS to check its correct confuration
 #define READBACK_DDS 1
@@ -205,7 +205,7 @@ err
 
 // all DB_FILE ANBLED are swoffed
 #define SWOFF_ALL_DB_FILE_ENABLED 0
-#define COMPILE_ONLY_RX_LUZ 1
+#define COMPILE_ONLY_RX_LUZ 0
 
 // ---------------------------------------------------------  COMPILE FOR INTERNAL TEST  -------------------------  //
 #elif COMPILE_FOR_INTERNAL_TEST
@@ -508,20 +508,20 @@ extern const uint16_t shifts[16];
 #else
 
 #define               FILE_MAIN_DB_ENABLED 0
-#define           FILE_INIT_ALL_DB_ENABLED 0
+#define           FILE_INIT_ALL_DB_ENABLED 1
 #define               FILE_UART_DB_ENABLED 1  // the UART_int is not working otherwise of course...
 #define              FILE_CLOCK_DB_ENABLED 0
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 0
+#define           FILE_HANDLERS_DB_ENABLED 1
 #define        FILE_RING_BUFFER_DB_ENABLED 0
-#define             FILE_RX_LUZ_DB_ENABLED 1
+#define             FILE_RX_LUZ_DB_ENABLED 0
 #define          FILE_MY_ASSERT_DB_ENABLED 0
 #define        FILE_TILT_SENSOR_DB_ENABLED 0
 #define             FILE_TIMERS_DB_ENABLED 0
 #define          FILE_GD_STATES_DB_ENABLED 0
-#define                FILE_GPS_DB_ENABLED 0
+#define                FILE_GPS_DB_ENABLED 1
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
 #define              FILE_E_RTC_DB_ENABLED 0
 #define             FILE_EEPROM_DB_ENABLED 0
