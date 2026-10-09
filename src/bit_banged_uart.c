@@ -23,7 +23,7 @@
 
 #include "xc.h"
 
-// #include "io_port_sfr_names.h"
+#include "io_port_sfr_names.h"
 
 // - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 #ifndef FILE_BIT_BANGED_UART_DB_ENABLED
@@ -75,7 +75,7 @@ static volatile __near uint8_t bb_asm_count;
 // #define ICSPDAT 			  LATBbits.LATB7
 
 #define BB_TX_UART           LATBbits.LATB6// LATAbits.LATA7 // 
-#define BB_RX_UART           LATBbits.LATB7// LATAbits.LATA7 // 
+#define BB_DIRECT           LATBbits.LATB7// LATAbits.LATA7 // 
 
 
 #if MIPS == 1
@@ -196,7 +196,7 @@ void init_TMR_bitbang_uart(uint8_t clockspeed){
 	// set_bb_uart(true);	// because UART TX is idle high
 	
   BB_TX_UART = true;
-  
+  BB_DIRECT = true;
   
   
 }

@@ -79,8 +79,8 @@
 #define DEFAULT_BAUD (B115200)  // (B9600)  //(B57600)  // 
 #define D_BAUD 1
 
-#define GPS_MODULE_L86 1
-#define GPS_MODULE_L86G 0
+#define GPS_MODULE_L86 0
+#define GPS_MODULE_L86G 1
 
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
@@ -167,8 +167,10 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
 
 #if GPS_MODULE_L86
 
+const uint8_t m_cmd_set_384kBaud[] = "$PMTK251,38400*27\r\n";
 const uint8_t m_cmd_set_115kBaud[] = "$PMTK251,115200*1F\r\n";
-const uint8_t m_cmd_set_constelation[] = "$PMTK353,1,0,1,1,1*2B\r\n";
+const uint8_t m_cmd_set_constelation[] = "$PMTK353,1,0,1,0,0*2B\r\n";
+const uint8_t m_cmd_get_constelation[] = "$PMTK355*31\r\n";
 const uint8_t m_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
 
 #elif GPS_MODULE_L86G
@@ -177,7 +179,9 @@ const uint8_t m_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
 const uint8_t m_cmd_set_115kBaud[] = "$PAIR864,0,0,115200*1B\r\n";
 const uint8_t m_cmd_set_constelation[] = "$PAIR066,1,0,1,1,1,0*3A\r\n";
 const uint8_t m_cmd_get_constelation[] = "$PAIR067*3B\r\n";
+const uint8_t m_cmd_save_configuration[] = "$PAIR513*3D\r\n";
 
+// UART_GPS_SEND("$PAIR513*3D\r\n");
 #else
   
 
@@ -261,8 +265,6 @@ static uint8_t check_validity_of_time_diff(void);
 
 static void configure_gps(void);
 
-static void try_reconfigure_gps(void);
-
 static void send_recfg_gps_sentences(void);
  
 static void disable_constelations(void);
@@ -287,11 +289,11 @@ static void convert_utc_to_gps_rtc_time(void);
 
 static void copy_rmc_to_from(RMC_sentence_t *const des_pnt,  RMC_sentence_t const *const src_pnt);
 
-#if DEBUGGING_BB_IS_ON
+// #if DEBUGGING_BB_IS_ON
 
 static void send_gps_direct(void);
   
-#endif
+// #endif
 
 
 //   * * * * * * *      P U B L I C   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *  //
@@ -377,15 +379,11 @@ void gps_startup_initializer(void){
   DB_PRINT(" gps_s ");
 
   uart_init_cfg(DEFAULT_BAUD);   
- 
-  // gps_module.baudslot = 0u;
   
   gps_reinit();
  
 }
 
-
-#if 1
 
 // we are switchng on and await the time out time to get 
 // information if we are actually receiving something usefull...
@@ -400,8 +398,6 @@ void gps_reinit(void){
   
   UART_on();
   
-  CREN = TRUE;
-  
   RX_IE = TRUE;
   
 #if USE_DEVICE_DRIVER
@@ -413,8 +409,6 @@ void gps_reinit(void){
   // switch on the gps valim pin
   GPS_VALIM = TRUE;
   
-  
-
 #endif  
   my_delay_ms(1000);
   // reset the position_cnt...
@@ -427,11 +421,10 @@ void gps_reinit(void){
   timers_set_tmr1_id(GPS_UART_TIMEOUT);
   start_timeout_tmr();
 
-
   // save the time for the moment...
   gps_module.lock_time_start = eRTC_get_second_cnt();
 
-#if 0
+#if GPS_MODULE_L86
 
   my_delay_ms(1500);
   disable_constelations();
@@ -445,70 +438,6 @@ void gps_reinit(void){
 }
 
 
-
-
-#else
-  
-// we are switchng on and await the time out time to get information if we are actually receiving something usefull...
-void gps_reinit(void){
-
-  DB_PRINT("\r\ngps_reinit\r\n");
-
-  UART_GPS_FLG.reg = 0u; // reset everything
-
-  // this resets the temp_buffer and temp_buffer_pointer...
-  reset_uart_handler_flags();
-  
-  UART_on();
-  
-  CREN = TRUE;
-  
-  RX_IE = TRUE;
-  
-#if USE_DEVICE_DRIVER
-  // switch on the gps valim pin
-  IO_Set_channel(IO_GPS_VALIM);
-
-#else  
-  
-  // switch on the gps valim pin
-  GPS_VALIM = TRUE;
-
-#endif  
-  my_delay_ms(1000);
-  // reset the position_cnt...
-  valid_position_cnt = 0;
-  
-// Becasue in debug mode the uart is always on becasue we are sending and receivng from there  
-
-  // TODO: init UART and GPS
-  // uart_initialize(GPS_UART);
-
- 
-  // TODO:
-  // reset the uart buffer --> that should get perhaps on the initializer of the uart !
-
-  timers_set_tmr1_id(GPS_UART_TIMEOUT);
-  start_timeout_tmr();
-
-
-  // save the time for the moment...
-  gps_module.lock_time_start = eRTC_get_second_cnt();
-
-#if 1
-
-  my_delay_ms(1500);
-  disable_constelations();
-  
-  send_recfg_gps_sentences();
-  
-#endif
-	
-  my_delay_ms(100);
- 
-}
-
-#endif
 
 
 
@@ -558,6 +487,7 @@ void gps_calculate_lock_time(void){
   gps_module.lock_times[gps_module.lock_indexer] = gps_module.lock_time_end - gps_module.lock_time_start;
   
   gps_module.last_lock_time = gps_module.lock_times[gps_module.lock_indexer];
+  
 #if DEBUGGING_BB_IS_ON
 
   DB_PRINT("\r\nLock_time: ");
@@ -565,8 +495,6 @@ void gps_calculate_lock_time(void){
   UART_CRLF;
 
 #endif  
-  
-  
   
   for(hlooper = 0u; hlooper < LOCK_TIME_COUNTER; hlooper++)
   {
@@ -593,10 +521,7 @@ gps_state_t gps_check_gps_error_status(void){
   
 
   stop_timeout_tmr();
-  // TMR1_ON = FALSE;
-  
-  // UART_GPS_FLG.timeout_tmr_is_running = FALSE;
-  
+ 
   if(UART_GPS_FLG.gps_sentence_is_good)
   {
     gps_module.state = GPS_SENTENCE_RECEIVING;  // GPS_ALL_GOOD
@@ -611,7 +536,8 @@ gps_state_t gps_check_gps_error_status(void){
 #if GPS_PRINT       
     DB_PRINT("\r\nGPS F ERR\r\n");
  #endif       
-    // try_reconfigure_gps();
+    
+    configure_gps();
     gps_reinit();
   }
   else if(UART_GPS_FLG.valid_header_received == FALSE)
@@ -621,7 +547,8 @@ gps_state_t gps_check_gps_error_status(void){
 #if GPS_PRINT           
     DB_PRINT("\r\nGPS B ERR\r\n");
  #endif          
-    // try_reconfigure_gps();
+    
+    configure_gps();
     gps_reinit();
   }
   else
@@ -703,15 +630,27 @@ static void configure_gps(void){
   
   // GPS_VALIM = TRUE;
 
-#if DEBUGGING_BB_IS_on
-  // (( idx 0 is 2000ms timeout))
+#if DEBUGGING_BB_IS_ON
+
+  
+  DB_PRINT("\r\nsgd\r\n");
+  
   timers_set_tmr1_id(3);
   
   send_gps_direct();
   CLRWDT();
   send_gps_direct();
   CLRWDT();
+ #else
+   my_delay_ms(400);
+DB_PRINT("\r\nsgd\r\n");
   
+  // timers_set_tmr1_id(0);
+  
+  // send_gps_direct();
+  // CLRWDT();
+  // send_gps_direct();
+  // CLRWDT();
 #endif
 
   // so speed first up for matching the GPS...
@@ -733,35 +672,27 @@ static void configure_gps(void){
     }
   
     uart_init_cfg(setter);
-    
-    // now set the GPS to xy baud
-    // send_bb_string("\r\ngps_cfg_115200");
-    
-    // UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
-    
+   
     UART_GPS_SEND(m_cmd_set_115kBaud);
-    
-    // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
-    // UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n"); 
-#if DEBUGGING_BB_IS_on    
+
+#if DEBUGGING_BB_IS_ON  
     send_gps_direct();
 #endif
     
       
-      //give a delay to 
-    my_delay_ms(4);
+    //give a delay to 
+    my_delay_ms(40);
     // my_delay_ms(400);
     
     // swoff --> reboot
     GPS_VALIM = FALSE;
     
-        //give a delay to 
+    //give a delay to 
     my_delay_ms(100);
     
     // swon --> reboot
     GPS_VALIM = TRUE;
     
-
   }
 
   uart_init_cfg(DEFAULT_BAUD);  // (B57600);
@@ -772,250 +703,38 @@ static void configure_gps(void){
   disable_constelations();
   
   my_delay_ms(1000);
+  
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
 
-  UART_GPS_SEND("$PAIR513*3D\r\n");
+#if GPS_MODULE_L86G
+  UART_GPS_SEND(m_cmd_save_configuration);
+#endif
+
   
   my_delay_ms(2000);
-  // GPS_VALIM = FALSE;
-  // my_delay_ms(100);  
-  // GPS_VALIM = TRUE;
+
   
-#if DEBUGGING_BB_IS_on  
+#if DEBUGGING_BB_IS_ON
   send_gps_direct();
 #endif
-  
-  // my_delay_ms(1000);
-  
+
   GPS_VALIM = FALSE;
   
   
-  // DB_PRINT("\r\ncfg_sent\r\nb");
-  
-  
 }
 
-#if DEBUGGING_BB_IS_on
 
-static void try_reconfigure_gps(void){
-  
-
-   
-  // now send the reduction of sentences from the GPS
-  send_recfg_gps_sentences();
-  
-  DB_PRINT(" recfg_gps ");
-  
-  configure_gps();
-  
-  
-  
-}
-#elif USE_115K_BAUD
-
-// overworking it so that we receive for the time being with 115200
-// this works perfectly !!  --> prepared for 9600Baud recfg
-static void try_reconfigure_gps(void){
-  
-  // this one increases whenever we are having looper 
-  // over all gps settings in the array and there was no good sentece...
-  static uint8_t maximum_reconfigure_cnt = 0;
-  
-  uint8_t hlooper = 0;
-  uint16_t setter = B9600;
-  
-  maximum_reconfigure_cnt++;
-  
-  // so speed first up for matching the GPS...
-  // uart_init_cfg(B115200);
-  for(hlooper = 0; hlooper < 3; hlooper++)
-  {
-    switch(hlooper)
-    {
-      case 0:
-        setter = B9600;
-      break;
-      case 1:
-        setter = B57600;
-      break;
-      case 2:
-        setter = B115200;
-      break;
-      
-    }
-  
-    uart_init_cfg(setter);
-    
-    // give a delay to stabilize the baud rate generator...lets start with a 100ms...
-    // my_delay_ms(100);
-    
-    // now set the GPS to xy baud
-#if D_BAUD==1
-
-    UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
-    // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
-      
-    // send_bb_string("\r\n115200\r\n"); // ("\r\nMSG: $PAIR864,0,0,57600*28\r\n");
-#elif  D_BAUD==2   
-    // UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
-    UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
-      
-    // send_bb_string("\r\n57600\r\n"); // ("\r\nMSG: $PAIR864,0,0,57600*28\r\n");    
-#else
-    wat
-    UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");   
-    send_bb_string("$PAIR864,0,0,9600*13\r\n");  
-    
-#endif   
-    
-    
-      //give a delay to 
-    my_delay_ms(400);
-    
-    // swoff --> reboot
-    GPS_VALIM = FALSE;
-    
-        //give a delay to 
-    my_delay_ms(200);
-    
-    // swon --> reboot
-    GPS_VALIM = TRUE;
-    
-    my_delay_ms(500);
-    
-  }
-
-  uart_init_cfg(DEFAULT_BAUD);  // (B57600);
-
-
-  disable_constelations();
-  
-
-  // now send the reduction of sentences from the GPS
-  send_recfg_gps_sentences();
-
- 
-  
-}
 
 static void disable_constelations(void){
-  
-  
-  // UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
-  
+
   UART_GPS_SEND(m_cmd_set_constelation);
-  
-  // UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
-  
+
   my_delay_ms(50);
-  
-  UART_GPS_SEND("$PAIR067*3B\r\n");
-  
- 
-  
+
+  UART_GPS_SEND(m_cmd_get_constelation);
   
 }
-
-
-
-
-#else
-// this works perfectly !!  --> prepared for 9600Baud recfg
-static void try_reconfigure_gps(void){
-  
-  // this one increases whenever we are having looper 
-  // over all gps settings in the array and there was no good sentece...
-  static uint8_t maximum_reconfigure_cnt = 0;
-  
-  maximum_reconfigure_cnt++;
-  
-  // so speed first up for matching the GPS...
-  uart_init_cfg(B115200);
-  
-  //give a delay to stabilize the baud rate generator...lets start with a 100ms...
-  my_delay_ms(100);
-  
-  // now set the GPS to xy baud
-#if COMPILE_FOR_DEBUG&&0
-
-  UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
-  // DB_PRINT("$PAIR864,0,0,115200*1B\r\n");
-  
-#else
-  
-  UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n");   
-  // DB_PRINT("$PAIR864,0,0,9600*13\r\n");  
-  
-#endif   
-  
-  
-    //give a delay to 
-  my_delay_ms(100);
-  
-  // swoff --> reboot
-  GPS_VALIM = FALSE;
-  
-      //give a delay to 
-  my_delay_ms(500);
-  
-  // swon --> reboot
-  GPS_VALIM = TRUE;
-  
-  my_delay_ms(500);
-  
-  // so slow down again to matching the GPS...
-#if COMPILE_FOR_DEBUG&&0
-  uart_init_cfg(B115200);
-#else
-  uart_init_cfg(B9600);   
-#endif 
-  
-  //give a delay to 
-  my_delay_ms(100);
-  
-  // now send the reduction of sentences from the GPS
-  send_recfg_gps_sentences();
-
-  my_delay_ms(100);
-  // and try again --> we call taht from the calling function now...
-  // gps_reinit();
-  
-#if DISABLE_GLONASS
-
-  // swoff glonass
-  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
-  
-  my_delay_ms(500);
-  
-  UART_GPS_SEND("$PAIR067*3B\r\n");
-  
-  my_delay_ms(100);  
-
-#elif DISABLE_NOT_GLONASS
-
-  // swoff glonass
-  UART_GPS_SEND("$PAIR066,0,1,0,0,0,0*3B\r\n");
-  
-  DB_PRINT("$PAIR066,0,1,0,0,0,0*3B\r\n");
-  
-  my_delay_ms(500);
-  
-  UART_GPS_SEND("$PAIR067*3B\r\n");
-  
-  my_delay_ms(100);  
-  
-#endif    
-  
-  DB_PRINT("\r\ncfg_sent\r\nb");
-  
-  
-}
-
-
-
-#endif
-
 
 
 #if GPS_MODULE_L86
@@ -2063,7 +1782,7 @@ void gps_set_debbugging_sync_time_flg(void){
 
 #if DEBUGGING_BB_IS_ON
 
-#if 1
+#if 0
 static void send_gps_direct(void){
   
   return;
@@ -2075,6 +1794,10 @@ static void send_gps_direct(void){
 
 static void send_gps_direct(void){
 
+  uint8_t temp_gie = GIE;
+  
+  GIE = true;
+  PERIPHERIC_IE = TRUE;
   LED = true;
   
   start_timeout_tmr();
@@ -2087,11 +1810,38 @@ static void send_gps_direct(void){
   }
   stop_timeout_tmr();
   LED = false;
-  send_bb_string(" . . .done\r\n");
+  DB_PRINT(" . . .done\r\n");
+  
+  GIE = temp_gie;
   
 }
 #endif
 
+#else
+  
+static void send_gps_direct(void){
+
+  uint8_t temp_gie = GIE;
+  
+  GIE = true;
+  PERIPHERIC_IE = TRUE;
+  // LED = true;
+  
+  start_timeout_tmr();
+  
+  while(TIMEOUT_FLG == false)
+  {
+
+    // BB_DIRECT = UART_RX_PC;
+
+  }
+  stop_timeout_tmr();
+  // LED = false;
+  // DB_PRINT(" . . .done\r\n");
+  
+  GIE = temp_gie;
+  
+}
 #endif
 
 

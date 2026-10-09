@@ -323,6 +323,11 @@ static void tmr1_timeout_handler(void){
       
     break;
     
+    case 3:
+    
+      TIMEOUT_FLG = TRUE;
+      
+    break;    
     
     
     default:
