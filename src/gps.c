@@ -78,6 +78,11 @@
 
 #define DEFAULT_BAUD (B115200)  // (B9600)  //(B57600)  // 
 #define D_BAUD 1
+
+#define GPS_MODULE_L86 1
+#define GPS_MODULE_L86G 0
+
+
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
 
@@ -160,10 +165,22 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
  
 // * * * * * * *    L 8 6   M O D U L E   S E N T N C E S   * * * * * * * * * * * * *   // 
 
-#if 0
-const uint8_t c_set_115Baud_L86[] = "$PMTK251,115200*1F\r\n";
-const uint8_t c_cfg_constelation_L86[] = "$PMTK353,1,0,1,1,1*2B\r\n";
-const uint8_t c_cfg_sentences_L86[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
+#if GPS_MODULE_L86
+
+const uint8_t m_cmd_set_115kBaud[] = "$PMTK251,115200*1F\r\n";
+const uint8_t m_cmd_set_constelation[] = "$PMTK353,1,0,1,1,1*2B\r\n";
+const uint8_t m_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
+
+#elif GPS_MODULE_L86G
+    // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
+    // UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n"); 
+const uint8_t m_cmd_set_115kBaud[] = "$PAIR864,0,0,115200*1B\r\n";
+const uint8_t m_cmd_set_constelation[] = "$PAIR066,1,0,1,1,1,0*3A\r\n";
+const uint8_t m_cmd_get_constelation[] = "$PAIR067*3B\r\n";
+
+#else
+  
+
 #endif
 
 
@@ -720,7 +737,10 @@ static void configure_gps(void){
     // now set the GPS to xy baud
     // send_bb_string("\r\ngps_cfg_115200");
     
-    UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
+    // UART_GPS_SEND("$PAIR864,0,0,115200*1B\r\n");
+    
+    UART_GPS_SEND(m_cmd_set_115kBaud);
+    
     // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
     // UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n"); 
 #if DEBUGGING_BB_IS_on    
@@ -868,72 +888,23 @@ static void try_reconfigure_gps(void){
 
   uart_init_cfg(DEFAULT_BAUD);  // (B57600);
 
-  //give a delay to 
-  // my_delay_ms(100);
-
-#if 0 // !DISABLE_ALL  
-  // now send the reduction of sentences from the GPS
-  send_recfg_gps_sentences();
-#endif
-
-  // my_delay_ms(100);
-  // and try again --> we call taht from the calling function now...
-  // gps_reinit();
-  
-#if DISABLE_GLONASS
-
-
-#if 1
 
   disable_constelations();
   
-#elif 1
-
-  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
-  my_delay_ms(500);
-  
-  UART_GPS_SEND("$PAIR067*3B\r\n");
-#else
-  // swoff glonass
-  UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
- 
-  my_delay_ms(500);
-  
-  UART_GPS_SEND("$PAIR067*3B\r\n");
- #endif  
-  // my_delay_ms(100);
-
-#elif DISABLE_NOT_GLONASS
-
-  // swoff glonass
-  UART_GPS_SEND("$PAIR066,0,1,0,0,0,0*3B\r\n");
-  
-  DB_PRINT("$PAIR066,0,1,0,0,0,0*3B\r\n");
-  
-  my_delay_ms(500);
-  
-  UART_GPS_SEND("$PAIR067*3B\r\n");
-  
-  my_delay_ms(100);  
-  
-#endif    
-  
-  
 
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
 
-  
-  
-  // DB_PRINT("\r\ncfg_sent\r\nb");
-  
+ 
   
 }
 
 static void disable_constelations(void){
   
   
-  UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
+  // UART_GPS_SEND("$PAIR066,1,0,1,1,1,0*3A\r\n");
+  
+  UART_GPS_SEND(m_cmd_set_constelation);
   
   // UART_GPS_SEND("$PAIR066,1,0,0,0,0,0*3B\r\n");
   
@@ -1047,16 +1018,18 @@ static void try_reconfigure_gps(void){
 
 
 
-#if DEBUGGING_IS_ON
+#if GPS_MODULE_L86
 
 static void send_recfg_gps_sentences(void){
+  
+  UART_GPS_SEND(m_cmd_set_sentences);
   
   DB_PRINT("\r\nSent cfg\r\n");
   
 }
 
 
-#else
+#elif GPS_MODULE_L86G
   
 
 static void send_recfg_gps_sentences(void){
@@ -1116,6 +1089,10 @@ static  uint8_t gps_out_sentence_chck[] = {
   DB_PRINT(" S_cfg ");
   
 }
+
+#else
+  
+wat?
 
 #endif
 
