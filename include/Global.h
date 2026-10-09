@@ -27,6 +27,9 @@
 #define USE_RX_CLOCK 1
 #define NO_SLEEP_TILL_BROOKLYN 1
 
+// we eliminate the one hour sleep 
+// just normal doubling
+#define USE_BAT_IS_TOO_LOW_FLG 0
 
 
 
@@ -77,11 +80,11 @@ err
 err
 #endif
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 69
+#define PCB_VERSION 66
 
 
 // The actual Version as string...
-#define FW_VERSION_STR "32"
+#define FW_VERSION_STR "33"
 
 
 // to get better adc readings...

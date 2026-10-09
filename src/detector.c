@@ -395,6 +395,8 @@ uint8_t LeerValorBateria(void){
   
 #endif
 
+#if USE_BAT_IS_TOO_LOW_FLG
+
   if((BAT_IS_LOW_FLG == true) && (gd.bat_decivolt >= gd.vbat_high))
   {
     BAT_IS_LOW_FLG = FALSE;
@@ -410,6 +412,20 @@ uint8_t LeerValorBateria(void){
     BAT_IS_TOO_LOW = true; 
   }
   
+#else
+  
+  if((BAT_IS_LOW_FLG == true) && (gd.bat_decivolt >= gd.vbat_high))
+  {
+    BAT_IS_LOW_FLG = FALSE;
+  }
+  else if((BAT_IS_LOW_FLG == false) && (gd.bat_decivolt  <= gd.vbat_low))
+  {
+    BAT_IS_LOW_FLG = true;
+  }
+
+  
+#endif  
+
   return gd.bat_decivolt;
   
 }

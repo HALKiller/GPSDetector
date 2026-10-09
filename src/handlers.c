@@ -77,6 +77,7 @@ static void f_setup_sleep_before_search(void);
 
 static void rtc_alarm_handler(void);
 static void set_rtc_alarm(uint16_t settime);
+static void stop_gps_and_select_message(void);
 
 #if DEBUGGING_IS_ON
 static void local_up_f1(void);
@@ -104,6 +105,7 @@ static const HandlersHandlerType Handler_arr[] =
 
   { e_200ms_h,                          rtc_200ms_handler }, 
   { e_gps_has_full_position_h,          f_gps_has_position },  
+  { e_gps_has_time_h,                   f_gps_has_time },
 	{ e_ring_buffer_handler,              process_next_char_from_input },
   { e_gps_on_h,                         f_gps_on },
   { e_prepare_msg_h,                    f_prepare_msg },
@@ -270,34 +272,38 @@ void handlers_generic_set_handler_FLG(uint8_t handler_set){
 
 void f_gps_has_time(void){
 
-  DB_PRINT(" H ");
-
-  if(gd_states_get_state() == E_SEARCH_POSITION_STATE)
+#if NO_SLEEP_TILL_BROOKLYN
+  if(gd_states_get_state() != E_SEARCH_POSITION_STATE)
   {
-    
-    eRTC_calculate_time_until_tx();
-   
-    if(gd.seconds_until_next_tx >= (2 * SLEEP_BEFORE_TX_SWAP_BACK_TIME))
-    {
-      
-      set_rtc_alarm(gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME); // gd.rtc_alarm = gd.seconds_until_next_tx - SLEEP_BEFORE_TX_SWAP_BACK_TIME;
-
-    }
-    else
-    {
-      
-      gps_stop();
-      DB_PRINT("GOFF\r\n");
-      set_rtc_alarm(gd.seconds_until_next_tx);  // ngd.rtc_alarm = gd.seconds_until_next_tx;
-      RTC_ALARM_ON = true;
-      set_message_for_tx(e_send_position);
-      gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
-
-    }
-
+    return;
   }
-  
+
+  eRTC_calculate_time_until_tx();
+
+  if(gd.seconds_until_next_tx > GPS_OFF_TIME_SAFE_SYNC)
+  {
+    set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC);
+    RTC_ALARM_ON = true;
+    return;
+  }
+
+  /* Time alone does not establish a valid position. */
+  RTC_ALARM_ON = false;
+  stop_gps_and_select_message();
+
+  if(gd.seconds_until_next_tx == 0u)
+  {
+    gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
+  }
+  else
+  {
+    set_rtc_alarm(gd.seconds_until_next_tx);
+    gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
+    RTC_ALARM_ON = true;
+  }
+#endif
 }
+
 
 //  **********************  PRIVATE FUNCTIONS BODY  ************************  //
 
@@ -438,6 +444,39 @@ static void rtc_1000ms_handler(void){
 }
 
 
+/* Stop input before restoring the snapshot used by message construction. */
+static void stop_gps_and_select_message(void){
+
+  gps_stop();
+
+#if NO_SLEEP_TILL_BROOKLYN
+  if(VALID_POS_RECEIVED == true)
+  {
+    copy_position_from_to(RECOVERPOSITION);
+    set_message_for_tx(e_send_position);
+    return;
+  }
+#endif
+
+  set_max_lock_time();
+  gps_calculate_lock_time();
+
+  if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) &&
+     (COPY_POS_IS_VALID == true))
+  {
+    copy_position_from_to(RECOVERPOSITION);
+    set_message_for_tx(e_resend_position);
+  }
+  else
+  {
+    set_message_for_tx(e_No_gps);
+    COPY_POS_IS_VALID = false;
+  }
+
+  gd.no_position_cnt++;
+}
+
+
 static void rtc_alarm_handler(void){
   
   DB_PRINT("\r\n");
@@ -452,99 +491,17 @@ static void rtc_alarm_handler(void){
       
     break;
     case E_SEARCH_POSITION_STATE:
-    
-      // well, we did not find a position in time it seems --> we are transmitting now what??
-      // retransmit last position and all the other thigns from here...
-      // when we get here the tx_moment is still GPS_OFF_TIME_SAFE_SYNC seconds away -->
-      // becasue of that we are adding here the next rtc_alarm because that has to be the correct time for tx
-      // messages_before_transmission();
-      // TODO: we still would need to switch off all the stuff we dont need...
-      
-      
-      gps_stop();
-            
-#if NO_SLEEP_TILL_BROOKLYN   
-   
-      if(VALID_POS_RECEIVED == true)
-      {
-        
-        // gps_calculate_lock_time();
-        copy_position_from_to(RECOVERPOSITION);
-        set_message_for_tx(e_send_position);
-        
-      }
-      else
-      {
-        set_max_lock_time();
-      
-        gps_calculate_lock_time();
-     
-        if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) && (COPY_POS_IS_VALID == true))
-        {
-          
-          // copy old position and create set it up for transmission...
-          copy_position_from_to(RECOVERPOSITION);
-          set_message_for_tx(e_resend_position);
-        }
-        else
-        {
-          set_message_for_tx(e_No_gps);
-          COPY_POS_IS_VALID = false;
-        }
-        
-        gd.no_position_cnt++;
-      
-      }
-      
-      
-#else 
 
-  
+      /* Acquisition ends here, with or without a position this cycle. */
+      stop_gps_and_select_message();
 
-      
-      set_max_lock_time();
-      
-      gps_calculate_lock_time();
-   
-      if((gd.no_position_cnt < MAXIMUM_RESENT_SAME_POSITION) && (COPY_POS_IS_VALID == true))
-      {
-        
-        // copy old position and create set it up for transmission...
-        copy_position_from_to(RECOVERPOSITION);
-        set_message_for_tx(e_resend_position);
-      }
-      else
-      {
-        set_message_for_tx(e_No_gps);
-        COPY_POS_IS_VALID = false;
-      }
-      
-      gd.no_position_cnt++;
-      
-      
-      
-#endif      
 #if GPS_OFF_BEFORE_TX
-#if NO_SLEEP_TILL_BROOKLYN
-
-      set_rtc_alarm(GPS_OFF_TIME_SAFE_SYNC);  // gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
-      
+      set_rtc_alarm(GPS_OFF_TIME_SAFE_SYNC);
       gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
-      
       RTC_ALARM_ON = true;
-      
-#else      
-  
-      set_rtc_alarm(GPS_OFF_TIME_SAFE_SYNC);  // gd.rtc_alarm = GPS_OFF_TIME_SAFE_SYNC;
-      
-      gd_states_switch_to_next_state(E_SLEEP_BEFORE_TRANSMISSION_STATE);
-      
-      RTC_ALARM_ON = true;
-      
-#endif
-#else         
+#else
       gd_states_switch_to_next_state(E_TRANSMISSION_STATE);
-#endif      
+#endif
 
       DB_PRINT("NP");
 
@@ -1373,12 +1330,12 @@ static void f_setup_sleep_before_search(void){
     gd.seconds_until_next_tx = gd.seconds_until_next_tx + gd.time_between_tx;
   }
   
- 
+#if USE_BAT_IS_TOO_LOW_FLG 
   if(BAT_IS_TOO_LOW == true)
   {
     gd.seconds_until_next_tx = SECONDS_PER_HOUR - (2u * locker);
   }
-  
+#endif  
    
   if(gd.seconds_until_next_tx > locker)
   {

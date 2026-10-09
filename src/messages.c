@@ -448,10 +448,12 @@ static void insert_bat_error(uint8_t slot){
     sentence_buffer.gps_buffer[slot] = '1';
   }
   
+#if USE_BAT_IS_TOO_LOW_FLG  
   if(BAT_IS_TOO_LOW == true)
   {
     sentence_buffer.gps_buffer[slot] = '2';
   }
+#endif
   
   if(DDS_CFG_ERR == true)
   {

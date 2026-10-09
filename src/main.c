@@ -138,6 +138,8 @@ void main(void)
   // and therefore there should not be any 
 // Isr be active allready except perhaps the UART during debugging!!!
   
+  
+#if 0  
 #if DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON
 
   const unsigned char SW_version[] = "GPSD_v.1.0_db\r\n";
@@ -147,7 +149,7 @@ void main(void)
   const unsigned char SW_version[] = "G\r\n";
   
 #endif
-
+#endif
 
 	init_all();
 

@@ -229,7 +229,7 @@ static uint8_t temp_buff_pnt_cnt = MAX_DATA_LENGTH_GPS_SENTENCE;  // cMax_Senten
 
 static uint8_t endbyte_cnt = 2;
 
-static void process_gps_position(void);
+static bool process_gps_position(void);
 
 static uint8_t check_validity_of_time_diff(void);
 
@@ -594,7 +594,7 @@ gps_state_t gps_check_gps_error_status(void){
 #if GPS_PRINT       
     DB_PRINT("\r\nGPS F ERR\r\n");
  #endif       
-    try_reconfigure_gps();
+    // try_reconfigure_gps();
     gps_reinit();
   }
   else if(UART_GPS_FLG.valid_header_received == FALSE)
@@ -604,7 +604,7 @@ gps_state_t gps_check_gps_error_status(void){
 #if GPS_PRINT           
     DB_PRINT("\r\nGPS B ERR\r\n");
  #endif          
-    try_reconfigure_gps();
+    // try_reconfigure_gps();
     gps_reinit();
   }
   else
@@ -925,7 +925,7 @@ static void try_reconfigure_gps(void){
 
   
   
-  DB_PRINT("\r\ncfg_sent\r\nb");
+  // DB_PRINT("\r\ncfg_sent\r\nb");
   
   
 }
@@ -1088,7 +1088,7 @@ static  uint8_t gps_out_sentence_chck[] = {
 
 #endif    
   
-  DB_PRINT("\r\n");
+  // DB_PRINT("\r\n");
 
   strcpy((char *)(sentence_buffer.gps_buffer), gps_front);
   
@@ -1113,7 +1113,7 @@ static  uint8_t gps_out_sentence_chck[] = {
 
   // my_delay_ms(100);
 
-  DB_PRINT("\r\nSent cfg\r\n");
+  DB_PRINT(" S_cfg ");
   
 }
 
@@ -1177,6 +1177,8 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     endbyte_cnt--;
     if(endbyte_cnt == 0u)
     {
+      /* Synchronization belongs only to the sentence processed below. */
+      GPS_HAS_SYNCED = false;
       if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt) == TRUE)
       {
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
@@ -1202,7 +1204,15 @@ void values_to_gps_rx_buffer(uint8_t n_char){
       }
 #endif
       reset_uart_handler_flags();
-      process_gps_position();
+      /* Full-position handling already reschedules the alarm. */
+      if(process_gps_position() == false)
+      {
+        if(GPS_HAS_SYNCED == true)
+        {
+          handlers_generic_set_handler_FLG(e_gps_has_time_h);
+        }
+      }
+      GPS_HAS_SYNCED = false;
       return;
     }
   }
@@ -1235,7 +1245,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 
 
 /* Position flags can change only when a complete sentence is processed. */
-static void process_gps_position(void){
+static bool process_gps_position(void){
 #if DEBUGGING_IS_ON
   if((UART_GPS_FLG.rtc_test_first_run == FALSE) &&
      (UART_GPS_FLG.gsa_position_is_good == TRUE) && (UART_GPS_FLG.rmc_time_is_good == TRUE))
@@ -1296,13 +1306,14 @@ static void process_gps_position(void){
 
       // set the handler flag...
       handlers_generic_set_handler_FLG(e_gps_has_full_position_h);
+      return true;
 
     }
 
 
 #else
 
-    DB_PRINT("\r\nSync\r\n");
+    DB_PRINT(" SY ");
 
     UART_GPS_FLG.rtc_test_first_run = TRUE;
 
@@ -1317,11 +1328,13 @@ static void process_gps_position(void){
 
     UART_GPS_FLG.gsa_position_is_good = FALSE;
     UART_GPS_FLG.rmc_time_is_good = FALSE;
+    return true;
 
 #endif
 
   }
 
+  return false;
 }
 
 

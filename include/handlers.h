@@ -34,6 +34,7 @@ typedef enum {
   e_1000ms_h,
   e_200ms_h, // and then the timing for the rtc to keep a good timing allright
   e_gps_has_full_position_h,
+  e_gps_has_time_h,
   e_ring_buffer_handler,           
 
   e_gps_on_h,  
