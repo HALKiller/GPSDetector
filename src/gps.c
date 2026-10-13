@@ -76,8 +76,8 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
-#define DEFAULT_BAUD (B115200)  // (B9600)  //(B57600)  // 
-#define D_BAUD 1
+#define DEFAULT_BAUD (B9600)  // (B115200)  // (B9600)  //(B57600)  // 
+
 
 #define GPS_MODULE_L86 0
 #define GPS_MODULE_L86G 1
@@ -176,6 +176,7 @@ const uint8_t m_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
 #elif GPS_MODULE_L86G
     // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
     // UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n"); 
+const uint8_t m_cmd_set_9k6kBaud[] = "$PAIR864,0,0,9600*13\r\n";
 const uint8_t m_cmd_set_115kBaud[] = "$PAIR864,0,0,115200*1B\r\n";
 const uint8_t m_cmd_set_constelation[] = "$PAIR066,1,0,1,1,1,0*3A\r\n";
 const uint8_t m_cmd_get_constelation[] = "$PAIR067*3B\r\n";
@@ -641,17 +642,14 @@ static void configure_gps(void){
   CLRWDT();
   send_gps_direct();
   CLRWDT();
- #else
-   my_delay_ms(400);
-DB_PRINT("\r\nsgd\r\n");
+#else
+   
   
-  // timers_set_tmr1_id(0);
   
-  // send_gps_direct();
-  // CLRWDT();
-  // send_gps_direct();
-  // CLRWDT();
+  
 #endif
+// this initial delay is important for the module
+  my_delay_ms(2500);
 
   // so speed first up for matching the GPS...
   // uart_init_cfg(B115200);
@@ -660,10 +658,10 @@ DB_PRINT("\r\nsgd\r\n");
     switch(hlooper)
     {
       case 0:
-        setter = B9600;
+        setter = B9600;  // B9600;
       break;
       case 1:
-        setter = B57600;
+        setter = B57600;  // B57600;
       break;
       case 2:
         setter = B115200;
@@ -673,8 +671,15 @@ DB_PRINT("\r\nsgd\r\n");
   
     uart_init_cfg(setter);
    
-    UART_GPS_SEND(m_cmd_set_115kBaud);
-
+    // UART_GPS_SEND("\r\nTEST\r\n");
+    // my_delay_ms(50);
+    // UART_GPS_SEND(m_cmd_set_115kBaud);
+    UART_GPS_SEND(m_cmd_set_9k6kBaud);
+    
+    my_delay_ms(50);
+    // 
+    
+  }
 #if DEBUGGING_BB_IS_ON  
     send_gps_direct();
 #endif
@@ -692,8 +697,10 @@ DB_PRINT("\r\nsgd\r\n");
     
     // swon --> reboot
     GPS_VALIM = TRUE;
+    my_delay_ms(2500);
     
-  }
+  // }
+  
 
   uart_init_cfg(DEFAULT_BAUD);  // (B57600);
 
@@ -1782,16 +1789,6 @@ void gps_set_debbugging_sync_time_flg(void){
 
 #if DEBUGGING_BB_IS_ON
 
-#if 0
-static void send_gps_direct(void){
-  
-  return;
-  
-}
-
-#else
-
-
 static void send_gps_direct(void){
 
   uint8_t temp_gie = GIE;
@@ -1815,7 +1812,7 @@ static void send_gps_direct(void){
   GIE = temp_gie;
   
 }
-#endif
+
 
 #else
   

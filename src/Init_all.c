@@ -102,7 +102,7 @@ void init_all(void){
 
 
 
-	send_bb_string("\r\n--- RESET  BUILD: ");
+	DB_PRINT("\r\n--- RESET  BUILD: ");
 	// send_bb_string(__DATE__);
 	// send_bb_string("  ");
 	// send_bb_string(__TIME__);

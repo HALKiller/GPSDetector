@@ -242,21 +242,24 @@ void uart_init_cfg(baudrate_t baudrate){
     case B9600:
       DB_PRINT("U96");
       SPBRGH = SPBRGH_9600_VAL;
-      SPBRG = SPBRGL_9600_VAL;
+      SPBRGL = SPBRGL_9600_VAL;
+      
+      
+      
     break;
     case B57600:
       DB_PRINT("U57");
       SPBRGH = SPBRGH_57600_VAL;
-      SPBRG = SPBRGL_57600_VAL;
+      SPBRGL = SPBRGL_57600_VAL;
     break;
     case B115200:
       DB_PRINT("U115");
       SPBRGH = SPBRGH_115200_VAL;
-      SPBRG = SPBRGL_115200_VAL;    
+      SPBRGL = SPBRGL_115200_VAL;    
     break;    
     case B9600_low_clk:
       SPBRGH = SPBRGH_9600_LCKL_VAL;
-      SPBRG = SPBRGL_9600_LCKL_VAL;    
+      SPBRGL = SPBRGL_9600_LCKL_VAL;    
     break;
     default:
       DB_PRINT("Unknown: ");
@@ -278,7 +281,7 @@ void uart_init_cfg(baudrate_t baudrate){
 
 #endif
 
-  my_delay_ms(100);
+  my_delay_ms(50);
   
 #if DEBUGGING_IS_ON&&0
 

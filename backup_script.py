@@ -14,7 +14,7 @@ def create_backup():
     print(f"Current script directory: {current_script_dir}")
 
     # Define the folders to be copied (relative to the current_script_dir)
-    folders_to_copy = ["src", "include"]
+    folders_to_copy = ["Project_files", "src", "include"]
 
     # Construct the parent directory (one level up from current_script_dir)
     parent_dir = os.path.abspath(os.path.join(current_script_dir, os.pardir))
@@ -26,7 +26,11 @@ def create_backup():
     # Create a timestamp for the backup folder name (e.g., 1306_08072025)
     # Using 'DDMMYYYY_HHMMSS' format for uniqueness and sorting
     timestamp = datetime.now().strftime("%H%M_%d%m%Y")
-    destination_folder_name = timestamp
+    # Get the name of the folder where this script resides
+    # Example: C:\...\RDGPS -> RDGPS
+    base_folder_name = os.path.basename(current_script_dir)
+    # Final backup folder name, e.g. RDGPS_1306_08072025
+    destination_folder_name = f"{base_folder_name}_{timestamp}"
     destination_path = os.path.join(bup_dir, destination_folder_name)
 
     print(f"Destination backup path: {destination_path}")
