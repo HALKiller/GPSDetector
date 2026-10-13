@@ -50,8 +50,13 @@
 
 #define REDUCE_MEM_USAGE 1
 
+#if DEBUGGING_BB_IS_ON
 #define DB_PRINT_L(str) send_bb_string((const unsigned char *)(str))
-// #define DB_PRINT_L(str)   // send_bb_string((const unsigned char *)(str))
+#else
+#define DB_PRINT_L(str)  
+#endif
+
+
 
 union udt_flags{
 	uint8_t reg;

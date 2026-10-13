@@ -90,7 +90,7 @@ void init_all(void){
 	// my_delay_ms(5u);
 
 
-#if !COMPILE_FOR_RELEASE || 1
+#if !COMPILE_FOR_RELEASE
 // we are using this timer also with SPI_TILT_SENSOR --> NOT ANYMORE! 06112025
   init_TMR_bitbang_uart(NORMAL_CLOCK);
 #endif
