@@ -27,6 +27,10 @@
 #define USE_RX_CLOCK 1
 #define NO_SLEEP_TILL_BROOKLYN 1
 
+// to have a faster startup we can swon the GPS allready when we enter the rx_luz waiter 
+// therefore we can save the time it takes normally on the wait fo rhte gps
+#define CFG_GPS_AFTER_RX_LUZ 1
+#define USE_CFG_ERRCNT 1
 // we eliminate the one hour sleep 
 // just normal doubling
 #define USE_BAT_IS_TOO_LOW_FLG 0

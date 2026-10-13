@@ -197,7 +197,6 @@ uint32_t eRTC_get_second_cnt(void){
   
 }
 
-#if 1 //7 for refernece pruposes..
 
 // OV: 20251104
 void eRTC_calculate_time_until_tx(void)
@@ -291,124 +290,6 @@ void eRTC_calculate_time_until_tx(void)
   ertc_convert_to_str();
 #endif
 }
-
-
-#elif 0
-
-// OV: 20251103
-void eRTC_calculate_time_until_tx(void)
-{
-  uint32_t time_now = 0;
-  uint16_t series_loop_time;  // 0 - (time_between_tx - 1);
-  int8_t  who_is_transmitting_now;
-  int8_t  gd_cnt;  // that can get negativ...
-  uint8_t which_baliza_transmits;
-  int16_t tmp = 0;
-  
-  time_now = eRTC_get_second_cnt();
-
-  time_now = time_now + ( TRANSMISSION_TIME_OFFSET - gd.transmission_duration );  // existing sync/offset
-
-// this is the amount of seconds we have at this "series_loop_time"
-
-  series_loop_time = (uint16_t)(time_now % gd.time_between_tx);
-  
-  
-  who_is_transmitting_now = (int8_t)(series_loop_time / gd.transmission_duration);
-  who_is_transmitting_now = (int8_t)((who_is_transmitting_now % gd.max_detectores) + 1);
-
-
-  // gd_cnt = (int8_t)gd.number - (int8_t)( who_is_transmitting_now % gd.max_detectores + 1 );
-  // the one is again needed to stay compatible with the existing deployed balizas
-  gd_cnt = (int8_t)gd.number - who_is_transmitting_now - 1;
-
-  which_baliza_transmits = (uint8_t)(gd.transmission_duration - (series_loop_time % gd.transmission_duration));
-  // If you prefer exact-slot-edge to mean "0" remaining instead of "full duration", use this instead:
-  // { uint16_t rem = series_loop_time % gd.transmission_duration; which_baliza_transmits = (rem == 0) ? 0 : (gd.transmission_duration - rem); }
-
-  // keep intermediates signed; cast once at the end
-  tmp = ((int16_t)gd_cnt * (int16_t)gd.transmission_duration) + (int16_t)which_baliza_transmits;
-
-  if ( gd_cnt < 0 )
-  {
-    tmp = tmp + (int16_t)gd.time_between_tx;
-  }
-
-
-  gd.seconds_until_next_tx = (uint16_t)tmp;
-
-
-  gd.next_time_tx = gd.seconds_until_next_tx + time_now;
-
-  if ( gd.next_time_tx >= SECONDS_PER_DAY )
-  {
-    gd.next_time_tx = gd.next_time_tx - SECONDS_PER_DAY;
-  }
-
-#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)&&0
-  ertc_convert_to_real_time(gd.next_time_tx);
-  DB_PRINT("N_tx: ");
-  ertc_convert_to_str();
-#endif
-}
-
-#else
-  
-void eRTC_calculate_time_until_tx(void)
-{
-
-  uint32_t time_now = 0;
-  uint16_t resto_division;
-  int8_t who_is_transmitting_now;
-  int8_t cuantas_balizas;
-  uint8_t cualquier_baliza_transmite;
-
-
-  time_now = eRTC_get_second_cnt();
-  
-  time_now = time_now + ( 15 - gd.transmission_duration );  //15 Dieter
-  
-  resto_division = time_now % gd.time_between_tx;
-  who_is_transmitting_now = ( resto_division / gd.transmission_duration );
-  who_is_transmitting_now = ( who_is_transmitting_now % gd.max_detectores ) + 1;
-  
-  cuantas_balizas = (int8_t)gd.number - (int8_t)( who_is_transmitting_now % gd.max_detectores + 1 );
-  
-  cualquier_baliza_transmite = gd.transmission_duration - ( resto_division % gd.transmission_duration );
-
-  gd.seconds_until_next_tx = cuantas_balizas * gd.transmission_duration + cualquier_baliza_transmite;
-  
-
-  
-  if ( cuantas_balizas < 0 )
-  {
-    
-    gd.seconds_until_next_tx = gd.seconds_until_next_tx + gd.time_between_tx;
-    
-  }
-
-#if 1  
-
-  gd.next_time_tx = gd.seconds_until_next_tx + time_now;
-  
-  if(gd.next_time_tx > SECONDS_PER_DAY)
-  {
-    gd.next_time_tx = gd.next_time_tx - SECONDS_PER_DAY;
-  }
- 
-#if (DEBUGGING_IS_ON||DEBUGGING_BB_IS_ON)&&0 
-  ertc_convert_to_real_time(gd.next_time_tx);
-  DB_PRINT("N_tx: ");
-  ertc_convert_to_str();
-#endif  
-  
-#endif
-  
-
-
-}
-
-#endif
 
 
 

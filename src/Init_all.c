@@ -136,7 +136,9 @@ void init_all(void){
   
 	init_wdt();
 
+#if !CFG_GPS_AFTER_RX_LUZ
   gps_first_run();
+#endif
   
   startup();
   
@@ -158,7 +160,9 @@ void startup(void){
   tilt_sensor_init();
   
   gps_init();
-  
+#if CFG_GPS_AFTER_RX_LUZ  
+  GPS_VALIM = true;
+#endif
   
 #if EMULATE_GPS_TIME_POSITION  
 

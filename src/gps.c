@@ -177,7 +177,11 @@ const uint8_t m_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
     // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
     // UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n"); 
 const uint8_t m_cmd_set_9k6kBaud[] = "$PAIR864,0,0,9600*13\r\n";
+const uint8_t m_cmd_set_57k6Baud[] = "$PAIR864,0,0,57600*28\r\n";
 const uint8_t m_cmd_set_115kBaud[] = "$PAIR864,0,0,115200*1B\r\n";
+
+
+
 const uint8_t m_cmd_set_constelation[] = "$PAIR066,1,0,1,1,1,0*3A\r\n";
 const uint8_t m_cmd_get_constelation[] = "$PAIR067*3B\r\n";
 const uint8_t m_cmd_save_configuration[] = "$PAIR513*3D\r\n";
@@ -188,6 +192,8 @@ const uint8_t m_cmd_save_configuration[] = "$PAIR513*3D\r\n";
 
 #endif
 
+
+const uint8_t *module_baud_sentence_pnt = &m_cmd_set_9k6kBaud;  // m_cmd_set_115kBaud;
 
  
 #if 0
@@ -333,6 +339,24 @@ void gps_init(void){
 
 }
 
+#if CFG_GPS_AFTER_RX_LUZ
+
+void gps_first_run(void){
+  
+  uart_init_cfg(DEFAULT_BAUD);
+  
+  UART_on();  // the Peripheric UART
+  
+  // GPS_VALIM = TRUE; // gps gest energy
+
+  // configure_gps();
+ 
+  // GPS_VALIM = FALSE;
+
+}
+
+#else
+
 void gps_first_run(void){
   
   uart_init_cfg(DEFAULT_BAUD);
@@ -344,9 +368,11 @@ void gps_first_run(void){
   configure_gps();
  
   GPS_VALIM = FALSE;
-  
-  
+
 }
+
+#endif
+
 
 uint32_t gps_rtc_get_second_cnt(void){
   
@@ -411,7 +437,9 @@ void gps_reinit(void){
   GPS_VALIM = TRUE;
   
 #endif  
-  my_delay_ms(1000);
+
+  // my_delay_ms(1000);
+  
   // reset the position_cnt...
   valid_position_cnt = 0;
   
@@ -649,7 +677,9 @@ static void configure_gps(void){
   
 #endif
 // this initial delay is important for the module
+#if !CFG_GPS_AFTER_RX_LUZ
   my_delay_ms(2500);
+#endif
 
   // so speed first up for matching the GPS...
   // uart_init_cfg(B115200);
@@ -674,7 +704,10 @@ static void configure_gps(void){
     // UART_GPS_SEND("\r\nTEST\r\n");
     // my_delay_ms(50);
     // UART_GPS_SEND(m_cmd_set_115kBaud);
-    UART_GPS_SEND(m_cmd_set_9k6kBaud);
+    
+    // UART_GPS_SEND(m_cmd_set_57k6Baud);
+    UART_GPS_SEND(module_baud_sentence_pnt);
+    // UART_GPS_SEND(m_cmd_set_9k6kBaud);
     
     my_delay_ms(50);
     // 
@@ -705,11 +738,11 @@ static void configure_gps(void){
   uart_init_cfg(DEFAULT_BAUD);  // (B57600);
 
   //give a delay to 
-  my_delay_ms(1000);
+  // my_delay_ms(1000);
   
   disable_constelations();
   
-  my_delay_ms(1000);
+  // my_delay_ms(1000);
   
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
@@ -719,7 +752,7 @@ static void configure_gps(void){
 #endif
 
   
-  my_delay_ms(2000);
+  // my_delay_ms(2000);
 
   
 #if DEBUGGING_BB_IS_ON

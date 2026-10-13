@@ -16,7 +16,7 @@
 
 #include "ring_buffer.h"
 
-#include "checksumming.h"
+// #include "checksumming.h"
 
 #include "io_port_sfr_names.h"
 

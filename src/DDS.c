@@ -113,10 +113,10 @@ const uint8_t shifts_8bit[8] = {
 
 
 
-uint16_t gTimerBitNormal;
-uint16_t gTimerBitFinal;
+// uint16_t gTimerBitNormal;
+// uint16_t gTimerBitFinal;
 
-extern bool gTrueSi150FalseSi300;
+// extern bool gTrueSi150FalseSi300;
 
 #if COMPILE_FOR_INTERNAL_TEST
 #define MAX_TXCNT_LIMIT (uint16_t)0x2F86 // 23x23x23
@@ -192,8 +192,6 @@ void Transmite(bool TransmiteRadiogonio){
   messages_before_transmission();
 #endif
 
-
-  
 
 #if USE_ADC_OVERSAMPLING&&1
   LeerValorBateria();
@@ -636,7 +634,7 @@ static void AD9954TransmiteByte(uint8_t ByteBaudot){
   }
   else
   {
-    // 6,56ms --> wtf...
+    // 6,66ms
     // 150 bps
     // Ajuste del PostScaler
     TMR2_POSTSCALER = TMR2_150BAUD_POST;

@@ -646,6 +646,10 @@ static void f_gps_on(void){
 static void f_gps_test_rx(void){
   
   gps_state_t gps_state;
+#if USE_CFG_ERRCNT  
+  static uint8_t err_cnt = 0;
+#endif
+  
   // depending on the gd_state we decide what is goping to happen -->
   // if there is the activation state --> well send depending on that
   gps_state = gps_check_gps_error_status();
@@ -654,6 +658,8 @@ static void f_gps_test_rx(void){
   {
     if(gps_state == GPS_SENTENCE_RECEIVING)
     {
+      err_cnt = 0;
+      
       set_message_for_tx(e_Activation);
 
       if(TILT_SENSOR_ERR == true)
@@ -666,8 +672,14 @@ static void f_gps_test_rx(void){
       }
  
     }
+    else if(err_cnt < 3)
+    {
+      err_cnt++;
+      return;
+    }
     else
     {
+      
       set_message_for_tx(e_No_gps);
 
       detector_status_led_cnt_on(LED_RED_BLINKS); // LED_RED_ON
@@ -1001,7 +1013,12 @@ static void f_rx_luz_com_handler(void){
   
   WDTCONbits.SWDTEN = TRUE;
   
+#if CFG_GPS_AFTER_RX_LUZ
+
+#endif  
+  
   gd_states_switch_to_next_state(E_STARTUP_STATE);
+  
 #if EMULATE_GPS_TIME_POSITION    
   RTC_TIME_IS_GOOD = false;
 #endif  
