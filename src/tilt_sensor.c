@@ -253,13 +253,13 @@ void tilt_sensor_init(void){
 // count > than threshold. and there can be two different thresholds for up and downcount.
 uint8_t update_tilt_sensor_state(void){
 
-
+#if 0
 #if USE_SPI_TILT
   uint8_t read_state = get_tilt_data();
 #else
   uint8_t read_state = TILT_SENSOR;
 #endif
-
+#endif
   if(tilt_sensor.detector_is_on != TS_ON_STATE)
   {
 

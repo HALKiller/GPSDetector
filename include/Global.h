@@ -66,10 +66,10 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 1
+#define COMPILE_FOR_RELEASE 0
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 0
+#define COMPILE_FOR_TEST 1
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -84,7 +84,7 @@ err
 err
 #endif
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 69
+#define PCB_VERSION 67
 
 
 // The actual Version as string...
@@ -520,7 +520,7 @@ extern const uint16_t shifts[16];
 #else
 
 #define               FILE_MAIN_DB_ENABLED 0
-#define           FILE_INIT_ALL_DB_ENABLED 1
+#define           FILE_INIT_ALL_DB_ENABLED 0
 #define               FILE_UART_DB_ENABLED 1  // the UART_int is not working otherwise of course...
 #define              FILE_CLOCK_DB_ENABLED 0
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0

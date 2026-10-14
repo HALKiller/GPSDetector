@@ -78,6 +78,8 @@
 
 #define DEFAULT_BAUD (B115200)  // (B115200)  // (B9600)  //(B57600)  // 
 
+#define ONE_TO_RULE_THEM_ALL 1
+
 #if PCB_VERSION==66
 #define GPS_MODULE_L86 0
 #define GPS_MODULE_L86G 1
@@ -168,7 +170,43 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
  
 // * * * * * * *    L 8 6   M O D U L E   S E N T N C E S   * * * * * * * * * * * * *   // 
 
-#if GPS_MODULE_L86
+
+#if ONE_TO_RULE_THEM_ALL
+
+
+
+
+const uint8_t m_L86_cmd_set_9k6kBaud[] = "$PMTK251,9600*17\r\n";
+// const uint8_t m_L86_cmd_set_57k6Baud[] = "$PMTK251,57600*2C\r\n";
+const uint8_t m_L86_cmd_set_115kBaud[] = "$PMTK251,115200*1F\r\n";
+const uint8_t m_L86_cmd_set_constelation[] = "$PMTK353,1,0,1,0,0*2B\r\n";
+// const uint8_t m_L86_cmd_get_constelation[] = "$PMTK355*31\r\n";
+const uint8_t m_L86_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
+
+const uint8_t m_LC86L_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n";
+
+
+
+const uint8_t m_L86G_cmd_set_9k6kBaud[] = "$PAIR864,0,0,9600*13\r\n";
+// const uint8_t m_L86G_cmd_set_57k6Baud[] = "$PAIR864,0,0,57600*28\r\n";
+const uint8_t m_L86G_cmd_set_115kBaud[] = "$PAIR864,0,0,115200*1B\r\n";
+const uint8_t m_L86G_cmd_set_constelation[] = "$PAIR066,1,0,1,1,1,0*3A\r\n";
+const uint8_t m_L86G_cmd_get_constelation[] = "$PAIR067*3B\r\n";
+const uint8_t m_L86G_cmd_save_configuration[] = "$PAIR513*3D\r\n";
+
+const uint8_t *const sentence_pnt[7] = {
+  
+  &m_L86_cmd_set_115kBaud,  // m_L86_cmd_set_9k6kBaud,  // m_L86_cmd_set_115kBaud,
+  &m_L86G_cmd_set_115kBaud, // m_L86G_cmd_set_9k6kBaud, // m_L86G_cmd_set_115kBaud,
+  &m_L86_cmd_set_sentences,
+  &m_LC86L_cmd_set_sentences,
+  &m_L86_cmd_set_constelation,
+  &m_L86G_cmd_set_constelation,
+  &m_L86G_cmd_save_configuration,
+  
+};
+
+#elif GPS_MODULE_L86
 
 // const uint8_t m_cmd_set_384kBaud[] = "$PMTK251,38400*27\r\n";
 const uint8_t m_cmd_set_9k6kBaud[] = "$PMTK251,9600*17\r\n";
@@ -180,6 +218,8 @@ const uint8_t m_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
 
 const uint8_t m_cmd_set_sentences_2[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n"
 
+const uint8_t *module_baud_sentence_pnt = &m_cmd_set_115kBaud;  // m_cmd_set_57k6Baud;; // &m_cmd_set_115kBaud;  // m_cmd_set_115kBaud;
+
 #elif GPS_MODULE_L86G
 
 const uint8_t m_cmd_set_9k6kBaud[] = "$PAIR864,0,0,9600*13\r\n";
@@ -190,23 +230,16 @@ const uint8_t m_cmd_get_constelation[] = "$PAIR067*3B\r\n";
 const uint8_t m_cmd_save_configuration[] = "$PAIR513*3D\r\n";
 
 // UART_GPS_SEND("$PAIR513*3D\r\n");
+
+const uint8_t *module_baud_sentence_pnt = &m_cmd_set_115kBaud;  // m_cmd_set_57k6Baud;; // &m_cmd_set_115kBaud;  // m_cmd_set_115kBaud;
+
 #else
   
 wat?
 
 #endif
 
-// #if DEFAULT_BAUD==(B115200)
-const uint8_t *module_baud_sentence_pnt = &m_cmd_set_115kBaud;  // m_cmd_set_57k6Baud;; // &m_cmd_set_115kBaud;  // m_cmd_set_115kBaud;
 
-// #elif DEFAULT_BAUD==(B57600)
-// const uint8_t *module_baud_sentence_pnt = &m_cmd_set_57k6Baud;  // m_cmd_set_115kBaud;
-// #elif DEFAULT_BAUD==(B9600)
-// const uint8_t *module_baud_sentence_pnt = &m_cmd_set_9k6kBaud;  // m_cmd_set_115kBaud;
-// wat
-// #else
-// wat?  
-// #endif
 
  
 #if 0
@@ -464,7 +497,7 @@ void gps_reinit(void){
   // save the time for the moment...
   gps_module.lock_time_start = eRTC_get_second_cnt();
 
-#if GPS_MODULE_L86
+#if GPS_MODULE_L86&&0
 
   my_delay_ms(1500);
   disable_constelations();
@@ -713,11 +746,25 @@ static void configure_gps(void){
     uart_init_cfg(setter);
     
     // this is the sentence which sets the baudrate in the module
+#if ONE_TO_RULE_THEM_ALL
+ 
+    UART_GPS_SEND(sentence_pnt[0]);
+
+    my_delay_ms(50);
+
+    UART_GPS_SEND(sentence_pnt[1]);
+
+    my_delay_ms(50);
+    
+#else
+    
     UART_GPS_SEND(module_baud_sentence_pnt);
 
     my_delay_ms(50);
 
-
+#endif
+  
+    
   }
   
 #if DEBUGGING_BB_IS_ON  
@@ -745,11 +792,15 @@ static void configure_gps(void){
   
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
-
+  
+#if ONE_TO_RULE_THEM_ALL
+  UART_GPS_SEND(sentence_pnt[6]);
+#else
+  
 #if GPS_MODULE_L86G
   UART_GPS_SEND(m_cmd_save_configuration);
 #endif
-
+#endif
   
 #if DEBUGGING_BB_IS_ON
   send_gps_direct();
@@ -764,16 +815,73 @@ static void configure_gps(void){
 
 static void disable_constelations(void){
 
+#if ONE_TO_RULE_THEM_ALL
+  
+  UART_GPS_SEND(sentence_pnt[4]);
+  UART_GPS_SEND(sentence_pnt[5]);
+  // my_delay_ms(50);
+  
+#else
+
   UART_GPS_SEND(m_cmd_set_constelation);
 
-  my_delay_ms(50);
+  // my_delay_ms(50);
 
-  UART_GPS_SEND(m_cmd_get_constelation);
-  
+  // UART_GPS_SEND(m_cmd_get_constelation);
+ #endif
+ 
 }
 
 
-#if GPS_MODULE_L86
+
+#if ONE_TO_RULE_THEM_ALL
+static void send_recfg_gps_sentences(void){
+
+
+  static uint8_t gps_out_sentence[] = {
+    '0', '1', '3', '5', '6', '7', '8', '9'
+  };
+
+  static  uint8_t gps_out_sentence_chck[] = {
+    'E', 'F', 'D', 'B', '8', '9', '6', '7'
+  };
+  
+
+  char out_sentence[18];
+
+  static const char gps_base_sentence[] = "$PAIR062,0,0*3E\r\n";
+
+  uint8_t hlooper = 0;
+  
+
+  strcpy((char *)(out_sentence), gps_base_sentence);
+  
+  for(hlooper = 0; hlooper < 8; hlooper++)
+  {
+    
+    out_sentence[9] = gps_out_sentence[hlooper];
+    
+    out_sentence[14] = gps_out_sentence_chck[hlooper];
+
+    DB_PRINT(&out_sentence);
+    
+    UART_GPS_SEND(&out_sentence);
+    
+    my_delay_ms(100);
+    
+  }
+
+  UART_GPS_SEND(sentence_pnt[2]);
+   
+  my_delay_ms(100);
+  
+  UART_GPS_SEND(sentence_pnt[3]);
+
+  DB_PRINT(" S_cfg ");
+
+
+}
+#elif GPS_MODULE_L86
 
 static void send_recfg_gps_sentences(void){
   
