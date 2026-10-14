@@ -52,7 +52,6 @@
       <itemPath>src/rx_luz.c</itemPath>
       <itemPath>src/my_assert.c</itemPath>
       <itemPath>src/device_driver_config.c</itemPath>
-      <itemPath>src/int2string.c</itemPath>
       <itemPath>src/tilt_sensor.c</itemPath>
       <itemPath>src/timers.c</itemPath>
       <itemPath>src/gd_states.c</itemPath>
@@ -609,16 +608,6 @@
         <XC8-config-global>
         </XC8-config-global>
       </item>
-      <item path="src/int2string.c" ex="true" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
       <item path="src/messages.c" ex="true" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
@@ -658,7 +647,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>noID</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>3.00</languageToolchainVersion>
+        <languageToolchainVersion>2.20</languageToolchainVersion>
         <platform>3</platform>
       </toolsSet>
       <packs>
@@ -1234,16 +1223,6 @@
         <XC8-config-global>
         </XC8-config-global>
       </item>
-      <item path="src/int2string.c" ex="true" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
       <item path="src/my_assert.c" ex="false" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
@@ -1273,7 +1252,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>noID</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>3.00</languageToolchainVersion>
+        <languageToolchainVersion>2.20</languageToolchainVersion>
         <platform>3</platform>
       </toolsSet>
       <packs>
@@ -1759,7 +1738,7 @@
         <targetPluginBoard></targetPluginBoard>
         <platformTool>noID</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>3.00</languageToolchainVersion>
+        <languageToolchainVersion>2.20</languageToolchainVersion>
         <platform>3</platform>
       </toolsSet>
       <packs>
@@ -2326,16 +2305,6 @@
         </XC8-config-global>
       </item>
       <item path="src/device_driver_config.c" ex="true" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
-      <item path="src/int2string.c" ex="true" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
         <HI-TECH-LINK>
@@ -2870,16 +2839,6 @@
         <XC8-config-global>
         </XC8-config-global>
       </item>
-      <item path="src/int2string.c" ex="true" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
       <item path="src/rx_luz.c" ex="false" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
@@ -3386,16 +3345,6 @@
         </XC8-config-global>
       </item>
       <item path="include/rx_luz.h" ex="false" overriding="false">
-        <HI-TECH-COMP>
-        </HI-TECH-COMP>
-        <HI-TECH-LINK>
-        </HI-TECH-LINK>
-        <XC8-CO>
-        </XC8-CO>
-        <XC8-config-global>
-        </XC8-config-global>
-      </item>
-      <item path="src/int2string.c" ex="true" overriding="false">
         <HI-TECH-COMP>
         </HI-TECH-COMP>
         <HI-TECH-LINK>

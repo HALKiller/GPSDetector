@@ -78,10 +78,13 @@
 
 #define DEFAULT_BAUD (B115200)  // (B115200)  // (B9600)  //(B57600)  // 
 
-
-#define GPS_MODULE_L86 1
-#define GPS_MODULE_L86G 0
-
+#if PCB_VERSION==66
+#define GPS_MODULE_L86 0
+#define GPS_MODULE_L86G 1
+#else
+#define GPS_MODULE_L86 0
+#define GPS_MODULE_L86G 1  
+#endif
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
 
@@ -167,22 +170,21 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
 
 #if GPS_MODULE_L86
 
+// const uint8_t m_cmd_set_384kBaud[] = "$PMTK251,38400*27\r\n";
 const uint8_t m_cmd_set_9k6kBaud[] = "$PMTK251,9600*17\r\n";
-const uint8_t m_cmd_set_384kBaud[] = "$PMTK251,38400*27\r\n";
+const uint8_t m_cmd_set_57k6Baud[] = "$PMTK251,57600*2C\r\n";
 const uint8_t m_cmd_set_115kBaud[] = "$PMTK251,115200*1F\r\n";
 const uint8_t m_cmd_set_constelation[] = "$PMTK353,1,0,1,0,0*2B\r\n";
 const uint8_t m_cmd_get_constelation[] = "$PMTK355*31\r\n";
 const uint8_t m_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
 
+const uint8_t m_cmd_set_sentences_2[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n"
+
 #elif GPS_MODULE_L86G
-    // UART_GPS_SEND("$PAIR864,0,0,57600*28\r\n");
-    // UART_GPS_SEND("$PAIR864,0,0,9600*13\r\n"); 
+
 const uint8_t m_cmd_set_9k6kBaud[] = "$PAIR864,0,0,9600*13\r\n";
 const uint8_t m_cmd_set_57k6Baud[] = "$PAIR864,0,0,57600*28\r\n";
 const uint8_t m_cmd_set_115kBaud[] = "$PAIR864,0,0,115200*1B\r\n";
-
-
-
 const uint8_t m_cmd_set_constelation[] = "$PAIR066,1,0,1,1,1,0*3A\r\n";
 const uint8_t m_cmd_get_constelation[] = "$PAIR067*3B\r\n";
 const uint8_t m_cmd_save_configuration[] = "$PAIR513*3D\r\n";
@@ -194,8 +196,17 @@ wat?
 
 #endif
 
+// #if DEFAULT_BAUD==(B115200)
+const uint8_t *module_baud_sentence_pnt = &m_cmd_set_115kBaud;  // m_cmd_set_57k6Baud;; // &m_cmd_set_115kBaud;  // m_cmd_set_115kBaud;
 
-const uint8_t *module_baud_sentence_pnt = &m_cmd_set_115kBaud;  // m_cmd_set_115kBaud;
+// #elif DEFAULT_BAUD==(B57600)
+// const uint8_t *module_baud_sentence_pnt = &m_cmd_set_57k6Baud;  // m_cmd_set_115kBaud;
+// #elif DEFAULT_BAUD==(B9600)
+// const uint8_t *module_baud_sentence_pnt = &m_cmd_set_9k6kBaud;  // m_cmd_set_115kBaud;
+// wat
+// #else
+// wat?  
+// #endif
 
  
 #if 0
@@ -706,13 +717,14 @@ static void configure_gps(void){
 
     my_delay_ms(50);
 
-    
+
   }
+  
 #if DEBUGGING_BB_IS_ON  
-    send_gps_direct();
+  send_gps_direct();
 #endif
-    
-      
+
+
   //give a delay to 
   my_delay_ms(40);
   
