@@ -160,6 +160,7 @@ void startup(void){
   tilt_sensor_init();
   
   gps_init();
+  
 #if CFG_GPS_AFTER_RX_LUZ  
   GPS_VALIM = true;
 #endif
@@ -197,7 +198,6 @@ void startup(void){
   measure_bat_for_batcnt(E_STARTUP_STATE);
 
 
-  
 }
 
 

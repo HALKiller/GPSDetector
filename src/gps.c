@@ -76,11 +76,11 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
-#define DEFAULT_BAUD (B9600)  // (B115200)  // (B9600)  //(B57600)  // 
+#define DEFAULT_BAUD (B115200)  // (B115200)  // (B9600)  //(B57600)  // 
 
 
-#define GPS_MODULE_L86 0
-#define GPS_MODULE_L86G 1
+#define GPS_MODULE_L86 1
+#define GPS_MODULE_L86G 0
 
 
 //   * * * * *      D A T A   T Y P E S ,   S T R U C T S ,   E N U M S     * * * * * * * * * *  //
@@ -167,6 +167,7 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
 
 #if GPS_MODULE_L86
 
+const uint8_t m_cmd_set_9k6kBaud[] = "$PMTK251,9600*17\r\n";
 const uint8_t m_cmd_set_384kBaud[] = "$PMTK251,38400*27\r\n";
 const uint8_t m_cmd_set_115kBaud[] = "$PMTK251,115200*1F\r\n";
 const uint8_t m_cmd_set_constelation[] = "$PMTK353,1,0,1,0,0*2B\r\n";
@@ -189,11 +190,12 @@ const uint8_t m_cmd_save_configuration[] = "$PAIR513*3D\r\n";
 // UART_GPS_SEND("$PAIR513*3D\r\n");
 #else
   
+wat?
 
 #endif
 
 
-const uint8_t *module_baud_sentence_pnt = &m_cmd_set_9k6kBaud;  // m_cmd_set_115kBaud;
+const uint8_t *module_baud_sentence_pnt = &m_cmd_set_115kBaud;  // m_cmd_set_115kBaud;
 
  
 #if 0
@@ -416,7 +418,6 @@ void gps_startup_initializer(void){
 // information if we are actually receiving something usefull...
 void gps_reinit(void){
 
-  // DB_PRINT("\r\ngps_reinit\r\n");
 
   UART_GPS_FLG.reg = 0u; // reset everything
 
@@ -438,8 +439,7 @@ void gps_reinit(void){
   
 #endif  
 
-  // my_delay_ms(1000);
-  
+
   // reset the position_cnt...
   valid_position_cnt = 0;
   
@@ -700,17 +700,12 @@ static void configure_gps(void){
     }
   
     uart_init_cfg(setter);
-   
-    // UART_GPS_SEND("\r\nTEST\r\n");
-    // my_delay_ms(50);
-    // UART_GPS_SEND(m_cmd_set_115kBaud);
     
-    // UART_GPS_SEND(m_cmd_set_57k6Baud);
+    // this is the sentence which sets the baudrate in the module
     UART_GPS_SEND(module_baud_sentence_pnt);
-    // UART_GPS_SEND(m_cmd_set_9k6kBaud);
-    
+
     my_delay_ms(50);
-    // 
+
     
   }
 #if DEBUGGING_BB_IS_ON  
@@ -718,31 +713,23 @@ static void configure_gps(void){
 #endif
     
       
-    //give a delay to 
-    my_delay_ms(40);
-    // my_delay_ms(400);
-    
-    // swoff --> reboot
-    GPS_VALIM = FALSE;
-    
-    //give a delay to 
-    my_delay_ms(100);
-    
-    // swon --> reboot
-    GPS_VALIM = TRUE;
-    my_delay_ms(2500);
-    
-  // }
-  
-
-  uart_init_cfg(DEFAULT_BAUD);  // (B57600);
-
   //give a delay to 
-  // my_delay_ms(1000);
+  my_delay_ms(40);
   
+  // swoff --> reboot
+  GPS_VALIM = FALSE;
+  
+  //give a delay to 
+  my_delay_ms(100);
+  
+  // swon --> reboot
+  GPS_VALIM = TRUE;
+  
+  my_delay_ms(2500);
+
+  uart_init_cfg(DEFAULT_BAUD);
+
   disable_constelations();
-  
-  // my_delay_ms(1000);
   
   // now send the reduction of sentences from the GPS
   send_recfg_gps_sentences();
@@ -750,9 +737,6 @@ static void configure_gps(void){
 #if GPS_MODULE_L86G
   UART_GPS_SEND(m_cmd_save_configuration);
 #endif
-
-  
-  // my_delay_ms(2000);
 
   
 #if DEBUGGING_BB_IS_ON
@@ -793,22 +777,27 @@ static void send_recfg_gps_sentences(void){
 
 static void send_recfg_gps_sentences(void){
   
+#define REDUCE_ROM_HERE 1
+
+  static uint8_t gps_out_sentence[] = {
+    '0', '1', '3', '5', '6', '7', '8', '9'
+  };
+
+  static  uint8_t gps_out_sentence_chck[] = {
+    'E', 'F', 'D', 'B', '8', '9', '6', '7'
+  };
   
-  
-static uint8_t gps_out_sentence[] = {
-  '0', '1', '3', '5', '6', '7', '8', '9'
-};
+#if REDUCE_ROM_HERE
 
-static  uint8_t gps_out_sentence_chck[] = {
-  'E', 'F', 'D', 'B', '8', '9', '6', '7'
-};
+  char out_sentence[18];
 
+  static const char gps_base_sentence[] = "$PAIR062,0,0*3E\r\n";
 
-
+#else
   static const char gps_front[] = "$PAIR062,";
   static const char gps_mid[] = ",0*3";
   static const char gps_end[] = "\r\n";
-
+#endif
 
   uint8_t hlooper = 0;
   
@@ -820,14 +809,33 @@ static  uint8_t gps_out_sentence_chck[] = {
 
 #endif    
   
-  // DB_PRINT("\r\n");
+#if REDUCE_ROM_HERE
+  
+  strcpy((char *)(out_sentence), gps_base_sentence);
+  
+  for(hlooper = 0; hlooper < 8; hlooper++)
+  {
+    
+    out_sentence[9] = gps_out_sentence[hlooper];
+    
+    out_sentence[14] = gps_out_sentence_chck[hlooper];
+
+    DB_PRINT(&out_sentence);
+    
+    UART_GPS_SEND(&out_sentence);
+    
+    my_delay_ms(100);
+    
+  }
+  
+#else  
 
   strcpy((char *)(sentence_buffer.gps_buffer), gps_front);
   
   strcpy((char *)&sentence_buffer.gps_buffer[10], gps_mid);
   
   strcpy((char *)&sentence_buffer.gps_buffer[15], gps_end);
-  
+
   for(hlooper = 0; hlooper < 8; hlooper++)
   {
     
@@ -843,7 +851,7 @@ static  uint8_t gps_out_sentence_chck[] = {
     
   }
 
-  // my_delay_ms(100);
+#endif  
 
   DB_PRINT(" S_cfg ");
   
@@ -1542,16 +1550,13 @@ static void process_rmc_sentence(void){
   rmc_sentence.HayLatitud = false;
   rmc_sentence.HayLongitud = false;
   
- // El primer valor que se encuentra es la hora UTC, que siempre aparece en todo tipo de tramas RMC
+ // get the time
   rmc_sentence.UtcOfPosition.Horas    = AToUint8_t( search_pnt, 2 );
   rmc_sentence.UtcOfPosition.Minutos  = AToUint8_t( search_pnt + 2, 2 );
   rmc_sentence.UtcOfPosition.Segundos = AToUint8_t( search_pnt + 4, 2 );
 
 
-
-
-
-  // Haya o no haya posición, siempre estará un indicador sobre el estado:
+  // get the state of the sentence
   search_pnt = Uint8_tStrchr( search_pnt, ',' ) + 1;
   if ( search_pnt[0] == 'V' )
   {
