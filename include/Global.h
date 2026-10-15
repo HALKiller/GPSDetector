@@ -30,6 +30,8 @@
 // to have a faster startup we can swon the GPS allready when we enter the rx_luz waiter 
 // therefore we can save the time it takes normally on the wait fo rhte gps
 #define CFG_GPS_AFTER_RX_LUZ 1
+
+// we recfg 
 #define USE_CFG_ERRCNT 1
 // we eliminate the one hour sleep 
 // just normal doubling
@@ -66,10 +68,10 @@
 //  * * * * * * * * * * * * *  D E B U G G I N G   A N D   V E R S I O N  r e l a t e d     * * * * * * * * * * * * *  //
 
 // when set we have a release version
-#define COMPILE_FOR_RELEASE 1
+#define COMPILE_FOR_RELEASE 0
 
 // if COMPILE_FOR_RELEASE == false we can compile for test
-#define COMPILE_FOR_TEST 0
+#define COMPILE_FOR_TEST 1
 
 // or compile for internal test --> that is only for me
 #define COMPILE_FOR_INTERNAL_TEST 0
@@ -85,9 +87,9 @@ err
 #endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 69
+#define PCB_VERSION 67
 
-#define BAUD_SETTING 115200  // (B115200)  // (B9600)  //(B57600)  // 
+#define BAUD_SETTING 9600  // (B115200)  // (B9600)  //(B57600)  // 
 
 // The actual Version as string...
 #define FW_VERSION_STR "33"
@@ -218,7 +220,7 @@ err
 #define SEND_LOCK_TIME_DECIMAS_LATITUDE 0
 
 // all DB_FILE ANBLED are swoffed
-#define SWOFF_ALL_DB_FILE_ENABLED 0
+#define SWOFF_ALL_DB_FILE_ENABLED 1
 #define COMPILE_ONLY_RX_LUZ 0
 
 // ---------------------------------------------------------  COMPILE FOR INTERNAL TEST  -------------------------  //

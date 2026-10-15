@@ -74,6 +74,7 @@ void __interrupt() isr(void){
 #if 0
     RX_IF = FALSE;
 #else    
+    // BB_DIRECT = !BB_DIRECT;
 		rx_data = RCREG;
 		set_data_value_into_buffer(rx_data);
 #endif		

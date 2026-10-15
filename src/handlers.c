@@ -580,6 +580,7 @@ static void rtc_200ms_handler(void){
 static void process_next_char_from_input(void){
 	
   uint8_t rx_data;
+  
 
 // the actual gps input
   get_data_from_buffer_with_pnt(&rx_data);
@@ -618,22 +619,22 @@ static void f_gps_on(void){
   else
   {
 #if 1 // DB_07102026
-    gd.seconds_until_next_tx = 120u;  //gd.time_between_tx;
+    gd.seconds_until_next_tx = gd.time_between_tx;  // 600;  //
     set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
     
-     DB_PRINT(" G24 ");
+    DB_PRINT(" I ");
     
 #elif DB_V69_PCB
     gd.seconds_until_next_tx = 240u;  //gd.time_between_tx;
     set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
-    DB_PRINT(" GPS_ON 240\r\n");
+    DB_PRINT(" J ");
 #else   
     gd.seconds_until_next_tx = 600u;  //gd.time_between_tx;
     set_rtc_alarm(gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC); // gd.rtc_alarm = gd.seconds_until_next_tx - GPS_OFF_TIME_SAFE_SYNC;
     RTC_ALARM_ON = true;
-    DB_PRINT(" G600\r\n");
+    DB_PRINT(" K ");
 #endif    
   }
   
@@ -675,6 +676,8 @@ static void f_gps_test_rx(void){
     else if(err_cnt < 3)
     {
       err_cnt++;
+      DB_PRINT(" H ");
+      UART_int(err_cnt);
       return;
     }
     else

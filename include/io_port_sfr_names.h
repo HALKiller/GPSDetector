@@ -90,6 +90,7 @@ wat
 
 #define USE_BB_LED_OUTPUT 1
 #define BB_DIRECT LATBbits.LATB7
+#define BB_TX_UART LATBbits.LATB6// LATAbits.LATA7 // 
 #else
   
 #define USE_BB_LED_OUTPUT 0

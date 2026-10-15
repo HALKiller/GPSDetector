@@ -417,12 +417,6 @@ void gps_first_run(void){
   uart_init_cfg(DEFAULT_BAUD);
   
   UART_on();  // the Peripheric UART
-  
-  // GPS_VALIM = TRUE; // gps gest energy
-
-  // configure_gps();
- 
-  // GPS_VALIM = FALSE;
 
 }
 
@@ -435,11 +429,11 @@ void gps_first_run(void){
   UART_on();  // the Peripheric UART
   
   GPS_VALIM = TRUE; // gps gest energy
-
+  // BB_TX_UART = true;
   configure_gps();
  
   GPS_VALIM = FALSE;
-
+  // BB_TX_UART = false;
 }
 
 #endif
@@ -505,7 +499,7 @@ void gps_reinit(void){
   
   // switch on the gps valim pin
   GPS_VALIM = TRUE;
-  
+  // BB_TX_UART = true;
 #endif  
 
 
@@ -531,7 +525,7 @@ void gps_reinit(void){
   
 #endif
 	
-  my_delay_ms(100);
+  // my_delay_ms(100);
  
 }
 
@@ -541,10 +535,10 @@ void gps_reinit(void){
 
 void gps_stop(void){
  
-  DB_PRINT("\r\ngps_stop\r\n");
+  DB_PRINT("\r\ng S\r\n");
  
   GPS_VALIM = FALSE;
-  
+  // BB_TX_UART = false;
 #if DEBUGGING_IS_ON 
   // and switch off the valim_pin for the UART_CRLF
   UART_GPS_FLG.gps_stop_debug_flg = true;
@@ -588,7 +582,7 @@ void gps_calculate_lock_time(void){
   
 #if DEBUGGING_BB_IS_ON
 
-  DB_PRINT("\r\nLock_time: ");
+  DB_PRINT("\r\nLt:  ");
   UART_int(gps_module.lock_times[gps_module.lock_indexer]);
   UART_CRLF;
 
@@ -619,12 +613,12 @@ gps_state_t gps_check_gps_error_status(void){
   
 
   stop_timeout_tmr();
- 
+  DB_PRINT("\r\n");
   if(UART_GPS_FLG.gps_sentence_is_good)
   {
     gps_module.state = GPS_SENTENCE_RECEIVING;  // GPS_ALL_GOOD
 #if GPS_PRINT   
-    DB_PRINT("\r\nGPS Works\r\n");
+    DB_PRINT("G_W");
 #endif    
   }
   else if(UART_GPS_FLG.receiving_chars_is_good == FALSE)
@@ -632,7 +626,7 @@ gps_state_t gps_check_gps_error_status(void){
     
     gps_module.state = NOT_RECEIVING;
 #if GPS_PRINT       
-    DB_PRINT("\r\nGPS F ERR\r\n");
+    DB_PRINT("GF_E");
  #endif       
     
     configure_gps();
@@ -643,7 +637,7 @@ gps_state_t gps_check_gps_error_status(void){
     
     gps_module.state = NOT_RECEIVING_CORRECTLY;
 #if GPS_PRINT           
-    DB_PRINT("\r\nGPS B ERR\r\n");
+    DB_PRINT("GB_E");
  #endif          
     
     configure_gps();
@@ -653,10 +647,10 @@ gps_state_t gps_check_gps_error_status(void){
   {
     gps_module.state = GPS_SENTENCE_RECEIVING;
 #if GPS_PRINT           
-    DB_PRINT("\r\nGPS O.K.\r\n");
+    DB_PRINT("GOK");
  #endif          
   }
-  
+  DB_PRINT("\r\n");
   return gps_module.state;
 
 }
@@ -726,9 +720,9 @@ static void configure_gps(void){
   // TODO --> check if thi sis certain actually...
   GLOBAL_IE = TRUE;
   
-  // GPS_VALIM = TRUE;
-
-#if DEBUGGING_BB_IS_ON
+  GPS_VALIM = TRUE;
+// BB_TX_UART = true;
+#if DEBUGGING_BB_IS_ON&&0
 
   
   DB_PRINT("\r\nsgd\r\n");
@@ -737,14 +731,15 @@ static void configure_gps(void){
   
   send_gps_direct();
   CLRWDT();
-  send_gps_direct();
-  CLRWDT();
+  // send_gps_direct();
+  // CLRWDT();
 #else
    
   
   
   
 #endif
+
 // this initial delay is important for the module
 #if !CFG_GPS_AFTER_RX_LUZ
   my_delay_ms(2500);
@@ -773,6 +768,10 @@ static void configure_gps(void){
     // this is the sentence which sets the baudrate in the module
 #if ONE_TO_RULE_THEM_ALL
  
+    UART_GPS_SEND(sentence_pnt[7]);
+
+    my_delay_ms(50);
+    
     UART_GPS_SEND(sentence_pnt[0]);
 
     my_delay_ms(50);
@@ -781,9 +780,7 @@ static void configure_gps(void){
 
     my_delay_ms(50);
     
-    UART_GPS_SEND(sentence_pnt[7]);
 
-    my_delay_ms(50);
 #else
     
     UART_GPS_SEND(module_baud_sentence_pnt);
@@ -795,7 +792,7 @@ static void configure_gps(void){
     
   }
   
-#if DEBUGGING_BB_IS_ON  
+#if DEBUGGING_BB_IS_ON&&0 
   send_gps_direct();
 #endif
 
@@ -805,13 +802,13 @@ static void configure_gps(void){
   
   // swoff --> reboot
   GPS_VALIM = FALSE;
-  
+  // BB_TX_UART = false;
   //give a delay to 
   my_delay_ms(100);
   
   // swon --> reboot
   GPS_VALIM = TRUE;
-  
+  // BB_TX_UART = true;
   my_delay_ms(2500);
 
   uart_init_cfg(DEFAULT_BAUD);
@@ -830,11 +827,11 @@ static void configure_gps(void){
 #endif
 #endif
   
-#if DEBUGGING_BB_IS_ON
+#if DEBUGGING_BB_IS_ON&&0
   send_gps_direct();
 #endif
 
-  GPS_VALIM = FALSE;
+  
   
   
 }
@@ -1026,7 +1023,7 @@ wat?
 /* Consume one UART byte. A new '$' always abandons an incomplete sentence. */
 void values_to_gps_rx_buffer(uint8_t n_char){
 
-#if GLONASS_BUG
+#if DEBUGGING_BB_IS_ON
   unsigned char t_str[2];
   t_str[1] = NULL_TERMINATOR;
 #endif
@@ -1037,18 +1034,20 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     return;
   }
 
-#if GLONASS_BUG&&1
+#if DEBUGGING_BB_IS_ON&&1
 
   t_str[0] = n_char;
   DB_PRINT(t_str);
   
 #endif
   
+  // BB_DIRECT = !BB_DIRECT;
 
   UART_GPS_FLG.receiving_chars_is_good = TRUE;
 
   if(n_char == '$')
   {
+    // DB_PRINT("GOK");
     reset_uart_handler_flags();
     UART_GPS_FLG.startbyte_found = TRUE;
     *temp_buff_pnt++ = n_char;
@@ -1071,6 +1070,9 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     {
       /* Synchronization belongs only to the sentence processed below. */
       GPS_HAS_SYNCED = false;
+      
+      DB_PRINT(" Z ");
+      
       if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt) == TRUE)
       {
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
@@ -1112,6 +1114,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   {
     if(n_char == '*')
     {
+      DB_PRINT(" X ");
       UART_GPS_FLG.endbyte_found = TRUE;
     }
   }
@@ -1988,7 +1991,7 @@ static void send_gps_direct(void){
   while(TIMEOUT_FLG == false)
   {
 
-    BB_DIRECT = UART_RX_PC;
+    // BB_DIRECT = UART_RX_PC;
 
   }
   stop_timeout_tmr();
