@@ -1,0 +1,51 @@
+BUILDING THE FIRMWARE VARIANTS
+
+Open PowerShell in the GPSDetector project folder and run:
+
+    .\build_variants.ps1
+
+If PowerShell blocks local scripts, this command allows this invocation:
+
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build_variants.ps1
+
+Preview the combinations without writing files or compiling:
+
+    .\build_variants.ps1 -DryRun
+
+Build just one combination:
+
+    .\build_variants.ps1 -Pcb 69 -Baud 9600 -Mode T
+
+The default is all 12 combinations: PCB 66/67/69, baud 9600/115200, R/T.
+FW_VERSION_STR is read from include/Global.h. Example: v33R66_9k6.hex.
+115200 baud uses the filename suffix 115k2.
+
+The script reads DEFAULTCONF from nbproject/Makefile-impl.mk. At creation
+this was PIC16F1936_xc8_1_38_no_BL (XC8 1.38, without bootloader).
+To select another generated MPLAB configuration explicitly:
+
+    .\build_variants.ps1 -Configuration PIC16F1936_xc8_1_38_no_BL
+
+Compiler and device-pack paths come from the existing MPLAB makefiles.
+If these paths are stale, open and build that configuration in MPLAB X first.
+Make can also be specified explicitly, for example:
+
+    .\build_variants.ps1 -MakePath 'C:\Program Files\Microchip\MPLABX\v6.25\gnuBins\GnuWin32\bin\make.exe'
+
+Each invocation creates a new run folder beneath:
+    dist/variants/<configuration>/
+It contains named HEX files, one log per variant, and summary.csv with status
+and SHA256 hashes. Failed builds have no exported HEX; other variants continue.
+The script reports failure at the end if any variant failed.
+
+Each variant builds from a fresh copy beneath build/variants/<run>/.
+These copies include the source, headers, and MPLAB project files. They are
+retained for inspection, together with intermediate compiler output.
+No original source/header or existing IDE build output is modified.
+Avoid editing source during a run so all copies represent the same revision.
+
+Only the copied Global.h is adjusted: PCB_VERSION, BAUD_SETTING,
+COMPILE_FOR_RELEASE, COMPILE_FOR_TEST, COMPILE_FOR_INTERNAL_TEST (0),
+and COMPILE_FOR_DEBUG (0). Other flags, including USE_115K_BAUD, stay as set.
+R/T select firmware behavior; both produce MPLAB production HEX images.
+Successful compilation does not replace testing firmware on each board.
