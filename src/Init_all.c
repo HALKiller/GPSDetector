@@ -52,7 +52,7 @@
 // - - - - - - - - - - - - - - - - - - - -  D E B U G G I N G   P R I N T   O U T   - - - - - - - - - - - - - - - - - - - - //  
 
 
-
+extern const char gMensajeVersion_new[];
 
 #define DEBUG_FOTOTRANSISTOR 0
 
@@ -102,14 +102,14 @@ void init_all(void){
 
 
 
-	DB_PRINT("\r\n--- RESET  BUILD: ");
+	DB_PRINT("\r\n-- RST: ");
 	// send_bb_string(__DATE__);
 	// send_bb_string("  ");
 	// send_bb_string(__TIME__);
 	// send_bb_string("\r\n");
 	// DB_PRINT("\r\nMIPS: ");
   // UART_CRLF;
-
+  DB_PRINT(gMensajeVersion_new);
 
 	// DB_PRINT("\r\nBUILD: ");
 	DB_PRINT(__DATE__);

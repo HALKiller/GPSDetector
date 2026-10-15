@@ -7,15 +7,6 @@
 #include <stddef.h>
 
 
-// typedef enum baudtype{
-  
-  // BAUD_9600 = 96,
-  // BAUD_57600 = 576,
-  // BAUD_115200 = 1152,
-  // BAUD_1953,
-  
-// }baudtype_t;
-
 
 
 #if MIPS == 1
@@ -87,9 +78,10 @@
 
 #define USE_THE_GENERIC 0
 
-#define DEBUG_BAUDRATE B9600
+// #define DEBUG_BAUDRATE B9600
 
 #if 1
+
 typedef enum {
   
   B9600 = 0,
@@ -98,34 +90,14 @@ typedef enum {
   B9600_low_clk,
   
 }baudrate_t;
-#else
-  
-typedef enum {
-  
-  B9600 = 96,
-  B57600 = 576,
-  B115200 = 1152,
-  B9600_low_clk,
-  
-}baudrate_t;
+
 #endif
 
 void uart_init_cfg(baudrate_t baudrate);
 
-// uint8_t check_next_char(void);
-
-// void init_uart_flags(void);
-
 void uart_init_slow_clock(void);
 
-// void init_UART(void);
-
-// inline void uart_swoff_reception(void);
-
-
 void send_string(const unsigned char *str_pnt);
-
-
 
 void UART_INT_C(uint32_t hvar);
 
@@ -134,8 +106,6 @@ void uart_hex(uint8_t hvar);
 void UART_32_int(uint32_t hvar);
 
 void send_character(uint8_t the_char);
-
-// uint8_t *get_pnt_to_uart_rx_buffer(void);
 
 void UART_off(void);
 

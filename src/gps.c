@@ -76,7 +76,7 @@
 
 #define STARTUP_LOCK_TIME MINIMUM_GPS_ON_BEFORE_TRANSMISSION
 
-#define DEFAULT_BAUD (B115200)  // (B115200)  // (B9600)  //(B57600)  // 
+// #define DEFAULT_BAUD (B9600)  // (B115200)  // (B9600)  //(B57600)  // 
 
 #define ONE_TO_RULE_THEM_ALL 1
 
@@ -174,18 +174,17 @@ static const uint32_t gps_standard_baud_rate_settings[] = {
 #if ONE_TO_RULE_THEM_ALL
 
 
-
-
 const uint8_t m_L86_cmd_set_9k6kBaud[] = "$PMTK251,9600*17\r\n";
 // const uint8_t m_L86_cmd_set_57k6Baud[] = "$PMTK251,57600*2C\r\n";
 const uint8_t m_L86_cmd_set_115kBaud[] = "$PMTK251,115200*1F\r\n";
 const uint8_t m_L86_cmd_set_constelation[] = "$PMTK353,1,0,1,0,0*2B\r\n";
 // const uint8_t m_L86_cmd_get_constelation[] = "$PMTK355*31\r\n";
 const uint8_t m_L86_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n";
-
+//                                         $PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*
 const uint8_t m_LC86L_cmd_set_sentences[] = "$PMTK314,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n";
-
-
+//                                           $PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*35
+const uint8_t m_L86L_cmd_set_115kBaud[] = "$PQBAUD,W,115200*43\r\n";
+const uint8_t m_L86L_cmd_set_9k6kBaud[] = "$PQBAUD,W,9600*4B\r\n";
 
 const uint8_t m_L86G_cmd_set_9k6kBaud[] = "$PAIR864,0,0,9600*13\r\n";
 // const uint8_t m_L86G_cmd_set_57k6Baud[] = "$PAIR864,0,0,57600*28\r\n";
@@ -194,7 +193,27 @@ const uint8_t m_L86G_cmd_set_constelation[] = "$PAIR066,1,0,1,1,1,0*3A\r\n";
 const uint8_t m_L86G_cmd_get_constelation[] = "$PAIR067*3B\r\n";
 const uint8_t m_L86G_cmd_save_configuration[] = "$PAIR513*3D\r\n";
 
-const uint8_t *const sentence_pnt[7] = {
+#if BAUD_SETTING==9600
+
+#define DEFAULT_BAUD (B9600)
+
+const uint8_t *const sentence_pnt[8] = {
+  
+  &m_L86_cmd_set_9k6kBaud,  // m_L86_cmd_set_9k6kBaud,  // m_L86_cmd_set_115kBaud,
+  &m_L86G_cmd_set_9k6kBaud, // m_L86G_cmd_set_9k6kBaud, // m_L86G_cmd_set_115kBaud,
+  &m_L86_cmd_set_sentences,
+  &m_LC86L_cmd_set_sentences,
+  &m_L86_cmd_set_constelation,
+  &m_L86G_cmd_set_constelation,
+  &m_L86G_cmd_save_configuration,
+  &m_L86L_cmd_set_9k6kBaud, // m_L86L_cmd_set_9k6kBaud, // m_L86L_cmd_set_115kBaud
+};
+
+
+#elif BAUD_SETTING==115200
+
+#define DEFAULT_BAUD (B115200)
+const uint8_t *const sentence_pnt[8] = {
   
   &m_L86_cmd_set_115kBaud,  // m_L86_cmd_set_9k6kBaud,  // m_L86_cmd_set_115kBaud,
   &m_L86G_cmd_set_115kBaud, // m_L86G_cmd_set_9k6kBaud, // m_L86G_cmd_set_115kBaud,
@@ -203,8 +222,14 @@ const uint8_t *const sentence_pnt[7] = {
   &m_L86_cmd_set_constelation,
   &m_L86G_cmd_set_constelation,
   &m_L86G_cmd_save_configuration,
-  
+  &m_L86L_cmd_set_115kBaud, // m_L86L_cmd_set_9k6kBaud, // m_L86L_cmd_set_115kBaud
 };
+
+
+#else
+  wat?
+#endif
+
 
 #elif GPS_MODULE_L86
 
@@ -756,6 +781,9 @@ static void configure_gps(void){
 
     my_delay_ms(50);
     
+    UART_GPS_SEND(sentence_pnt[7]);
+
+    my_delay_ms(50);
 #else
     
     UART_GPS_SEND(module_baud_sentence_pnt);
@@ -1009,10 +1037,10 @@ void values_to_gps_rx_buffer(uint8_t n_char){
     return;
   }
 
-#if GLONASS_BUG&&0
+#if GLONASS_BUG&&1
 
   t_str[0] = n_char;
-  send_bb_string(t_str);
+  DB_PRINT(t_str);
   
 #endif
   
