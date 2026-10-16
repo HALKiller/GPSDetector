@@ -448,12 +448,13 @@ static void rtc_1000ms_handler(void){
 static void stop_gps_and_select_message(void){
 
   gps_stop();
-
+  DB_PRINT(" sgs: ");
 #if NO_SLEEP_TILL_BROOKLYN
   if(VALID_POS_RECEIVED == true)
   {
     copy_position_from_to(RECOVERPOSITION);
     set_message_for_tx(e_send_position);
+    DB_PRINT("A ");
     return;
   }
 #endif
@@ -466,11 +467,13 @@ static void stop_gps_and_select_message(void){
   {
     copy_position_from_to(RECOVERPOSITION);
     set_message_for_tx(e_resend_position);
+    DB_PRINT("B ");
   }
   else
   {
     set_message_for_tx(e_No_gps);
     COPY_POS_IS_VALID = false;
+    DB_PRINT("C ");
   }
 
   gd.no_position_cnt++;

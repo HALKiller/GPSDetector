@@ -173,6 +173,11 @@ void eRTC_clock_sync_to_gps(uint32_t gps_time){
   eRTC_second_cnt = gps_time;    
   
   RTC_TIME_IS_GOOD = true;
+#if DEBUGGING_BB_IS_ON  
+  DB_PRINT(" rs: ");
+  db_print_rtc_time();
+#endif
+  
   
   rtc_decimo_cnt = 0u;
   
@@ -213,50 +218,60 @@ void eRTC_calculate_time_until_tx(void)
   rtc_time = eRTC_get_second_cnt();
   // existing sync/offset
   time_now = rtc_time + ( TRANSMISSION_TIME_OFFSET - gd.transmission_duration );
-  
+
+#if !COMPILE_FOR_RELEASE&&0    
   DB_PRINT("\r\nDet: ");
   DB_INT(gd.number);
-
-  
-  
   DB_PRINT("\r\nT_now: ");
-#if !COMPILE_FOR_RELEASE  
-  ertc_convert_to_real_time(rtc_time);
-  ertc_convert_to_str();
+
+
+  db_print_rtc_time();
+  // ertc_convert_to_real_time(rtc_time);
+  // ertc_convert_to_str();
 #endif
   
   // this is the amount of seconds we have at this "series_loop_time"
   series_loop_time = (uint16_t)(time_now % gd.time_between_tx);
   
+#if !COMPILE_FOR_RELEASE&&0      
   DB_PRINT("series_loop_time: ");
   DB_INT(series_loop_time);
+#endif
   
   // the detector number which transmits at the moment --> + 1 because of 1 base
   who_is_transmitting_now = (int8_t)(series_loop_time / gd.transmission_duration) + 1;  // series_loop_time = 18p.e. --> == 1
   
+#if !COMPILE_FOR_RELEASE&&0      
   DB_PRINT("\r\nwho_is_transmitting_now: ");
   DB_INT(who_is_transmitting_now);
+#endif
   
   
   // the one is again needed to stay compatible with the existing deployed balizas
   gd_delta = (int8_t)gd.number - who_is_transmitting_now - 1;
-  
+
+#if !COMPILE_FOR_RELEASE&&0      
   DB_PRINT("\r\ngd_delta: ");
   DB_INT(gd_delta);
+#endif
   
   
 // how much time is left in this slot...
   remaining_time_in_actual_slot = (uint8_t)(gd.transmission_duration - (series_loop_time % gd.transmission_duration));
-  
+#if !COMPILE_FOR_RELEASE&&0      
   DB_PRINT("\r\nremaining_time_in_actual_slot: ");
   DB_INT(remaining_time_in_actual_slot);
+#endif
   
   
   // keep intermediates signed; cast once at the end
   tmp = ((int16_t)gd_delta * (int16_t)gd.transmission_duration) + (int16_t)remaining_time_in_actual_slot;
-  
+
+#if !COMPILE_FOR_RELEASE&&0      
   DB_PRINT("\r\ntmp: ");
   DB_INT(tmp);
+#endif
+  
   
   
   // if the gd_delta is negativ we have to add the full cycle time
@@ -265,11 +280,13 @@ void eRTC_calculate_time_until_tx(void)
     tmp = tmp + (int16_t)gd.time_between_tx;
   }
 
-
   gd.seconds_until_next_tx = (uint16_t)tmp;
-  
+
+
+#if !COMPILE_FOR_RELEASE&&0      
   DB_PRINT("\r\nseconds_until_next_tx: ");
   DB_INT(gd.seconds_until_next_tx);
+#endif
   
   gd.next_time_tx = gd.seconds_until_next_tx + rtc_time;
 
@@ -278,7 +295,7 @@ void eRTC_calculate_time_until_tx(void)
     gd.next_time_tx = gd.next_time_tx - SECONDS_PER_DAY;
   }
 
-#if !COMPILE_FOR_RELEASE    
+#if !COMPILE_FOR_RELEASE&&0    
   ertc_convert_to_real_time(gd.next_time_tx);
   DB_PRINT("\r\nN_tx: ");
   ertc_convert_to_str();
@@ -292,7 +309,14 @@ void eRTC_calculate_time_until_tx(void)
 }
 
 
-
+void db_print_rtc_time(void){
+  
+#if DEBUGGING_BB_IS_ON  
+  ertc_convert_to_real_time(eRTC_get_second_cnt());
+  ertc_convert_to_str();
+#endif  
+  
+}
 
 
 //   * * * * * *      P R I V A T E   F U N C T I O N S   B O D Y     * * * * * * * * * * * * * *   //

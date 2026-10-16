@@ -44,6 +44,7 @@ void eRTC_clock_sync_to_gps(uint32_t gps_time);
 
 void eRTC_calculate_time_until_tx(void);
 
+void db_print_rtc_time(void);
 
 extern volatile uint8_t tmr4_of_cnt;
 

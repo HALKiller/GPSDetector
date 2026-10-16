@@ -25,6 +25,8 @@
 // 051002026 --> independnet clock for rx_luz --> becaeu 8MIPS does not wanna worked
 // therefore lets use the 1MIPS clock for the time being
 #define USE_RX_CLOCK 1
+
+// we dont clock down for three seconds before tx...just run it till end with 8MIPS
 #define NO_SLEEP_TILL_BROOKLYN 1
 
 // to have a faster startup we can swon the GPS allready when we enter the rx_luz waiter 
@@ -87,7 +89,7 @@ err
 #endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 66
+#define PCB_VERSION 69
 
 #define BAUD_SETTING 115200  // (B115200)  // (B9600)  //(B57600)  // 
 
@@ -495,6 +497,8 @@ extern const uint16_t shifts[16];
 
 #endif
 
+#define DB_ON 1
+#define DB_OFF 0
 
 #if SWOFF_ALL_DB_FILE_ENABLED
 
@@ -524,24 +528,24 @@ extern const uint16_t shifts[16];
 #else
 
 #define               FILE_MAIN_DB_ENABLED 0
-#define           FILE_INIT_ALL_DB_ENABLED 1
-#define               FILE_UART_DB_ENABLED 1  // the UART_int is not working otherwise of course...
+#define           FILE_INIT_ALL_DB_ENABLED DB_ON
+#define               FILE_UART_DB_ENABLED DB_ON  // the UART_int is not working otherwise of course...
 #define              FILE_CLOCK_DB_ENABLED 0
 #define FILE_CONFIGURATION_BITS_DB_ENABLED 0
 #define FILE_INTERRUPT_ISR_FILE_DB_ENABLED 0
 #define                FILE_ADC_DB_ENABLED 0
-#define           FILE_HANDLERS_DB_ENABLED 1
+#define           FILE_HANDLERS_DB_ENABLED DB_ON
 #define        FILE_RING_BUFFER_DB_ENABLED 0
 #define             FILE_RX_LUZ_DB_ENABLED 0
 #define          FILE_MY_ASSERT_DB_ENABLED 0
 #define        FILE_TILT_SENSOR_DB_ENABLED 0
 #define             FILE_TIMERS_DB_ENABLED 0
 #define          FILE_GD_STATES_DB_ENABLED 0
-#define                FILE_GPS_DB_ENABLED 1
+#define                FILE_GPS_DB_ENABLED DB_ON
 #define  FILE_EXTENSION_STRINGS_DB_ENABLED 0
-#define              FILE_E_RTC_DB_ENABLED 0
+#define              FILE_E_RTC_DB_ENABLED DB_ON
 #define             FILE_EEPROM_DB_ENABLED 0
-#define                FILE_DDS_DB_ENABLED 1
+#define                FILE_DDS_DB_ENABLED DB_ON
 #define           FILE_MESSAGES_DB_ENABLED 0
 #define    FILE_BIT_BANGED_UART_DB_ENABLED 0
 #define           FILE_DETECTOR_DB_ENABLED 0

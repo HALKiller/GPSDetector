@@ -1558,6 +1558,7 @@ static void process_gsa_sentence(void){
 
 #if 1
 
+// from where does that come ...that call
 static void convert_utc_to_gps_rtc_time(void){
   
 
@@ -1838,25 +1839,7 @@ static void process_rmc_sentence(void){
 
 static uint8_t check_validity_of_time_diff(void){
   
-  // #define MAX_PERMITTED_DELTA 18u
-  
-  // uint32_t delta;
-  // uint32_t get_rtc = eRTC_get_second_cnt();
-  
-  // if(get_rtc > gps_rtc_time)
-  // {
-    // delta = get_rtc - gps_rtc_time;
-  // }
-  // else
-  // {
-    // delta = gps_rtc_time - get_rtc;
-  // }
-  
-  // if((delta <= MAX_PERMITTED_DELTA) || (delta >= (SECONDS_PER_DAY - MAX_PERMITTED_DELTA)))
-  // {
-    // return true;
-  // }
-  
+
   return false;
 
 }
