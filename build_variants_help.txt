@@ -8,6 +8,14 @@ If PowerShell blocks local scripts, this command allows this invocation:
 
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build_variants.ps1
 
+Also in case try:
+
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+    
+And then past :
+
+    .\build_variants.ps1
+
 Preview the combinations without writing files or compiling:
 
     .\build_variants.ps1 -DryRun

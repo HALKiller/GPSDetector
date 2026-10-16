@@ -1028,13 +1028,14 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   t_str[1] = NULL_TERMINATOR;
 #endif
   
-
+#if DEBUGGING_IS_ON
   if(UART_GPS_FLG.gps_stop_debug_flg == true)
   {
     return;
   }
+#endif
 
-#if DEBUGGING_BB_IS_ON&&1
+#if (DEBUGGING_BB_IS_ON)&&(BAUD_SETTING==9600)
 
   t_str[0] = n_char;
   DB_PRINT(t_str);
@@ -1047,7 +1048,6 @@ void values_to_gps_rx_buffer(uint8_t n_char){
 
   if(n_char == '$')
   {
-    // DB_PRINT("GOK");
     reset_uart_handler_flags();
     UART_GPS_FLG.startbyte_found = TRUE;
     *temp_buff_pnt++ = n_char;
@@ -1071,8 +1071,6 @@ void values_to_gps_rx_buffer(uint8_t n_char){
       /* Synchronization belongs only to the sentence processed below. */
       GPS_HAS_SYNCED = false;
       
-      DB_PRINT(" Z ");
-      
       if(GPS_checksum_checker(src_buff_pnt, cMax_Sentence_length_GPS - temp_buff_pnt_cnt) == TRUE)
       {
         UART_GPS_FLG.gps_sentence_is_good = TRUE;
@@ -1081,7 +1079,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
         if(temp_buff_pnt_cnt > 0u)
         {
           *temp_buff_pnt = NULL_TERMINATOR;
-          // send_bb_string(sentence_buffer.gps_buffer);
+          // DB_PRINT(sentence_buffer.gps_buffer);
         }
 #endif
         
@@ -1114,7 +1112,7 @@ void values_to_gps_rx_buffer(uint8_t n_char){
   {
     if(n_char == '*')
     {
-      DB_PRINT(" X ");
+      
       UART_GPS_FLG.endbyte_found = TRUE;
     }
   }
@@ -1467,16 +1465,13 @@ static void process_gsa_sentence(void){
   static uint8_t r_cnt = 0;
   
   r_cnt++;
-  
 
- 
-  
   if( r_cnt >= 11)
   {
     r_cnt = 0;
-    send_bb_string("\r\n");
-    send_bb_string(sentence_buffer.gps_buffer);
-    send_bb_string("\r\n");
+    DB_PRINT("\r\n");
+    DB_PRINT(sentence_buffer.gps_buffer);
+    DB_PRINT("\r\n");
   }
   
 #endif  
@@ -1505,15 +1500,6 @@ static void process_gsa_sentence(void){
       
     }
 
-    
- #if 0 
-    
-    gSeHaProcesadoGsa = true;
-    gNoProcesaMasGsa  = true;
-
-#endif    
-
-  
 }
 
 
@@ -1829,9 +1815,9 @@ static void process_rmc_sentence(void){
   if( r_cnt >= 10)
   {
     r_cnt = 0;
-    send_bb_string("\r\n");
-    send_bb_string(sentence_buffer.gps_buffer);
-    send_bb_string("\r\n");
+    DB_PRINT("\r\n");
+    DB_PRINT(sentence_buffer.gps_buffer);
+    DB_PRINT("\r\n");
   }
   
 #endif    

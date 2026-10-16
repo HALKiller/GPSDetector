@@ -9,7 +9,7 @@
 // 66 --> The Version with 16F1936, analog inclination sensor
 // 67 --> SPI_TILT, Status LEDs,  
 // 68 --> These were never for sales and are intermediate between 67 and 69
-// 69 --> the PCB with SPI_TILT_SENSOR which got rejected by its numbering system...
+// 69 --> the PCB with SPI_TILT_SENSOR, STATUS_LEDS red and green,...
 
 
 // these i use when there is a pin to be checked and i use the three DB_LED for that...
@@ -89,11 +89,15 @@ wat
 #if DEBUGGING_BB_IS_ON
 
 #define USE_BB_LED_OUTPUT 1
-#define BB_DIRECT LATBbits.LATB7
-#define BB_TX_UART LATBbits.LATB6// LATAbits.LATA7 // 
+
+#define BB_DIRECT  LATBbits.LATB7
+#define BB_TX_UART LATBbits.LATB6
+
 #else
   
 #define USE_BB_LED_OUTPUT 0
+#define BB_DIRECT
+#define BB_TX_UART
   
 #endif
 

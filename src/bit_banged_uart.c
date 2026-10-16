@@ -74,7 +74,7 @@ static volatile __near uint8_t bb_asm_count;
 // #define ICSPCLCK 			LATBbits.LATB6
 // #define ICSPDAT 			  LATBbits.LATB7
 
-#define BB_TX_UART           LATBbits.LATB6// LATAbits.LATA7 // 
+#define BB_TX_UART          LATBbits.LATB6// LATAbits.LATA7 // 
 #define BB_DIRECT           LATBbits.LATB7// LATAbits.LATA7 // 
 
 
@@ -111,7 +111,7 @@ static volatile __near uint8_t bb_asm_count;
 #elif MIPS==8
 
 // 250000 Baudrate
-#define BB_PR	69  // 32 --> 250000    // 69 --> 115200  // 
+#define BB_PR	32  // 32 --> 250000    // 69 --> 115200  // 
 #define BB_PSA  TMR6_01_PRESCALER 
 #define BB_POST TMR6_01_POSTSCALER
 
@@ -195,7 +195,7 @@ void init_TMR_bitbang_uart(uint8_t clockspeed){
   TRISBbits.TRISB7 = false;  // the RX_Pin
 	// set_bb_uart(true);	// because UART TX is idle high
 	
-  BB_TX_UART = false;
+  BB_TX_UART = true;
   BB_DIRECT = true;
   
   

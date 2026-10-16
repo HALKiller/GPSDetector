@@ -87,9 +87,9 @@ err
 #endif
 
 // depending on that define we compile different pcb versions
-#define PCB_VERSION 67
+#define PCB_VERSION 66
 
-#define BAUD_SETTING 9600  // (B115200)  // (B9600)  //(B57600)  // 
+#define BAUD_SETTING 115200  // (B115200)  // (B9600)  //(B57600)  // 
 
 // The actual Version as string...
 #define FW_VERSION_STR "33"
@@ -220,7 +220,7 @@ err
 #define SEND_LOCK_TIME_DECIMAS_LATITUDE 0
 
 // all DB_FILE ANBLED are swoffed
-#define SWOFF_ALL_DB_FILE_ENABLED 1
+#define SWOFF_ALL_DB_FILE_ENABLED 0
 #define COMPILE_ONLY_RX_LUZ 0
 
 // ---------------------------------------------------------  COMPILE FOR INTERNAL TEST  -------------------------  //
